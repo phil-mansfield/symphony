@@ -100,8 +100,8 @@ _carmen_cosmology = { 'flat': True, 'H0': 70.0, 'Om0': 0.25,
 
 """ parameter_table contains simulation-defining parameters. This includes a 
 table of cosmological parameters ("flat", "H0", "Om0", "Ob0", "sigma8", and
-"ns"), the particle mass in Msun/h, "mp", the Plummer-equivalent force
-softening scale in comoving kpc/h, "eps", and for convience, "h100".
+"ns"), the particle mass in Msun, "mp", the Plummer-equivalent force
+softening scale in comoving Mpc, "eps", and for convience, "h100".
 """
 parameter_table = {
     "SymphonyLMC": _chinchilla_cosmology,
@@ -130,6 +130,8 @@ for sim in parameter_table:
     param = parameter_table[sim]
     param["h100"] = param["H0"]/100
 
+parameter_table["ExampleSuite"] = parameter_table["Example"]
+    
 def colossus_parameters(param):
     """ colossus_parameters converts a parameter dictionary into a colossus-
     comparitble parameter dictionary.
