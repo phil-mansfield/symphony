@@ -1,5 +1,5 @@
-# symphony
-A Python library for interacting with the Symphony and MW-est zoom-in simualtion suites.
+# Symphony
+This repository contains code related to the Symphony zoom-in simulation suite.
 
 Documentation can be found at 
 https://symphony-simulations.readthedocs.io/en/latest/
