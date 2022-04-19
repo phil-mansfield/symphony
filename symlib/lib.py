@@ -130,7 +130,7 @@ for sim in parameter_table:
     param = parameter_table[sim]
     param["h100"] = param["H0"]/100
 
-parameter_table["ExampleSuite"] = parameter_table["Example"]
+parameter_table["ExampleSuite"] = parameter_table["MWest"]
     
 def colossus_parameters(param):
     """ colossus_parameters converts a parameter dictionary into a colossus-
