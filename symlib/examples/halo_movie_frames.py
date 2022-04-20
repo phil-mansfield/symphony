@@ -35,9 +35,9 @@ def main():
     snaps, scales = np.arange(236), symlib.scale_factors()
         
     # Work out subdirectory names and create as needed.
-    base_dir = path.join(sim_dir, "Halo%03d" % host_id)
-    out_dir = path.join(path.join(
-        out_base_dir, "Halo%03d" % host_id), "h%03d" % s_idx)
+    base_dir = path.join(sim_dir, suite_name, "Halo%03d" % host_id)
+    out_dir = path.join(out_base_dir, suite_name, "Halo%03d" % host_id,
+                        "movie_frames", "h%03d" % s_idx)
     os.makedirs(out_dir, exist_ok=True)
 
     # *****

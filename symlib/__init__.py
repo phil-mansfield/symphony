@@ -21,3 +21,5 @@ from .star_tagging import GalaxyHaloModel
 # Utility functions
 from .star_tagging import clean_particles, tag_stars, look_back_orbital_time
 
+# These are functions that are only really useful for the the tutorial
+from .util import plot_circle

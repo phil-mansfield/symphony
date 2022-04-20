@@ -252,7 +252,7 @@ def read_subhalos(params, dir_name):
     given by SUBHALO_DTYPE (see the header of this file). If a halo doesn't
     exist at a given snapshot, values are set -1 ok will be set to false.
     """
-    fname = path.join(dir_name, "mergers.dat")
+    fname = path.join(dir_name, "halos", "subhalos.dat")
     f = open(fname, "rb")
 
     n_snap = struct.unpack("i", f.read(4))[0]
@@ -276,9 +276,8 @@ def read_subhalos(params, dir_name):
             out["vmax"][i,ok], out["mvir"][i,ok], out["rvir"][i,ok]*a[ok]
         )
         
-    print("WARNING: merger.dat and lib.py are different versions")
-    #for i in range(n_merger):
-    #    out["rvmax"][i,:] = np.fromfile(f, np.float32, n_snap)
+    for i in range(n_merger):
+        out["rvmax"][i,:] = np.fromfile(f, np.float32, n_snap)
     for i in range(n_merger):
         out["id"][i,:] = np.fromfile(f, np.int32, n_snap)
     for i in range(n_merger):
@@ -311,7 +310,7 @@ def get_subhalo_histories(s, idx, dir_name):
         mvir, vmax, x = s[i]["mvir"], s[i]["vmax"], s[i]["x"]
         ok = mvir > 0
         
-        h["mpeak"], h["vpeak"] = np.max(mvir[ok]), np.max(vmax[ok])
+        h["mpeak"][i], h["vpeak"][i] = np.max(mvir[ok]), np.max(vmax[ok])
         if i == 0: continue
 
         m_snap = merger_snap(central, x[ok], snap[ok])
@@ -326,7 +325,7 @@ def read_branches(dir_name):
     It returns an array with length n_branches where each element has type
     BRANCH_DTYPE.
     """
-    fname = path.join(dir_name, "branches.dat")
+    fname = path.join(dir_name, "halos", "tree_header.dat")
     f = open(fname, "rb")
     
     n = struct.unpack("i", f.read(4))[0]
