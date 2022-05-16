@@ -37,7 +37,7 @@ HISTORY_DTYPE = [("mpeak", "f4"), ("vpeak", "f4"), ("merger_snap", "i4"),
                  ("merger_ratio", "f4"),
                  ("start", "i4"), ("end", "i4"), ("is_real", "?"),
                  ("is_disappear", "?"), ("is_main_sub", "?"),
-                 ("preprocess", "i4")]
+                 ("preprocess", "i4"), ("first_infall_snap", "i4")]
 
 
 """ BRANCH_DTYPE is a numpy datatype representing the main branch of of halo's
@@ -60,7 +60,7 @@ merger tree. This forms a component of HISTORY_DTYPE, which
 """
 BRANCH_DTYPE = [("start", "i4"), ("end", "i4"), ("is_real", "?"),
                  ("is_disappear", "?"), ("is_main_sub", "?"),
-                 ("preprocess", "i4")]
+                 ("preprocess", "i4"), ("first_infall_snap", "i4")]
 
 """ TREE_COL_NAMES is the mapping of variable names to columns in the
 consistent-trees file. These are the variable names you need to pass to
@@ -141,11 +141,28 @@ def colossus_parameters(param):
 
 P_FILE_FMT = "%s/particles/part_%03d.%d"
 
-def scale_factors(n_snap=236, a_start=1/20.0, a_end=1.0):
-    """ scale_factors returns the scale factors used by the simulation. The
-    defaults are set to correspond to the MWest suite's parameters.
+def halo_dir_to_suite_name(dir_name):
+    """ dur_to_suite_name returns the name of the suite that a halo in the
+    given directory belongs to.
     """
-    return 10**np.linspace(np.log10(a_start), np.log10(a_end), n_snap)
+    suite_dir, halo_name = os.path.split(dir_name)
+    base_dir, suite_name = os.path.split(suite_dir)
+    return suite_name
+
+def scale_factors(dir_name):
+    """ scale_factors returns the scale factors of each snapshot for a halo in
+    the given directory.
+    """
+    # TODO: individual halo-by-halo scale factors
+    suite_name = halo_dir_to_suite_name(dir_name)
+    if suite_name in ["SymphonyLMC", "SymphonyGroup",
+                      "SymphonyMilkyWay", "MWest"]:
+        return 10**np.linspace(np.log10(0.05), np.log10(1), 236)
+    elif suite_name in ["SymphonyLCluster",  "SymphonyCluster"]:
+        return 10**np.linspace(np.log10(0.075), np.log10(1), 200)
+    else:
+        raise ValueError(("The halo in %s does not bleong to a " + 
+                          "recognized suite.") % dir_name)
 
 def mvir_to_rvir(mvir, a, omega_M):
     """ mvir_to_rvir converts a Bryan & Norman virial mass in Msun/h to a virial
@@ -260,8 +277,8 @@ def read_subhalos(params, dir_name):
 
     idx = np.fromfile(f, np.int32, n_merger)    
     out = np.zeros((n_merger, n_snap), dtype=SUBHALO_DTYPE)
-    a = scale_factors()
-    
+    a = scale_factors(dir_name)
+
     for i in range(n_merger):
         out["mvir"][i,:] = np.fromfile(f, np.float32, n_snap)
         out["ok"][i,:] = out["mvir"][i,:] > 0
@@ -301,6 +318,7 @@ def get_subhalo_histories(s, idx, dir_name):
     h["is_main_sub"] = b[idx]["is_main_sub"]
     # TODO: point into subhalos, not branches
     h["preprocess"] = b[idx]["preprocess"]
+    h["first_infall_snap"] = b[idx]["first_infall_snap"]
 
     central = s[0]
 
@@ -339,7 +357,8 @@ def read_branches(dir_name):
     out["is_disappear"] = np.fromfile(f, np.bool, n)
     out["is_main_sub"] = np.fromfile(f, np.bool, n)
     out["preprocess"] = np.fromfile(f, np.int32, n)
-    
+    out["first_infall_snap"] = np.fromfile(f, np.int32, n)
+
     return out    
 
 def read_tree(dir_name, var_names):
@@ -434,48 +453,101 @@ def tree_var_offset(hd, var_name):
     hd_size = 4*4 + 4*(hd.n_int + hd.n_float + hd.n_vec)
     return hd.n*4*(i + 2*max(0, i - hd.n_int - hd.n_float)) + hd_size    
 
-def read_particles(base_dir, snap, i, vars_to_read=["x", "v", "phi"]):
-    """ read_part_file reads the particles from a file for halo i at the given
-    snapshot. You can change which particles are read using vars_to_read. By
-    default, all three are read and returned as a tuple of (x, v, phi).
-    """
-    fname = P_FILE_FMT % (base_dir, snap, i)
-    f = open(fname, "rb")
 
-    n = struct.unpack("i", f.read(4))[0]
-    vars = { }
+def read_particle_header(base_dir):
+    n_snap = struct.unpack("i", f.read(4))[0]
+    n_merger = struct.unpack("i", f.read(4))[0]
+
+    idx = np.fromfile(f, np.int32, n_merger)    
     
-    if "x" in vars_to_read:
-        vars["x"] = np.fromfile(f, dtype=("f", 3), count=n)
-    else:
-        f.seek(12*n, 1)
+class ParticleHeader(object):
+    def __init__(self, base_dir):
+        file_name = path.join(base_dir, "particle_header.dat")
+        f = open(file_name, "rb")
+        
+        self.n_file = struct.unpack("i", f.read(4))[0]
+        self.n_halo = struct.unpack("i", f.read(4))[0]
+        self.n_particle = struct.unpack("i", f.read(4))[0]
+        
+        self.file_lengths = np.fromfile(f, np.int32, self.n_file)
+        self.offsets = np.fromfile(f, np.int32, self.n_halo)
+        self.sizes = np.fromfile(f, np.int32, self.n_halo)
+        self.file_idxs = np.fromfile(f, np.int32, self.n_halo)
+        self.n0 = np.fromfile(f, np.int32, self.n_halo)
 
-    if "v" in vars_to_read:
-        vars["v"] = np.fromfile(f, dtype=("f", 3), count=n)
-    else:
-        f.seek(12*n, 1)
+        f.close()
 
-    if "phi" in vars_to_read:
-        vars["phi"] = np.fromfile(f, dtype=np.float, count=n)
+class ParticleTags(object):
+    def __init__(self, base_dir, hd):
+        self.id = [None]*hd.n_halo
+        self.snap = [None]*hd.n_halo
+        self.flag = [None]*hd.n_halo
 
-    f.close()
-    out = [vars[var_name] for var_name in vars_to_read]
-    if len(out) == 1:
-        return out[0]
-    else:
-        return tuple(out)
+        for i_file in range(hd.n_file):
+            f = open(path.join(base_dir, "tags.%d.dat" % i_file))
+            
+            to_read = np.where(i_file == self.file_idxs)[0]
+            for i in to_read:
+                self.id[i] = np.fromfile(f, np.int32, hd.sizes[i])
+                self.snap[i] = np.fromfile(f, np.int32, hd.sizes[i])
+                self.flag[i] = np.fromfile(f, np.int32, hd.sizes[i])
 
-def read_particle_tags(base_dir, h_idx):
-    fname = "%s/particles/ids.%d" % (base_dir, h_idx)
-    f = open(fname, "rb")
+            f.close()
+
+        self.n0 = hd.n0
+
+class TagLookup(object):
+    def __init__(self, base_dir, hd):
+        
+
+def read_particles(base_dir, snap, var_name):
+    pass
+
+def read_unique_paritcles(base_dir, snap, var_name, haloes=None):
+    pass
+
+# def read_particles(base_dir, snap, i, vars_to_read=["x", "v", "phi"]):
+#     """ read_part_file reads the particles from a file for halo i at the given
+#     snapshot. You can change which particles are read using vars_to_read. By
+#     default, all three are read and returned as a tuple of (x, v, phi).
+#     """
+#     fname = P_FILE_FMT % (base_dir, snap, i)
+#     f = open(fname, "rb")
+
+#     n = struct.unpack("i", f.read(4))[0]
+#     vars = { }
     
-    n = struct.unpack("i", f.read(4))[0]
-    id = np.fromfile(f, dtype=np.int32, count=n)
-    snap = np.fromfile(f, dtype=np.int16, count=n)
+#     if "x" in vars_to_read:
+#         vars["x"] = np.fromfile(f, dtype=("f", 3), count=n)
+#     else:
+#         f.seek(12*n, 1)
 
-    f.close()
+#     if "v" in vars_to_read:
+#         vars["v"] = np.fromfile(f, dtype=("f", 3), count=n)
+#     else:
+#         f.seek(12*n, 1)
 
-    return id, snap
+#     if "phi" in vars_to_read:
+#         vars["phi"] = np.fromfile(f, dtype=np.float, count=n)
+
+#     f.close()
+#     out = [vars[var_name] for var_name in vars_to_read]
+#     if len(out) == 1:
+#         return out[0]
+#     else:
+#         return tuple(out)
+
+# def read_particle_tags(base_dir, h_idx):
+#     fname = "%s/particles/ids.%d" % (base_dir, h_idx)
+#     f = open(fname, "rb")
+    
+#     n = struct.unpack("i", f.read(4))[0]
+#     id = np.fromfile(f, dtype=np.int32, count=n)
+#     snap = np.fromfile(f, dtype=np.int16, count=n)
+
+#     f.close()
+
+#     return id, snap
 
 # NFW math
 

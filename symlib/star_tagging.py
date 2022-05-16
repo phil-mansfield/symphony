@@ -468,12 +468,12 @@ def tag_stars(base_dir, params, galaxy_halo_model, mergers, halo_idx, tag_snap,
     that with E_snap.
     """
     halo = mergers[halo_idx]
-    scales = lib.scale_factors()
+    scale = lib.scale_factors(base_dir)
     
     star_tag_snap = tag_snap
     if E_snap is None:
         E_tag_snap = look_back_orbital_time(
-            params, star_tag_snap, 0.125, halo, 0.5)
+            params, scale, star_tag_snap, 0.125, halo, 0.5)
     else:
         E_tag_snap = E_snap
         
@@ -483,32 +483,31 @@ def tag_stars(base_dir, params, galaxy_halo_model, mergers, halo_idx, tag_snap,
 
     x_E, v_E, idx_E = clean_particles(
         params, x_E, v_E, mergers[halo_idx,E_tag_snap],
-        scales[E_tag_snap]
+        scale[E_tag_snap]
     )
     x_star, _, idx_star = clean_particles(
         params, x_star, None, mergers[halo_idx,star_tag_snap],
-        scales[star_tag_snap]
+        scale[star_tag_snap]
     )
     
     ranks = RadialEnergyRanking(params, x_E, v_E, idx_E, n_max)
     ranks.load_particles(x_star, None, idx_star)
 
     kwargs = galaxy_halo_model.get_kwargs(
-        params, mergers[halo_idx], star_tag_snap)
+        params, scale, mergers[halo_idx], star_tag_snap)
     mp_star = galaxy_halo_model.set_mp_star(ranks, kwargs)
     
     return mp_star, ranks
     
-def look_back_orbital_time(params, snap, dt_orbit, halo, min_mass_frac):
+def look_back_orbital_time(params, scale, snap, dt_orbit, halo, min_mass_frac):
     """ look_back_orbital_time returns the snapshot of the time which has
     experienced dt_orbit orbital times before the given snapshot, snap. To
     protect against looking back too far, you may specify a maximum amount that
     the halo can grow between the look-back snapshot. halo is an object from
-    the mergers.dat file.
+    the subhalos.dat file.
     """
     cosmo = cosmology.setCosmology("", lib.colossus_parameters(params))
     
-    scale = lib.scale_factors()
     z = 1/scale - 1
     age = cosmo.age(z)
     T_orbit = mass_so.dynamicalTime(z, "vir", "orbit")
@@ -581,13 +580,12 @@ class GalaxyHaloModel(object):
             
         return sorted(list(out_dict.keys()))
 
-    def get_kwargs(self, params, halo, snap):
+    def get_kwargs(self, params, scale, halo, snap):
         """ get_kwargs creates the kwargs that that are needed for a call to
         set_mp_star.
         """
         h100 = params["h100"]
         
-        scale = lib.scale_factors()[snap]
         z = 1/scale - 1
         
         var_names = self.var_names()
