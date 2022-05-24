@@ -4,6 +4,7 @@ import numpy as np
 import os
 import os.path as path
 import scipy.interpolate as interpolate
+import numpy.random as random
 
 """ SUBHALO_DTYPE is the numpy datatype used by the main return value of
 read_subhalos(). Positions and distances are in comvoing Mpc/h, velocities are
@@ -122,8 +123,8 @@ parameter_table["MWest"]["eps"] = 0.170
 parameter_table["SymphonyLMC"]["mp"] = 3.52476e4
 parameter_table["SymphonyMilkyWay"]["mp"] = 2.81981e5
 parameter_table["SymphonyGroup"]["mp"] = 2.25585e6
-parameter_table["SymphonyLCluster"]["mp"] = 1.3e8
-parameter_table["SymphonyCluster"]["mp"] = 1.3e8
+parameter_table["SymphonyLCluster"]["mp"] = 1.51441632e8
+parameter_table["SymphonyCluster"]["mp"] = 1.26201360e8
 parameter_table["MWest"]["mp"] = 2.81981e5
 
 for sim in parameter_table:
@@ -353,9 +354,9 @@ def read_branches(dir_name):
     edges = np.fromfile(f, np.int32, n+1)
     out["start"] = edges[:-1]
     out["end"] = edges[1:]
-    out["is_real"] = np.fromfile(f, np.bool, n)
-    out["is_disappear"] = np.fromfile(f, np.bool, n)
-    out["is_main_sub"] = np.fromfile(f, np.bool, n)
+    out["is_real"] = np.fromfile(f, bool, n)
+    out["is_disappear"] = np.fromfile(f, bool, n)
+    out["is_main_sub"] = np.fromfile(f, bool, n)
     out["preprocess"] = np.fromfile(f, np.int32, n)
     out["first_infall_snap"] = np.fromfile(f, np.int32, n)
 
@@ -462,7 +463,7 @@ def read_particle_header(base_dir):
     
 class ParticleHeader(object):
     def __init__(self, base_dir):
-        file_name = path.join(base_dir, "particle_header.dat")
+        file_name = path.join(base_dir, "particles", "particle_header.dat")
         f = open(file_name, "rb")
         
         self.n_file = struct.unpack("i", f.read(4))[0]
@@ -475,82 +476,119 @@ class ParticleHeader(object):
         self.file_idxs = np.fromfile(f, np.int32, self.n_halo)
         self.n0 = np.fromfile(f, np.int32, self.n_halo)
 
+        self.base_dir = base_dir
+        
         f.close()
 
 class ParticleTags(object):
-    def __init__(self, base_dir, hd):
-        self.id = [None]*hd.n_halo
-        self.snap = [None]*hd.n_halo
-        self.flag = [None]*hd.n_halo
+    def __init__(self, base_dir, part_hd):
+        self.id = [None]*part_hd.n_halo
+        self.snap = [None]*part_hd.n_halo
+        self.flag = [None]*part_hd.n_halo
 
-        for i_file in range(hd.n_file):
-            f = open(path.join(base_dir, "tags.%d.dat" % i_file))
+        for i_file in range(part_hd.n_file):
+            file_name = path.join(base_dir, "particles", "tags.%d.dat" % i_file)
+            f = open(file_name, "rb")
             
-            to_read = np.where(i_file == self.file_idxs)[0]
+            to_read = np.where(i_file == part_hd.file_idxs)[0]
             for i in to_read:
-                self.id[i] = np.fromfile(f, np.int32, hd.sizes[i])
-                self.snap[i] = np.fromfile(f, np.int32, hd.sizes[i])
-                self.flag[i] = np.fromfile(f, np.int32, hd.sizes[i])
+                self.id[i] = np.fromfile(f, np.int32, part_hd.sizes[i])
+                self.snap[i] = np.fromfile(f, np.int16, part_hd.sizes[i])
+                self.flag[i] = np.fromfile(f, np.uint8, part_hd.sizes[i])
 
             f.close()
 
-        self.n0 = hd.n0
+        self.n0 = part_hd.n0
 
 class TagLookup(object):
-    def __init__(self, base_dir, hd):
+    def __init__(self, base_dir):
+        file_name = path.join(base_dir, "particles", "tags.lookup_table.dat")
+        f = open(file_name, "rb")
+        Np = struct.unpack("i", f.read(4))[0]
+        self.halo = np.fromfile(f, np.int16, Np)
+        self.index = np.fromfile(f, np.int32, Np)
         
+class ParticleInfo(object):
+    def __init__(self, base_dir):
+        self.part_hd = ParticleHeader(base_dir)
+        self.tags = ParticleTags(base_dir, self.part_hd)
+        self.lookup = TagLookup(base_dir)
 
-def read_particles(base_dir, snap, var_name):
-    pass
-
-def read_unique_paritcles(base_dir, snap, var_name, haloes=None):
-    pass
-
-# def read_particles(base_dir, snap, i, vars_to_read=["x", "v", "phi"]):
-#     """ read_part_file reads the particles from a file for halo i at the given
-#     snapshot. You can change which particles are read using vars_to_read. By
-#     default, all three are read and returned as a tuple of (x, v, phi).
-#     """
-#     fname = P_FILE_FMT % (base_dir, snap, i)
-#     f = open(fname, "rb")
-
-#     n = struct.unpack("i", f.read(4))[0]
-#     vars = { }
+        global_offset = np.zeros(self.part_hd.n_halo, dtype=int)
+        global_offset[1:] = np.cumsum(self.part_hd.n0[:-1])
+        self.global_offset = global_offset
+        self.global_index = global_offset[self.lookup.halo] + self.lookup.index
+        
+def read_particles(part_info, base_dir, snap, var_name):
+    hd, tags = part_info.part_hd, part_info.tags
     
-#     if "x" in vars_to_read:
-#         vars["x"] = np.fromfile(f, dtype=("f", 3), count=n)
-#     else:
-#         f.seek(12*n, 1)
+    if var_name == "id":
+        return tags.id
+    elif var_name == "snap":
+        return tags.snap
+    elif var_name == "ownership":
+        return tags.flag
+    elif var_name == "valid":
+        valid = [None]*len(tags.snap)
+        for i in range(len(valid)):
+            valid[i] = tags.snap[i] <= snap
+        return valid
+    elif var_name in ["x", "v"]:
+        x_full = np.zeros((hd.n_particle, 3))
 
-#     if "v" in vars_to_read:
-#         vars["v"] = np.fromfile(f, dtype=("f", 3), count=n)
-#     else:
-#         f.seek(12*n, 1)
+        for i_file in range(hd.n_file):
+            snap_name = "snap_%03d" % snap
+            file_name = "%s.%d.dat" % (var_name, i_file)
+            path = os.path.join(hd.base_dir, "particles", snap_name, file_name)
+            f = open(path, "rb")
+            
+            code = struct.unpack("i", f.read(4))[0]
+            if code != 0: raise ValueError("%s is not a vector file." % path)
 
-#     if "phi" in vars_to_read:
-#         vars["phi"] = np.fromfile(f, dtype=np.float, count=n)
+            to_read = np.where(hd.file_idxs == i_file)[0]
+            for i_halo in to_read:
+                size = struct.unpack("q", f.read(8))[0]
+                min = np.array(struct.unpack("fff", f.read(12)))
+                max = np.array(struct.unpack("fff", f.read(12)))
+                
+                qx_i = np.fromfile(f, np.uint16, size*3)
+                x_i = _dequantize_vector(qx_i, min, max)
 
-#     f.close()
-#     out = [vars[var_name] for var_name in vars_to_read]
-#     if len(out) == 1:
-#         return out[0]
-#     else:
-#         return tuple(out)
+                x_i = _expand_vector(tags, x_i, i_halo, snap)
+                offset = part_info.global_offset
+                x_full[offset[i_halo]: offset[i_halo]+len(x_i)] = x_i
 
-# def read_particle_tags(base_dir, h_idx):
-#     fname = "%s/particles/ids.%d" % (base_dir, h_idx)
-#     f = open(fname, "rb")
+            f.close()
+            
+        out = [None]*hd.n_halo
+        for i_halo in range(hd.n_halo):
+            idx = part_info.global_index[tags.id[i_halo] - 1]
+            out[i_halo] = x_full[idx]
+
+        return out
+    else:
+        raise ValueError("Unknown property name, '%s'" % var_name)
     
-#     n = struct.unpack("i", f.read(4))[0]
-#     id = np.fromfile(f, dtype=np.int32, count=n)
-#     snap = np.fromfile(f, dtype=np.int16, count=n)
+def _dequantize_vector(qx, min, max):
+    dx = max - min
+    n = len(qx)//3
+    
+    qx_vec = qx.reshape((n, 3))
+    uint16_max = float(np.iinfo(np.uint16).max)
+    out = np.zeros((n, 3))
+    for dim in range(3):
+        out[:,dim] = dx[dim]/uint16_max*(qx_vec[:,dim]+ random.random(n)) + min[dim]
 
-#     f.close()
-
-#     return id, snap
-
+    return out
+         
+def _expand_vector(tags, x, i, snap):
+    ok = tags.snap[i][tags.flag[i] == 0] <= snap
+    out = np.ones((len(ok), 3)) * np.nan
+    assert(np.sum(ok) == len(x))
+    out[ok] = x
+    return out
+    
 # NFW math
-
 def _two_way_interpolate(x, y):
     """ two_way_interpolate returns interpolation functions that map from x -> y
     and y -> x. Both input arrays must monotonic.
@@ -591,4 +629,31 @@ def vmax_to_cvir_nfw(vmax, mvir, rvir):
     cv[cv < 1] = 1
     return cv_to_c_nfw(cv)    
 
+def main():
+    base_dir = "/home/phil/code/src/github.com/phil-mansfield/symphony_pipeline/tmp_data"
+    sim_dir = path.join(base_dir, "SymphonyMilkyWay", "Halo023")
+
+    param = parameter_table["SymphonyMilkyWay"]
+    h, hist = read_subhalos(param, sim_dir)
+    
+    info = ParticleInfo(sim_dir)
+
+    x235 = read_particles(info, sim_dir, 235, "x")
+    v235 = read_particles(info, sim_dir, 235, "v")
+    ok235 = read_particles(info, sim_dir, 235, "valid")
+    owner235 = read_particles(info, sim_dir, 235, "ownership")
+    
+    x234 = read_particles(info, sim_dir, 234, "x")
+    v234 = read_particles(info, sim_dir, 234, "v")
+    ok234 = read_particles(info, sim_dir, 234, "valid")
+    owner234 = read_particles(info, sim_dir, 234, "ownership")
+
+    for i in range(4):
+        ok = ok234[i] & ok235[i]
+        dx = x235[i][ok] - x234[i][ok]
+        dv = v235[i][ok] - v234[i][ok]
+        x_mid = np.median(dx, axis=0)
+        v_mid = np.median(dv, axis=0)
+        print(x_mid, v_mid)
+        
 if __name__ == "__main__": main()
