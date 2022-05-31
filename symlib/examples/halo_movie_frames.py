@@ -217,5 +217,5 @@ def get_c_range(x, y, mp, r_max, bins, frac):
 
     return H[i_min], H[i_max]
     
-    
+
 if __name__ == "__main__": main()

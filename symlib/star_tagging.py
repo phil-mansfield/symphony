@@ -683,7 +683,7 @@ def profile_info(params, x, ok=None):
     r = np.sqrt(np.sum(x**2, axis=1))
     
     order = np.argsort(r)
-    r_sort = r[order]
+    r_sort = np.sqrt(r[order]**2 + (params["eps"]*1e-3)**2)
     dm = np.ones(len(r_sort))*mp
     if ok is not None: dm[~ok] = 0
     m_enc = np.cumsum(dm[order])
@@ -704,7 +704,7 @@ def profile_info(params, x, ok=None):
     W = (np.cumsum(dW[::-1])[::-1] + 2*vesc_lim**2)/vmax**2
     out = np.zeros(len(W))
     out[order] = W
-
+    
     return rmax, vmax, -out, order
 
 def rank_by_quantile(quantiles, x, idx, n_max):
