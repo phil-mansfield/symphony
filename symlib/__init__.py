@@ -1,7 +1,7 @@
 # Data types
 from .lib import SUBHALO_DTYPE, HISTORY_DTYPE, BRANCH_DTYPE
 # I/O function
-from .lib import read_subhalos, read_branches, read_tree, read_particles, read_particle_tags, ParticleInfo
+from .lib import read_subhalos, read_branches, read_tree, read_particles, ParticleInfo
 # Utilities
 from .lib import parameter_table, scale_factors, pristine_merger_indices, merger_stats, propagate_parent_indices, parameter_table, colossus_parameters
 # TODO: better names for pristine_merger_indices and propagate_parent_indices
