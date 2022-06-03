@@ -667,7 +667,7 @@ def v_circ(m, r):
     """
     return 655.8 * (m/1e14)**0.5 * (r/1e3)**-0.5
 
-def profile_info(params, x, ok=None):
+def profile_info(params, x, ok=None, order=None):
     """ profile_info returns basic information about the spherically averaged
     profile of a halo. x is the the position of particles (pkpc) relative to
     the halo center, mp is the particle mass[es] (Msun), and ok flags 
@@ -681,8 +681,9 @@ def profile_info(params, x, ok=None):
     mp /= h100
     
     r = np.sqrt(np.sum(x**2, axis=1))
+
+    if order is None: order = np.argsort(r)
     
-    order = np.argsort(r)
     r_sort = np.sqrt(r[order]**2 + (params["eps"]*1e-3)**2)
     dm = np.ones(len(r_sort))*mp
     if ok is not None: dm[~ok] = 0
@@ -699,6 +700,8 @@ def profile_info(params, x, ok=None):
     r_scaled = (r_sort[1:]*r_sort[:-1]) / dr
     dW[:-1] = v_circ(m_enc[:-1], r_scaled)**2
 
+    # I don't think this is true when there's a tidal radius. Come back to this
+    # later.
     vesc_lim = v_circ(m_enc[-1], r_sort[-1]) * np.sqrt(2)
 
     W = (np.cumsum(dW[::-1])[::-1] + 2*vesc_lim**2)/vmax**2
