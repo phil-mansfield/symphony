@@ -105,12 +105,12 @@ table of cosmological parameters ("flat", "H0", "Om0", "Ob0", "sigma8", and
 softening scale in comoving Mpc, "eps", and for convience, "h100".
 """
 parameter_table = {
-    "SymphonyLMC": _chinchilla_cosmology,
-    "SymphonyMilkyWay": _chinchilla_cosmology,
-    "SymphonyGroup": _chinchilla_cosmology,
-    "SymphonyLCluster": _banerjee_cosmology,
-    "SymphonyCluster": _carmen_cosmology,
-    "MWest": _chinchilla_cosmology,
+    "SymphonyLMC": _chinchilla_cosmology.copy(),
+    "SymphonyMilkyWay": _chinchilla_cosmology.copy(),
+    "SymphonyGroup": _chinchilla_cosmology.copy(),
+    "SymphonyLCluster": _banerjee_cosmology.copy(),
+    "SymphonyCluster": _carmen_cosmology.copy(),
+    "MWest": _chinchilla_cosmology.copy(),
 }
 
 parameter_table["SymphonyLMC"]["eps"] = 0.080
@@ -547,6 +547,10 @@ def read_particles(part_info, base_dir, snap, var_name):
 
             to_read = np.where(hd.file_idxs == i_file)[0]
             for i_halo in to_read:
+                if hd.n0[i_halo] == 0: continue
+                ok = tags.snap[i_halo][tags.flag[i_halo] == 0] <= snap
+                if np.sum(ok) == 0: continue
+
                 size = struct.unpack("q", f.read(8))[0]
                 min = np.array(struct.unpack("fff", f.read(12)))
                 max = np.array(struct.unpack("fff", f.read(12)))
@@ -566,6 +570,14 @@ def read_particles(part_info, base_dir, snap, var_name):
             out[i_halo] = x_full[idx]
 
         return out
+    elif == "core":
+        file_name = path.join(base_dir, "halos", "cores.dat")
+
+        with open(file_name, "wb") as fp:
+            n_halo, n_core = struct.unpack("ii", fp.read(8))
+            idxs = npfromfile(fp, dtype=int, count=n_halo*n_core)
+            idxs = idxs.reshape((n_halo, n_core))
+        return idxs
     else:
         raise ValueError("Unknown property name, '%s'" % var_name)
     
@@ -584,6 +596,8 @@ def _dequantize_vector(qx, min, max):
 def _expand_vector(tags, x, i, snap):
     ok = tags.snap[i][tags.flag[i] == 0] <= snap
     out = np.ones((len(ok), 3)) * np.nan
+    if np.sum(ok) != len(x):
+        print("   ", np.sum(ok), len(x))
     assert(np.sum(ok) == len(x))
     out[ok] = x
     return out

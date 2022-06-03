@@ -19,7 +19,7 @@ from .star_tagging import RadialEnergyRanking
 # Galaxy-halo models
 from .star_tagging import GalaxyHaloModel
 # Utility functions
-from .star_tagging import clean_particles, tag_stars, look_back_orbital_time
+from .star_tagging import clean_particles, tag_stars, look_back_orbital_time, profile_info
 
 # These are functions that are only really useful for the the tutorial
 from .util import plot_circle
