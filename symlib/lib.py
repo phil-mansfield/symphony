@@ -573,9 +573,9 @@ def read_particles(part_info, base_dir, snap, var_name):
     elif var_name == "core":
         file_name = os.path.join(base_dir, "halos", "cores.dat")
 
-        with open(file_name, "wb") as fp:
-            n_halo, n_core = struct.unpack("qq", fp.read(8))
-            idxs = npfromfile(fp, dtype=np.int32, count=n_halo*n_core)
+        with open(file_name, "rb") as fp:
+            n_halo, n_core = struct.unpack("qq", fp.read(16))
+            idxs = np.fromfile(fp, dtype=np.int32, count=n_halo*n_core)
             idxs = idxs.reshape((n_halo, n_core))
         return idxs
     else:
