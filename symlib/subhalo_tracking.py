@@ -228,7 +228,7 @@ class MassProfile(object):
 
         This is not vectorized
         """
-        
+
         if dx.shape != (3,):
             raise ValueError("dx must be single 3-vector.")
 
@@ -244,7 +244,7 @@ class MassProfile(object):
             if dv is None:
                 raise ValueError("dv must be set if method = 'centrifugal'")
             # In units of  (km/s * kpc)/kpc^2 = km/kpc/s:
-            Omega = np.sqrt(np.sum(np.cross(dv, dr)**2))/R**2
+            Omega = np.sqrt(np.sum(np.cross(dv, dx)**2))/R**2
             # In units of 1/Gyr (funny how closw those two numbers are...)
             Omega *= 1.022
             Omega_circ = 0.750 * (M/1e12)**0.5 * (R/200)**-1.5
@@ -346,6 +346,25 @@ def find_cores(x_own, v_own, m_own, rho_cut, k=64):
 
     return xc, vc
 
+def is_bound(param, dx, dv, ok=None, order=None):
+    rmax, vmax, pe, order = star_tagging.profile_info(param, dx, ok, order)
+    ke = 0.5*np.sum(dv**2, axis=1)/vmax**2
+    if ok is None:
+        return pe + ke < 0, order
+    else:
+        return (pe + ke < 0) & ok, order
+
+def is_bound_iter(n_iter, param, dx, dv, ok=None, order=None):
+    ok, order = is_bound(param, dx, dv, ok, order)
+    n_bound = np.sum(ok)
+    
+    for i in range(n_iter - 1):
+        ok, order = is_bound(param, dx, dv, ok, order)
+        n_bound_i = np.sum(ok)
+        if n_bound_i == n_bound: break
+
+    return ok, order
+
 def main():
     import matplotlib.pyplot as plt
     import palette
@@ -376,14 +395,16 @@ def main():
     #    print("%3d %.3f" % (h0, h[h0,-1]["mvir"]/np.max(h[h0]["mvir"])))
 
     fig_proj, ax_proj = plt.subplots(1, 2, figsize=(16, 8), sharey=True)
+    #fig_proj_b, ax_proj_b = plt.subplots(1, 2, figsize=(16, 8), sharey=True)
     fig_den, ax_den = plt.subplots()
-    fig_prof, ax_prof
+    fig_r_tidal, ax_r_tidal = plt.subplots()
     
     for snap in [235]:
         x_snap = lib.read_particles(info, sim_dir, snap, "x")
         v_snap = lib.read_particles(info, sim_dir, snap, "v")
         valid_snap = lib.read_particles(info, sim_dir, snap, "valid")
         owner_snap = lib.read_particles(info, sim_dir, snap, "ownership")
+        core_idxs = lib.read_particles(info, sim_dir, snap, "core")
         
         a = scale[snap]
         for i in range(len(x_snap)):
@@ -394,6 +415,8 @@ def main():
         h = fix_units_halos(h, a, param)
         
         r_max = h[0,snap]["rvir"]*1.5
+
+        prof = MassProfile(eps, mp, snap, h, x_snap, owner_snap, valid_snap)
         
         pts = 201
         grid = eval_grid(r_max, [0, 0], pts)
@@ -403,7 +426,8 @@ def main():
         
         #for h0 in range(1, len(h)):
         #for h0 in [3, 80, 110, 253, 254, 257, 398]:
-        for h0 in [21]:
+        for h0 in [20]:
+        #for h0 in [377]:
             if h[h0,snap]["rvir"] <= 0: continue
             print(h0)
             
@@ -412,6 +436,12 @@ def main():
             own = ok & (owner == 0)
             mp = np.ones(len(x))*param["mp"]
 
+            x_core_pt = x[core_idxs[h0]][:10]
+            v_core_pt = v[core_idxs[h0]][:10]
+            print(core_idxs[h0])
+            print(x_core_pt)
+            print(len(x))
+            
             #xc, vc = find_core(x[own], v[own], mp[own], k=k)
             xcs, vcs = find_cores(x[own], v[own], mp[own], rho_cut, k=k)
             xc, vc = xcs[0], vcs[0]
@@ -424,26 +454,9 @@ def main():
                 dvc[:,dim] = v[:,dim] - vc[dim]
             rc = np.sqrt(np.sum(dxc**2, axis=1))
             rc = np.sqrt(rc**2 + eps**2)
-            ke = 0.5*np.sum(dvc**2, axis=1)
 
-            rmax, vmax, phi, order = star_tagging.profile_info(param, dxc[ok])
-            e = phi+ke[ok]/vmax**2
-
-            bound = e < 0
-            n_bound = np.sum(bound)
-
-            for _ in range(n_iter):
-                rmax, vmax, phi, order = star_tagging.profile_info(
-                    param, dxc[ok], ok=bound)
-                e = phi+ke[ok]/vmax**2
-                bound = e < 0
-                if (np.sum(bound) == 0 or
-                    abs(np.sum(bound) - n_bound)/n_bound < 0.01): break
-                n_bound = np.sum(bound)
-
-            rho_proj_1 = density_2d_proj(x[ok], mp[ok], grid, k=k)
-            rho_proj_2 = density_2d_proj(x[ok], mp[ok], grid, k=k, dim_x=2)
-            
+            bound, order = is_bound_iter(n_iter, param, dxc[ok], dvc[ok])
+                            
             ax = ax_den
             ax.cla()
             
@@ -472,8 +485,8 @@ def main():
                             alpha=0.2, color="k")
             
             for i in range(1, len(xcs)):
-                rc = np.sqrt(np.sum((xcs[i] - xc)**2))
-                plt.plot([np.log10(rc)]*2, [rho_min, rho_max], "--",
+                rc_i = np.sqrt(np.sum((xcs[i] - xc)**2))
+                ax.plot([np.log10(rc_i)]*2, [rho_min, rho_max], "--",
                          lw=1, c=pc("b"))
 
             log_rvir = np.log10(h[h0,snap]["rvir"])
@@ -481,54 +494,154 @@ def main():
             
             ax.set_xlabel(r"$\log_{10}(r)\,({\rm kpc})$")
             ax.set_ylabel(r"$\rho_{\rm dm}\,(M_\odot\,{\rm kpc}^{-3})$")
-            
-            ax1, ax2 = ax_proj
-            ax1.cla()
-            ax2.cla()
-            
-            rho_proj_1 = np.log10(np.reshape(rho_proj_1, (pts, pts)))
-            rho_proj_2 = np.log10(np.reshape(rho_proj_2, (pts, pts)))
 
-            c_range = get_c_range(10**rho_proj_1, 0.99)
-            vmin, vmax = np.log10(c_range[0]), np.log10(c_range[1])
-            vmin, vmax = vmin, 6.5
-            
-            ax1.imshow(rho_proj_1, vmin=vmin, vmax=vmax, origin="lower",
-                      cmap="afmhot", extent=[-r_max, r_max, -r_max, r_max])
-            util.plot_circle(ax1, 0, 0, h[0,snap]["rvir"], c="w", lw=2.5)
-            util.plot_circle(ax2, 0, 0, h[0,snap]["rvir"], c="w", lw=2.5)
-            
-            rc = r_max/20
-            for i in range(len(xcs)):
-                util.plot_circle(ax1, xcs[i,0], xcs[i,1], rc, lw=1.5, c="w")
-                util.plot_circle(ax1, xcs[i,0], xcs[i,1], rc, lw=1.5,
-                                 c="k", ls="--")
-            util.plot_circle(ax1, xcs[0,0], xcs[0,1],
-                             rc*1.25, c=pc("b"), lw=1.5)
-            util.plot_circle(ax1, h[h0,snap]["x"][0], h[h0,snap]["x"][1],
-                             rc*1.5, c=pc("p"), lw=1.5)
-            ax1.set_xlim(-r_max, +r_max)
-            ax1.set_ylim(-r_max, +r_max)
-            
-            ax1.set_xlabel(r"$X\,(h^{-1}{\rm Mpc})$")
-            ax1.set_ylabel(r"$Y\,(h^{-1}{\rm Mpc})$")
+            axs = [ax_proj]
+            for i_ax in range(len(axs)):
+                ax1, ax2 = axs[i_ax]
+                ax1.cla()
+                ax2.cla()
 
-            ax2.imshow(rho_proj_2, vmin=vmin, vmax=vmax, origin="lower",
-                      cmap="afmhot", extent=[-r_max, r_max, -r_max, r_max])
-            util.plot_circle(ax1, 0, 0, h[0,snap]["rvir"], c="w")
+                if i_ax == 0:
+                    rho_proj_1 = density_2d_proj(x[ok], mp[ok], grid, k=k)
+                    rho_proj_2 = density_2d_proj(x[ok], mp[ok],
+                                                 grid, k=k, dim_x=2)
+
+                    rho_proj_1 = np.log10(np.reshape(rho_proj_1, (pts, pts)))
+                    rho_proj_2 = np.log10(np.reshape(rho_proj_2, (pts, pts)))
+                    
+                else:
+                    rho_proj_1 = density_2d_proj(x[ok][bound], mp[ok][bound],
+                                                 grid, k=k)
+                    rho_proj_2 = density_2d_proj(x[ok][bound], mp[ok][bound],
+                                                 grid, k=k, dim_x=2)
+
+                    rho_proj_1 = np.log10(np.reshape(rho_proj_1,
+                                                     (pts, pts)))
+                    rho_proj_2 = np.log10(np.reshape(rho_proj_2,
+                                                     (pts, pts)))
+                    
+                if i_ax == 0:
+                    c_range = get_c_range(10**rho_proj_1, 0.99)
+                    vmin, vmax = np.log10(c_range[0]), np.log10(c_range[1])
+                    vmin, vmax = vmin, 6.5
             
-            for i in range(len(xcs)):
-                util.plot_circle(ax2, xcs[i,2], xcs[i,1], rc, lw=1.5, c="w")
-                util.plot_circle(ax2, xcs[i,2], xcs[i,1], rc, lw=1.5,
-                                 c="k", ls="--")
-            util.plot_circle(ax2, xcs[0,2], xcs[0,1],
-                             rc*1.25, c=pc("b"), lw=1.5)
-            util.plot_circle(ax2, h[h0,snap]["x"][2], h[h0,snap]["x"][1], 
-                             rc*1.5, c=pc("p"), lw=1.5)
+                ax1.imshow(rho_proj_1, vmin=vmin, vmax=vmax, origin="lower",
+                           cmap="afmhot", extent=[-r_max, r_max, -r_max, r_max])
+                util.plot_circle(ax1, 0, 0, h[0,snap]["rvir"], c="w", lw=2.5)
+                util.plot_circle(ax2, 0, 0, h[0,snap]["rvir"], c="w", lw=2.5)
             
-            ax2.set_xlabel(r"$Z\,(h^{-1}{\rm Mpc})$")
-            ax2.set_xlim(-r_max, +r_max)
-            ax2.set_ylim(-r_max, +r_max)
+                rc = r_max/20
+                for i in range(len(xcs)):
+                    util.plot_circle(ax1, xcs[i,0], xcs[i,1], rc, lw=1.5, c="w")
+                    util.plot_circle(ax1, xcs[i,0], xcs[i,1], rc, lw=1.5,
+                                     c="k", ls="--")
+                    util.plot_circle(ax1, xcs[0,0], xcs[0,1],
+                                     rc*1.25, c=pc("b"), lw=1.5)
+                    util.plot_circle(ax1, h[h0,snap]["x"][0],
+                                     h[h0,snap]["x"][1],
+                                     rc*1.5, c=pc("p"), lw=1.5)
+
+                ax1.plot(x_core_pt[:,0], x_core_pt[:,1], ".", c=pc("b"))
+                ax2.plot(x_core_pt[:,2], x_core_pt[:,1], ".", c=pc("b"))
+                print(x_core_pt)
+                
+                ax1.set_xlim(-r_max, +r_max)
+                ax1.set_ylim(-r_max, +r_max)
+            
+                ax1.set_xlabel(r"$X\,(h^{-1}{\rm Mpc})$")
+                ax1.set_ylabel(r"$Y\,(h^{-1}{\rm Mpc})$")
+
+            
+                ax2.imshow(rho_proj_2, vmin=vmin, vmax=vmax, origin="lower",
+                           cmap="afmhot", extent=[-r_max, r_max, -r_max, r_max])
+                util.plot_circle(ax1, 0, 0, h[0,snap]["rvir"], c="w")
+            
+                for i in range(len(xcs)):
+                    util.plot_circle(ax2, xcs[i,2], xcs[i,1], rc, lw=1.5, c="w")
+                    util.plot_circle(ax2, xcs[i,2], xcs[i,1], rc, lw=1.5,
+                                     c="k", ls="--")
+                util.plot_circle(ax2, xcs[0,2], xcs[0,1],
+                                 rc*1.25, c=pc("b"), lw=1.5)
+                util.plot_circle(ax2, h[h0,snap]["x"][2], h[h0,snap]["x"][1], 
+                                 rc*1.5, c=pc("p"), lw=1.5)
+            
+                ax2.set_xlabel(r"$Z\,(h^{-1}{\rm Mpc})$")
+                ax2.set_xlim(-r_max, +r_max)
+                ax2.set_ylim(-r_max, +r_max)
+
+            ax = ax_r_tidal
+
+            m_snap = hist["merger_snap"][h0]
+            r_low, r_high = eps, h["rvir"][h0, m_snap]
+            
+            r_cut = np.linspace(r_low, r_high, 50)
+            m_cut = np.zeros(len(r_cut))
+
+            methods = ["jacobi", "radial", "centrifugal", "circular",
+                       "klypin99"]
+            colors = [pc("r"), pc("o"), pc("g"), pc("b", 0.3), pc("p")]
+            
+            rc = np.sqrt(np.sum(dxc**2, axis=1))
+            rc = np.sqrt(rc**2 + eps**2)
+
+            ax.plot(r_cut, r_cut, "--", c="k", lw=1.5)
+            
+            mp = param["mp"]/param["h100"]
+            for mi in range(len(methods)):
+                r_tidal = np.zeros(len(r_cut))
+                r_tidal_bound = np.zeros(len(r_cut))
+                r_tidal_bound_i = np.zeros(len(r_cut))
+
+                for i in range(len(r_cut)):
+                    in_cut =  (rc < r_cut[i]) & valid_snap[h0]
+                    m_cut[i] = np.sum(in_cut)*mp
+                        
+                    if m_cut[i] == 0:
+                        r_tidal[i] = 0
+                    else:
+                        r_tidal[i] = prof._tidal_radius_iter(
+                            m_cut[i], xc, vc, methods[mi]
+                        )
+
+                    if methods[mi] == "circular":
+                        bound, order = is_bound(param, dxc, dvc,
+                                                ok=in_cut, order=order)
+                        bound_i, order = is_bound_iter(n_iter, param, dxc, dvc,
+                                                       ok=in_cut, order=order)
+
+                        m_cut_bound = np.sum(bound)*mp
+                        m_cut_bound_i = np.sum(bound_i)*mp
+                        if m_cut_bound == 0:
+                            r_tidal_bound[i] = 0
+                        else:
+                            r_tidal_bound[i] = prof._tidal_radius_iter(
+                                m_cut_bound, xc, vc, methods[mi]
+                            )
+                        if m_cut_bound_i == 0:
+                            r_tidal_bound_i[i] = 0
+                        else:
+                            r_tidal_bound_i[i] = prof._tidal_radius_iter(
+                                m_cut_bound, xc, vc, methods[mi]
+                            )
+
+                            
+                ok = (r_tidal > 0) & (~np.isinf(r_tidal))
+                ax.plot(r_cut[ok], r_tidal[ok], colors[mi], label=methods[mi])
+                if methods[mi] == "circular":
+                    ok = (r_tidal_bound > 0) & (~np.isinf(r_tidal_bound))
+                    ax.plot(r_cut[ok], r_tidal_bound[ok], "--",
+                            c=pc("b"))
+
+                    ok = (r_tidal_bound_i > 0) & (~np.isinf(r_tidal_bound_i))
+                    ax.plot(r_cut[ok], r_tidal_bound_i[ok], ":",
+                            c=pc("b", 0.75))
+                    
+                
+            ax.set_xlim(0, r_high)
+            ax.set_ylim(0, r_high)
+            ax.set_ylabel(r"$R_{\rm tidal}$")
+            ax.set_xlabel(r"$R_{\rm cut}$")
+            ax.legend(loc="upper left", fontsize=18)
             
             fig_den.savefig(
                 "../../symphony_pipeline/plots/" +
@@ -537,6 +650,14 @@ def main():
             fig_proj.savefig(
                 "../../symphony_pipeline/plots/" +
                 "subhalo_tracking/h%03d_proj.png" % h0
+            )
+            #fig_proj_b.savefig(
+            #    "../../symphony_pipeline/plots/" +
+            #    "subhalo_tracking/h%03d_proj_b.png" % h0
+            #)
+            fig_r_tidal.savefig(
+                "../../symphony_pipeline/plots/" +
+                "subhalo_tracking/h%03d_proj_b.png" % h0
             )
     plt.show()
     
