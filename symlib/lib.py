@@ -12,7 +12,8 @@ physical peculiar velocities, and masses are in Msun/h.
 """
 SUBHALO_DTYPE = [("id", "i4"), ("mvir", "f4"), ("vmax", "f4"), ("rvmax", "f4"),
                  ("x", "f4", (3,)), ("v", "f4", (3,)), ("ok", "?"),
-                 ("rvir", "f4"), ("cvir", "f4")]
+                 ("rvir", "f4"), ("cvir", "f4"),
+                 ("x_core", "f4", (3,)), ("v_core", "f4", (3,))]
 
 """ HISTORY_DTYPE is a numpy datatype representing data about a subhalo which 
 is indepdent of time, such as the maximum mass that it takes on, its merger
@@ -306,7 +307,21 @@ def read_subhalos(params, dir_name):
     f.close()
 
     histories = get_subhalo_histories(out, idx, dir_name)
-    
+
+    file_name = path.join(dir_name, "halos", "core_pos.dat")
+    if path.exists(file_name):
+        with open(file_name, "rb") as f:
+            n_halo, n_snap = struct.unpack("qq", f.read(16))
+            x = np.fromfile(f, np.float32, 3*n_halo*n_snap)
+            v = np.fromfile(f, np.float32, 3*n_halo*n_snap)
+            x = x.reshape((n_halo, n_snap, 3))
+            v = v.reshape((n_halo, n_snap, 3))
+            out["x_core"] = x
+            out["v_core"] = v
+    else:
+        out["x_core"] = np.nan
+        out["v_core"] = np.nan
+        
     return out, histories
 
 def get_subhalo_histories(s, idx, dir_name):
@@ -578,8 +593,16 @@ def read_particles(part_info, base_dir, snap, var_name):
             idxs = np.fromfile(fp, dtype=np.int32, count=n_halo*n_core)
             idxs = idxs.reshape((n_halo, n_core))
         return idxs
+    elif var_name == "core":
+        file_name = os.path.join(base_dir, "halos", "cores.dat")
+
+        with open(file_name, "rb") as fp:
+            n_halo, n_snap, n_core = struct.unpack("qqq", fp.read(24))
+            idxs = np.fromfile(fp, dtype=np.int32, count=n_halo*n_snap*n_core)
+            idxs = idxs.reshape(n_halo, n_snap, n_core)
+        return idxs
     else:
-        raise ValueError("Unknown property name, '%s'" % var_name)
+        raise ValueError("Unknown property name, '%s'" % var_name)    
     
 def _dequantize_vector(qx, min, max):
     dx = max - min
