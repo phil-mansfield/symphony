@@ -275,7 +275,7 @@ class MassProfile(object):
             m = m_tidal
 
         assert(0)
-
+    
         
 def main():
     palette.configure(False)
