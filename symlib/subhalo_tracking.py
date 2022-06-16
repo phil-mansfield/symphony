@@ -1,172 +1,149 @@
 import numpy as np
-import scipy.spatial as spatial
-import scipy.special as special
-import os.path as path
+import matplotlib.pyplot as plt
+import lib
+import util
 import star_tagging
+import subfind
+import matplotlib.colors as mpl_colors
+from colossus.cosmology import cosmology
+from colossus.halo import mass_so
+import os.path as path
+import palette
+from palette import pc
 import scipy.signal as signal
 import scipy.interpolate as interpolate
 
-def spline(x):
-    r1 = x <= 1
-    r2 = (x > 1) & (x <= 2)
-    
-    out = np.zeros(len(x))
-    out[r1] = 1 - (3/2)*x[r1]**2 + 0.75*x[r1]**3
-    out[r2] = 0.25*(2 - x[r2])**3
-
-    return out
-    
-def rho_sph(ri, mi, n_dim):
-    r = np.max(ri)/2
-    Vr = np.pi**(n_dim/2)*r**n_dim / special.gamma(n_dim/2 + 1)
-    # No need to add the central particle's mass: It's already in the sample
-    # if it's a real particel and its mass is zero if it's a test point.
-    return np.sum(mi*spline(ri/r))/Vr
-
-def mean_sph(ri, mi, val):
-    r = np.max(ri)/2
-    w = mi*spline(ri/r)
-    return np.sum(val*w)/np.sum(w)
-
-def density(x, m, test, k=64, return_tree=False):
-    tree = spatial.cKDTree(x)
-    
-    rho = np.zeros(len(test))
-    for i in range(len(test)):
-        ri, idx = tree.query(test[i], k)
-        rho[i] = rho_sph(ri, m[idx], len(x[0]))
-
-    if return_tree:
-        return rho, tree
-    else:
-        return rho
-
-def density(x, m, test, k=64, return_tree=False):
-    tree = spatial.cKDTree(x)
-    
-    rho = np.zeros(len(test))
-    for i in range(len(test)):
-        ri, idx = tree.query(test[i], k)
-        rho[i] = rho_sph(ri, m[idx], len(x[0]))
-
-    if return_tree:
-        return rho, tree
-    else:
-        return rho
-
-def neighbor_density(x, rho, test, k=64, tree=None):
-    if tree is None:
-        tree = spatial.cKDTree(x)
-
-    rho_neighbor = np.zeros(rho.shape)
-    for i in range(len(test)):
-        _, idx = tree.query(test[i], k)
-        rho_neighbor[i] = np.max(rho[idx])
-
-    return rho_neighbor
-    
-def density_2d_proj(x, m, test, dim_x=0, dim_y=1, k=64, return_tree=False):
-    xx = np.zeros((len(x), 2))
-    xx[:,0], xx[:,1] = x[:,dim_x], x[:,dim_y]
-    if test.shape[1] == 2:
-        yy = test
-    else:
-        yy = np.zeros((len(test), 2))
-        yy[:,0], yy[:,1] = test[:,dim_x], test[:,dim_y]
-
-    return density(xx, m, yy, k=k)
-
-def dispersion_scale(x, m):
-    xc = np.zeros(len(x[0]))
-    for dim in range(len(x[0])):
-        xc[dim] = np.sum(x[:,dim]*m, axis=0)/np.sum(m)
+def delta(x, x0):
     dx = np.zeros(x.shape)
-    for dim in range(len(x[0])):
-        dx[:,dim] = x[:,dim] - xc[dim]
-    return np.sqrt(np.mean(dx**2))
-
-def density_phase_space(x, v, m, test_x, test_v, k=64, return_tree=False):
-    dx, dv = dispersion_scale(x, m), dispersion_scale(v, m)
-    xx = np.zeros((len(x), len(x[0]) + len(v[0])))
-    yy = np.zeros((len(test_x), len(x[0]) + len(v[0])))
-    xx[:,:len(x[0])] = x / dx
-    xx[:,len(x[0]):] = v / dv
-    yy[:,:len(x[0])] = test_x / dx
-    yy[:,len(x[0]):] = test_v / dv
-    return density(xx, m, yy, k=k, return_tree=return_tree)
-
-def sph_scalar(x, val, m, test, k=64, tree=None):
-    if tree is None: tree = spatial.cKDTree(x)
-
-    out = np.zeros(len(test))
-    for i in range(len(test)):
-        ri, idx = tree.query(test[i], k)
-        out[i] = mean_sph(ri, m[idx], val[idx])
-    
-    return out
-        
-def sph_vector(x, vec, m, test, k=64, tree=None):
-    if tree is None: tree = spatial.cKDTree(x)
-
-    out = np.zeros((len(test), len(vec[0])))
-    for dim in range(len(vec[0])):
-        out[:,dim] = sph_scalar(x, vec[:,dim], m, test, k=k, tree=tree)
-    return out
-
-def sph_vector_phase_space(x, v, vec, m, test_x, test_v, k=64, tree=None):
-    dx, dv = dispersion_scale(x, m), dispersion_scale(v, m)
-    yy = np.zeros((len(test_x), len(x[0]) + len(v[0])))
-    yy[:,:len(x[0])] = np.asarray(test_x) / dx
-    yy[:,len(x[0]):] = np.asarray(test_v) / dv
-    xx = np.zeros((len(x), len(x[0]) + len(v[0])))
-    xx[:,:len(x[0])] = x / dx
-    xx[:,len(x[0]):] = v / dv
-    
-    return sph_vector(xx, vec, m, yy, k=k, tree=tree)
-
-def fix_units_x(x, h, scale, param):
-    dx = np.zeros(x.shape)
-    for dim in range(3): dx[:,dim] = x[:,dim] - h["x"][dim]
-    dx *= scale*1e3/param["h100"]
+    for dim in range(3):
+        dx[:,dim] = x[:,dim] - x0[dim]
     return dx
 
-def fix_units_v(v, h, scale, param):
-    v *= np.sqrt(scale)
-    dv = np.zeros(v.shape)
-    for dim in range(3): dv[:,dim] = v[:,dim] - h["v"][dim]
-    return dv
+def distance(x, x0):
+    return np.sqrt(np.sum(delta(x, x0)**2, axis=1))
 
-def fix_units_param(scale, param):
-    return param["mp"]/param["h100"], param["eps"]*scale/param["h100"]
+def n_most_bound(xc, vc, x, v, ok, n_core, param):
+    dx, dv = delta(x, xc), delta(v, vc)
 
-def fix_units_halos(h, scale, param):    
-    for dim in range(3):
-        x0 = np.copy(h["x"][0,:,dim])
-        v0 = np.copy(h["v"][0,:,dim])
-        
-        for hi in range(len(h)):
-            h["x"][hi,:,dim] -= x0
-            h["v"][hi,:,dim] -= v0
-                    
-    h["x"] *= 1e3*scale/param["h100"]
-    h["rvir"] *= 1e3*scale/param["h100"]
+    ke = 0.5*np.sum(dv**2, axis=1)
+    _, vmax, pe_scaled, _ = star_tagging.profile_info(param, dx, ok=ok)
+    E = ke + pe_scaled*vmax**2
     
-    for hi in range(len(h)):
-        invalid = h[hi]["rvir"] < 0
-        h[hi, invalid]["rvir"] = -1
-        h[hi, invalid]["x"] = -1
-        h[hi, invalid]["v"] = -1
+    order = np.argsort(E[ok])
+    orig_idx = np.arange(len(x), dtype=int)[ok][order]
+    
+    assert(len(orig_idx) >= n_core)
+    return orig_idx[:n_core]
+
+def is_bound(param, dx, dv, ok=None, order=None):
+    rmax, vmax, pe, order = star_tagging.profile_info(param, dx, ok, order)
+    pe *= vmax**2
+    ke = 0.5*np.sum(dv**2, axis=1)
+
+    if ok is None:
+        return pe + ke < 0, order
+    else:
+        return (pe + ke < 0) & ok, order
+
+def is_bound_iter(n_iter, param, dx, dv, ok=None, order=None):
+    ok, order = is_bound(param, dx, dv, ok, order)
+    n_bound = np.sum(ok)
+
+    for i in range(n_iter - 1):
+        ok, order = is_bound(param, dx, dv, ok, order)
+        n_bound_i = np.sum(ok)
+        if n_bound_i == n_bound: break
         
-    return h
+    return ok, order
 
-def capped_min(x, cap):
-    ok = x > cap
-    return np.min(x[ok])
+def rockstar_cores(snap_info, h, sub_idxs, n_core):
+    core_idxs = np.ones((len(h), n_core), dtype=int)*-1
+    param = snap_info.param
 
+    snap = snap_info.snap
+    
+    for i_sub in sub_idxs:
+        x, v = snap_info.x[i_sub], snap_info.v[i_sub]
+        valid, owner =  snap_info.valid[i_sub], snap_info.owner[i_sub]
+        ok = valid & (owner == 0)
+        
+        xc, vc = h["x"][i_sub,snap], h["v"][i_sub,snap]
+        core_idxs[i_sub,:] = n_most_bound(xc, vc, x, v, ok, n_core, param)
+
+        r = distance(x, xc)
+        
+    return core_idxs
+
+class SnapshotData(object):
+    def __init__(self, info, sim_dir, snap, a, h_cmov, param):
+        self.x = lib.read_particles(info, sim_dir, snap, "x")
+        self.v = lib.read_particles(info, sim_dir, snap, "v")
+        self.valid = lib.read_particles(info, sim_dir, snap, "valid")
+        self.owner = lib.read_particles(info, sim_dir, snap, "ownership")
+        self.ok = [None]*len(self.x)
+        
+        for i in range(len(self.x)):
+            self.x[i] = util.set_units_x(self.x[i], h_cmov[0,snap], a, param)
+            self.v[i] = util.set_units_v(self.v[i], h_cmov[0,snap], a, param)
+            self.ok[i] = self.valid[i] & (self.owner[i] == 0)
+            
+        self.mp, self.eps = util.set_units_param(a, param)
+        self.snap = snap
+        self.param = param
+
+class SubhaloTrack(object):
+    def __init__(self, i_sub, snap_data_init, core, param):
+        x, v = snap_data_init.x[i_sub], snap_data_init.v[i_sub]
+        
+        self.i_sub = i_sub
+
+        snap = snap_data_init.snap
+        n_snap = param["n_snap"]
+        n_core = len(core)
+        self.n_core = n_core
+        self.snaps = np.arange(n_snap, dtype=int)
+        self.cores = np.ones((n_snap, n_core), dtype=int)*-1
+        self.x = np.ones((n_snap, 3))*np.nan
+        self.v = np.ones((n_snap, 3))*np.nan
+        self.param = param
+
+        self.cores[snap] = core
+        self._set_xv(snap_data_init)
+        
+    def next_snap(self, snap_data, core):    
+        snap = snap_data.snap
+        self.cores[snap] = core
+        self._set_xv(snap_data)
+
+    def _set_xv(self, snap_data):
+        snap = snap_data.snap
+        core = self.cores[snap]
+    
+        x, v = snap_data.x[self.i_sub], snap_data.v[self.i_sub]
+        valid, owner = snap_data.valid[self.i_sub], snap_data.owner[self.i_sub]
+        mp, eps = snap_data.mp, snap_data.eps
+        
+        ok = valid & (owner == 0)
+
+        x_sf, v_sf, rho_sf, owner_sf, peak_n = subfind.subfind(x[ok], v[ok], mp)
+        owner_all = np.ones(len(x), dtype=int)*-1
+        owner_all[ok] = owner_sf
+        
+        owner_votes = owner_all[core]
+        assert(-1 not in owner_votes)
+        i_owner = np.argmax(np.bincount(owner_votes))
+        xc_sf, vc_sf = x_sf[i_owner], v_sf[i_owner]
+
+        core_sf = n_most_bound(xc_sf, vc_sf, x, v, ok, self.n_core, self.param)
+        
+        self.cores[snap] = core_sf
+        self.x[snap] = xc_sf
+        self.v[snap] = vc_sf   
+        
 class MassProfile(object):
     # Positions should already be in physical kpc, no h100.
-    def __init__(self, eps, mp, snap, h, x, own, valid):
-        r_low = eps / 10
+    def __init__(self, param, snap, h, x, own, valid):
+        r_low = param["eps"] / 10
         r_high = h[0,snap]["rvir"]*10
         r_edges = 10**np.linspace(np.log10(r_low), np.log10(r_high), 100)
 
@@ -180,13 +157,13 @@ class MassProfile(object):
 
             ok = (own[i] == 0) & (valid[i])
             n, _, = np.histogram(r[ok], bins=r_edges)
-            dm_hist += n*mp
+            dm_hist += n*param["mp"]
             dm_hist[0] += np.sum(r < r_low)
 
         dlog_r = np.log10(r_edges[1]) - np.log10(r_edges[0])
         mr = np.cumsum(dm_hist)
         
-        ok = (mr > 0) & (r_edges[1:] > eps)
+        ok = (mr > 0) & (r_edges[1:] > param["eps"])
         dlog_m_dlog_r = signal.savgol_filter(
             np.log10(mr[ok]), 25, 4, deriv=1,
             delta=dlog_r, mode="interp"
@@ -207,8 +184,9 @@ class MassProfile(object):
             bounds_error=False
         )
 
-        self.mp = mp
-        self.eps = eps
+        self.param = param
+        self.mp = param["mp"]
+        self.eps = param["eps"]
 
     def m(self, r):
         return 10**self._m_interp(np.log10(r))
@@ -258,488 +236,120 @@ class MassProfile(object):
 
         if factor <= 0:
             return np.inf
+        elif factor < 1:
+            factor = 1.0
         
         return R*(m/(factor*M))**(1.0/3)
 
-    def tidal_radius(dx_core, dx, dv_core=None, dv=None, bound_only=False):
-        if bound_only:
-            raise ValueError("bound_only not yet supported")
-        
-        if dx_core[0] == 0 and dx_core[1] == 0 and dix_core[2] == 0:
+    def tidal_radius(self, dx_core, dx, dv_core=None, dv=None,
+                     method="centrifugal", bound_only=True):
+        if dx_core[0] == 0 and dx_core[1] == 0 and dx_core[2] == 0:
             return 0.0
 
-        dr2 = np.zeros(len(dx))
-        for dim in range(3):
-            dr2 += (dx[:,dim] - dx_core[:,dim])**2
-        dr = np.sqrt(dr2)
+        dx = delta(dx, dx_core)
+        dv = delta(dv, dv_core)
+        
+        dr = np.sqrt(np.sum(dx**2, axis=1))
+        order = np.argsort(dr)
 
         m = len(dr)*self.mp
         conv_limit = 0.001
         
         while True:
-            r_tidal = self._tidal_radius_iter(m, dx_core, )
-            n_tidal = np.sum(dr < r_tidal)
-            if n_tidal == 0: return 0.0
-            
+            r_tidal = self._tidal_radius_iter(m, dx_core, dv_core,
+                                              method=method)
+            ok = dr < r_tidal
+            n_tidal = np.sum(ok)
+            if bound_only:
+                is_bound = is_bound_iter(5, self.param, dx, dv,
+                                         ok=ok, order=order)
+            else:
+                is_bound = ok
+                
+            m_tidal = np.sum(is_bound)*self.param["mp"]
+
+            if m_tidal == 0:
+                return 0.0, 0.0
             if np.abs(m/m_tidal - 1) < conv_limit:
-                return r_tidal
+                return r_tidal, m_tidal
+
             
             m = m_tidal
 
-        return m_tidal
-            
-def eval_grid(r, center, pts):
-    x = np.linspace(center[0] - r, center[0] + r, pts)
-    y = np.linspace(center[1] - r, center[1] + r, pts)
-    xy, yx = np.meshgrid(x, y)
-    xy, yx = xy.flatten(), yx.flatten()
-    return np.vstack((xy, yx)).T
+        assert(0)
 
-def find_core_phase_space(x_own, v_own, m_own, k=64):
-    rho, tree = density_phase_space(
-        x_own, v_own, m_own, x_own, v_own,
-        k=k, return_tree=True)
-
-    i_max = np.argmax(rho)
-    xc_init, vc_init = x_own[i_max], v_own[i_max]
-
-    xc = sph_vector_phase_space(x_own, v_own, x_own, m_own,
-                                [xc_init], [vc_init], k=k, tree=tree)[0]
-    vc = sph_vector_phase_space(x_own, v_own, v_own, m_own,
-                                [xc_init], [vc_init], k=k, tree=tree)[0]
-
-    return xc, vc
-
-def find_core(x_own, v_own, m_own, k=64):
-    rho, tree = density(x_own, m_own, x_own,
-                        k=k, return_tree=True)
-
-    i_max = np.argmax(rho)
-    xc_init, vc_init = x_own[i_max], v_own[i_max]
-
-    xc = sph_vector(x_own, x_own, m_own,
-                    [xc_init], k=k, tree=tree)[0]
-    vc = sph_vector(x_own, v_own, m_own,
-                    [xc_init], k=k, tree=tree)[0]
-
-    return xc, vc
-
-
-def find_cores(x_own, v_own, m_own, rho_cut, k=64):
-    rho, tree = density(x_own, m_own, x_own,
-                        k=k, return_tree=True)
-    rho_neighbor = neighbor_density(x_own, rho, x_own, k=k, tree=tree)
-
-    core_idx = np.where((rho_neighbor == rho) & (rho > rho_cut))[0]
-    if len(core_idx) == 0:
-        core_idx = np.array([np.argmax(rho)], dtype=int)
-    
-    core_rho = rho[core_idx]
-    core_idx = core_idx[np.argsort(core_rho)][::-1]
-    
-    xc_init = x_own[core_idx]
-
-    xc = sph_vector(x_own, x_own, m_own,
-                    xc_init, k=k, tree=tree)
-    vc = sph_vector(x_own, v_own, m_own,
-                    xc_init, k=k, tree=tree)
-
-    return xc, vc
-
-def is_bound(param, dx, dv, ok=None, order=None):
-    rmax, vmax, pe, order = star_tagging.profile_info(param, dx, ok, order)
-    ke = 0.5*np.sum(dv**2, axis=1)/vmax**2
-    if ok is None:
-        return pe + ke < 0, order
-    else:
-        return (pe + ke < 0) & ok, order
-
-def is_bound_iter(n_iter, param, dx, dv, ok=None, order=None):
-    ok, order = is_bound(param, dx, dv, ok, order)
-    n_bound = np.sum(ok)
-    
-    for i in range(n_iter - 1):
-        ok, order = is_bound(param, dx, dv, ok, order)
-        n_bound_i = np.sum(ok)
-        if n_bound_i == n_bound: break
-
-    return ok, order
-
+        
 def main():
-    import matplotlib.pyplot as plt
-    import palette
-    from palette import pc
-    import util
-    import lib
-    import matplotlib.colors as mpl_colors
-    from colossus.cosmology import cosmology
-    from colossus.halo import mass_so
-
     palette.configure(False)
     
     base_dir = "/home/phil/code/src/github.com/phil-mansfield/symphony_pipeline/tmp_data"
     suite_name = "SymphonyMilkyWay"
     sim_dir = path.join(base_dir, suite_name, "Halo023")
+    
     param = lib.parameter_table[suite_name]
-
     h, hist = lib.read_subhalos(param, sim_dir)
+    h_cmov = np.copy(h)
     info = lib.ParticleInfo(sim_dir)
-    k = 64
-    n_iter = 10
+
     scale = lib.scale_factors(sim_dir)
-
     cosmo = cosmology.setCosmology("", lib.colossus_parameters(param))
+    h = util.set_units_halos(h_cmov, scale, param)
     
-    #for h0 in range(len(h)):
-    #    if h[h0,-1]["mvir"] < 0: continue
-    #    print("%3d %.3f" % (h0, h[h0,-1]["mvir"]/np.max(h[h0]["mvir"])))
-
-    fig_proj, ax_proj = plt.subplots(1, 2, figsize=(16, 8), sharey=True)
-    #fig_proj_b, ax_proj_b = plt.subplots(1, 2, figsize=(16, 8), sharey=True)
-    fig_den, ax_den = plt.subplots()
-    fig_r_tidal, ax_r_tidal = plt.subplots()
+    targets = np.where(h["ok"][:,234] & h["ok"][:,235])[0]
+    targets = targets[targets >= 3]
     
-    for snap in [235]:
-        x_snap = lib.read_particles(info, sim_dir, snap, "x")
-        v_snap = lib.read_particles(info, sim_dir, snap, "v")
-        valid_snap = lib.read_particles(info, sim_dir, snap, "valid")
-        owner_snap = lib.read_particles(info, sim_dir, snap, "ownership")
-        core_idxs = lib.read_particles(info, sim_dir, snap, "core")
-        
-        a = scale[snap]
-        for i in range(len(x_snap)):
-            x_snap[i] = fix_units_x(x_snap[i], h[0,snap], a, param)
-            v_snap[i] = fix_units_v(v_snap[i], h[0,snap], a, param)
+    snap234 = SnapshotData(info, sim_dir, 234, scale[234], h_cmov, param)
+    snap235 = SnapshotData(info, sim_dir, 235, scale[235], h_cmov, param)
 
-        mp, eps = fix_units_param(a, param)
-        h = fix_units_halos(h, a, param)
-        
-        r_max = h[0,snap]["rvir"]*1.5
-
-        prof = MassProfile(eps, mp, snap, h, x_snap, owner_snap, valid_snap)
-        
-        pts = 201
-        grid = eval_grid(r_max, [0, 0], pts)
-
-        rho_c = cosmo.rho_c(1/a - 1) * param["h100"]**2
-        rho_cut = mass_so.deltaVir(1/a - 1)*rho_c
-        
-        #for h0 in range(1, len(h)):
-        #for h0 in [3, 80, 110, 253, 254, 257, 398]:
-        for h0 in [20]:
-        #for h0 in [377]:
-            if h[h0,snap]["rvir"] <= 0: continue
-            print(h0)
-            
-            x, ok, owner = x_snap[h0], valid_snap[h0], owner_snap[h0]
-            v = v_snap[h0]
-            own = ok & (owner == 0)
-            mp = np.ones(len(x))*param["mp"]
-
-            x_core_pt = x[core_idxs[h0]][:10]
-            v_core_pt = v[core_idxs[h0]][:10]
-            print(core_idxs[h0])
-            print(x_core_pt)
-            print(len(x))
-            
-            #xc, vc = find_core(x[own], v[own], mp[own], k=k)
-            xcs, vcs = find_cores(x[own], v[own], mp[own], rho_cut, k=k)
-            xc, vc = xcs[0], vcs[0]
-            rho_ok = density(x[ok], mp[ok], x[ok], k=k)
-            rho_own = density(x[own], mp[own], x[own], k=k)
-            
-            dxc, dvc = np.zeros(x.shape), np.zeros(v.shape)
-            for dim in range(3):
-                dxc[:,dim] = x[:,dim] - xc[dim]
-                dvc[:,dim] = v[:,dim] - vc[dim]
-            rc = np.sqrt(np.sum(dxc**2, axis=1))
-            rc = np.sqrt(rc**2 + eps**2)
-
-            bound, order = is_bound_iter(n_iter, param, dxc[ok], dvc[ok])
-                            
-            ax = ax_den
-            ax.cla()
-            
-            own_ok = own[ok]
-            bound_own = bound[own_ok]
-            
-            ax.plot(np.log10(rc[ok][(~bound) & (~own_ok)]),
-                    np.log10(rho_ok[(~bound) & (~own_ok)]),
-                    ".", alpha=0.2, c=pc("b"))
-            ax.plot(np.log10(rc[own][~bound_own]),
-                    np.log10(rho_own[~bound_own]),
-                    ".", alpha=0.2, c="k")
-            ax.plot( np.log10(rc[own][bound_own]),
-                     np.log10(rho_own[bound_own]),
-                     ".", alpha=0.2, c=pc("r"))
-            ax.plot(np.log10(rc[ok][(bound) & (~own_ok)]),
-                    np.log10(rho_ok[(bound) & (~own_ok)]),
-                    ".", alpha=0.2, c=pc("o"))
-            
-            rho_min = np.log10(np.min(rho_ok))
-            rho_max = np.log10(np.max(rho_ok))
-            r_low, r_high = ax.get_xlim()
-            ax.set_xlim(r_low, r_high)
-            
-            ax.fill_between([r_low, r_high], [rho_min]*2, [np.log10(rho_cut)]*2,
-                            alpha=0.2, color="k")
-            
-            for i in range(1, len(xcs)):
-                rc_i = np.sqrt(np.sum((xcs[i] - xc)**2))
-                ax.plot([np.log10(rc_i)]*2, [rho_min, rho_max], "--",
-                         lw=1, c=pc("b"))
-
-            log_rvir = np.log10(h[h0,snap]["rvir"])
-            ax.set_ylim(rho_min, rho_max)
-            
-            ax.set_xlabel(r"$\log_{10}(r)\,({\rm kpc})$")
-            ax.set_ylabel(r"$\rho_{\rm dm}\,(M_\odot\,{\rm kpc}^{-3})$")
-
-            axs = [ax_proj]
-            for i_ax in range(len(axs)):
-                ax1, ax2 = axs[i_ax]
-                ax1.cla()
-                ax2.cla()
-
-                if i_ax == 0:
-                    rho_proj_1 = density_2d_proj(x[ok], mp[ok], grid, k=k)
-                    rho_proj_2 = density_2d_proj(x[ok], mp[ok],
-                                                 grid, k=k, dim_x=2)
-
-                    rho_proj_1 = np.log10(np.reshape(rho_proj_1, (pts, pts)))
-                    rho_proj_2 = np.log10(np.reshape(rho_proj_2, (pts, pts)))
-                    
-                else:
-                    rho_proj_1 = density_2d_proj(x[ok][bound], mp[ok][bound],
-                                                 grid, k=k)
-                    rho_proj_2 = density_2d_proj(x[ok][bound], mp[ok][bound],
-                                                 grid, k=k, dim_x=2)
-
-                    rho_proj_1 = np.log10(np.reshape(rho_proj_1,
-                                                     (pts, pts)))
-                    rho_proj_2 = np.log10(np.reshape(rho_proj_2,
-                                                     (pts, pts)))
-                    
-                if i_ax == 0:
-                    c_range = get_c_range(10**rho_proj_1, 0.99)
-                    vmin, vmax = np.log10(c_range[0]), np.log10(c_range[1])
-                    vmin, vmax = vmin, 6.5
-            
-                ax1.imshow(rho_proj_1, vmin=vmin, vmax=vmax, origin="lower",
-                           cmap="afmhot", extent=[-r_max, r_max, -r_max, r_max])
-                util.plot_circle(ax1, 0, 0, h[0,snap]["rvir"], c="w", lw=2.5)
-                util.plot_circle(ax2, 0, 0, h[0,snap]["rvir"], c="w", lw=2.5)
-            
-                rc = r_max/20
-                for i in range(len(xcs)):
-                    util.plot_circle(ax1, xcs[i,0], xcs[i,1], rc, lw=1.5, c="w")
-                    util.plot_circle(ax1, xcs[i,0], xcs[i,1], rc, lw=1.5,
-                                     c="k", ls="--")
-                    util.plot_circle(ax1, xcs[0,0], xcs[0,1],
-                                     rc*1.25, c=pc("b"), lw=1.5)
-                    util.plot_circle(ax1, h[h0,snap]["x"][0],
-                                     h[h0,snap]["x"][1],
-                                     rc*1.5, c=pc("p"), lw=1.5)
-
-                ax1.plot(x_core_pt[:,0], x_core_pt[:,1], ".", c=pc("b"))
-                ax2.plot(x_core_pt[:,2], x_core_pt[:,1], ".", c=pc("b"))
-                print(x_core_pt)
-                
-                ax1.set_xlim(-r_max, +r_max)
-                ax1.set_ylim(-r_max, +r_max)
-            
-                ax1.set_xlabel(r"$X\,(h^{-1}{\rm Mpc})$")
-                ax1.set_ylabel(r"$Y\,(h^{-1}{\rm Mpc})$")
-
-            
-                ax2.imshow(rho_proj_2, vmin=vmin, vmax=vmax, origin="lower",
-                           cmap="afmhot", extent=[-r_max, r_max, -r_max, r_max])
-                util.plot_circle(ax1, 0, 0, h[0,snap]["rvir"], c="w")
-            
-                for i in range(len(xcs)):
-                    util.plot_circle(ax2, xcs[i,2], xcs[i,1], rc, lw=1.5, c="w")
-                    util.plot_circle(ax2, xcs[i,2], xcs[i,1], rc, lw=1.5,
-                                     c="k", ls="--")
-                util.plot_circle(ax2, xcs[0,2], xcs[0,1],
-                                 rc*1.25, c=pc("b"), lw=1.5)
-                util.plot_circle(ax2, h[h0,snap]["x"][2], h[h0,snap]["x"][1], 
-                                 rc*1.5, c=pc("p"), lw=1.5)
-            
-                ax2.set_xlabel(r"$Z\,(h^{-1}{\rm Mpc})$")
-                ax2.set_xlim(-r_max, +r_max)
-                ax2.set_ylim(-r_max, +r_max)
-
-            ax = ax_r_tidal
-
-            m_snap = hist["merger_snap"][h0]
-            r_low, r_high = eps, h["rvir"][h0, m_snap]
-            
-            r_cut = np.linspace(r_low, r_high, 50)
-            m_cut = np.zeros(len(r_cut))
-
-            methods = ["jacobi", "radial", "centrifugal", "circular",
-                       "klypin99"]
-            colors = [pc("r"), pc("o"), pc("g"), pc("b", 0.3), pc("p")]
-            
-            rc = np.sqrt(np.sum(dxc**2, axis=1))
-            rc = np.sqrt(rc**2 + eps**2)
-
-            ax.plot(r_cut, r_cut, "--", c="k", lw=1.5)
-            
-            mp = param["mp"]/param["h100"]
-            for mi in range(len(methods)):
-                r_tidal = np.zeros(len(r_cut))
-                r_tidal_bound = np.zeros(len(r_cut))
-                r_tidal_bound_i = np.zeros(len(r_cut))
-
-                for i in range(len(r_cut)):
-                    in_cut =  (rc < r_cut[i]) & valid_snap[h0]
-                    m_cut[i] = np.sum(in_cut)*mp
-                        
-                    if m_cut[i] == 0:
-                        r_tidal[i] = 0
-                    else:
-                        r_tidal[i] = prof._tidal_radius_iter(
-                            m_cut[i], xc, vc, methods[mi]
-                        )
-
-                    if methods[mi] == "circular":
-                        bound, order = is_bound(param, dxc, dvc,
-                                                ok=in_cut, order=order)
-                        bound_i, order = is_bound_iter(n_iter, param, dxc, dvc,
-                                                       ok=in_cut, order=order)
-
-                        m_cut_bound = np.sum(bound)*mp
-                        m_cut_bound_i = np.sum(bound_i)*mp
-                        if m_cut_bound == 0:
-                            r_tidal_bound[i] = 0
-                        else:
-                            r_tidal_bound[i] = prof._tidal_radius_iter(
-                                m_cut_bound, xc, vc, methods[mi]
-                            )
-                        if m_cut_bound_i == 0:
-                            r_tidal_bound_i[i] = 0
-                        else:
-                            r_tidal_bound_i[i] = prof._tidal_radius_iter(
-                                m_cut_bound, xc, vc, methods[mi]
-                            )
-
-                            
-                ok = (r_tidal > 0) & (~np.isinf(r_tidal))
-                ax.plot(r_cut[ok], r_tidal[ok], colors[mi], label=methods[mi])
-                if methods[mi] == "circular":
-                    ok = (r_tidal_bound > 0) & (~np.isinf(r_tidal_bound))
-                    ax.plot(r_cut[ok], r_tidal_bound[ok], "--",
-                            c=pc("b"))
-
-                    ok = (r_tidal_bound_i > 0) & (~np.isinf(r_tidal_bound_i))
-                    ax.plot(r_cut[ok], r_tidal_bound_i[ok], ":",
-                            c=pc("b", 0.75))
-                    
-                
-            ax.set_xlim(0, r_high)
-            ax.set_ylim(0, r_high)
-            ax.set_ylabel(r"$R_{\rm tidal}$")
-            ax.set_xlabel(r"$R_{\rm cut}$")
-            ax.legend(loc="upper left", fontsize=18)
-            
-            fig_den.savefig(
-                "../../symphony_pipeline/plots/" +
-                "subhalo_tracking/h%03d_den.png" % h0
-            )
-            fig_proj.savefig(
-                "../../symphony_pipeline/plots/" +
-                "subhalo_tracking/h%03d_proj.png" % h0
-            )
-            #fig_proj_b.savefig(
-            #    "../../symphony_pipeline/plots/" +
-            #    "subhalo_tracking/h%03d_proj_b.png" % h0
-            #)
-            fig_r_tidal.savefig(
-                "../../symphony_pipeline/plots/" +
-                "subhalo_tracking/h%03d_proj_b.png" % h0
-            )
-    plt.show()
+    n_core = 32
     
-def get_c_range_hist(x, y, mp, r_max, bins, frac):
-    range = ((-r_max, r_max), (-r_max, r_max))
-    H, _, _ = np.histogram2d(x, y, weights=mp, range=range, bins=bins)
-    H = np.sort(H.flatten())
+    rs_cores = rockstar_cores(snap234, h, targets, n_core)
+    infall_cores = lib.read_particles(info, sim_dir, -1, "infall_core")
+    infall_cores = infall_cores[:,:n_core]
 
-    H_sum = np.cumsum(H)
-    H_tot = H_sum[-1]
-    i_min = np.searchsorted(H_sum, H_tot*(1 - frac)/2)
-    i_max = np.searchsorted(H_sum, H_tot*(1 + frac)/2)
+    infall_tracks = [None]*len(targets)
+    rs_tracks = [None]*len(targets)
 
-    return H[i_min], H[i_max]
-
-def get_c_range(x, frac):
-    x = np.sort(x.flatten())
-    x_sum = np.cumsum(x)
-    x_tot = x_sum[-1]
-    i_min = np.searchsorted(x_sum, x_tot*(1-frac)/2)
-    i_max = np.searchsorted(x_sum, x_tot*(1+frac)/2)
-    return x[i_min], x[-1]
-
-def main2():
-    import matplotlib.pyplot as plt
-    import palette
-    from palette import pc
-    import util
-    import lib
-    import matplotlib.colors as mpl_colors
-    from colossus.cosmology import cosmology
-    from colossus.halo import mass_so
-
-    palette.configure(False)
+    prof235 = MassProfile(snap235.param, 235, h, snap235.x,
+                          snap235.owner, snap235.valid)
     
-    base_dir = "/home/phil/code/src/github.com/phil-mansfield/symphony_pipeline/tmp_data"
-    suite_name = "SymphonyMilkyWay"
-    sim_dir = path.join(base_dir, suite_name, "Halo023")
-    param = lib.parameter_table[suite_name]
+    for i in range(len(targets)):
+        i_sub = targets[i]
+        print("%3d" % i_sub, end=" ")
+        infall_tracks[i] = SubhaloTrack(i_sub, snap234, infall_cores, param)
+        rs_tracks[i] = SubhaloTrack(i_sub, snap234, rs_cores, param)
 
-    h, hist = lib.read_subhalos(param, sim_dir)
-    info = lib.ParticleInfo(sim_dir)
-    k = 64
-    n_iter = 10
-    scale = lib.scale_factors(sim_dir)
-
-    cosmo = cosmology.setCosmology("", lib.colossus_parameters(param))
-
-    for snap in [235]:
-        x_snap = lib.read_particles(info, sim_dir, snap, "x")
-        v_snap = lib.read_particles(info, sim_dir, snap, "v")
-        valid_snap = lib.read_particles(info, sim_dir, snap, "valid")
-        owner_snap = lib.read_particles(info, sim_dir, snap, "ownership")
-
-        a = scale[snap]
-        for i in range(len(x_snap)):
-            x_snap[i] = fix_units_x(x_snap[i], h[0,snap], a, param)
-            v_snap[i] = fix_units_v(v_snap[i], h[0,snap], a, param)
-
-        mp, eps = fix_units_param(a, param)
-        h = fix_units_halos(h, a, param)
-
-        prof = MassProfile(eps, mp, snap, h, x_snap, owner_snap, valid_snap)
-
-        r = 10**np.linspace(-1, 3, 200)
-        dln_m_dln_r = prof.dln_m_dln_r(r)
-        m  = prof.m(r)
-
-        plt.figure()
-        plt.plot(r, dln_m_dln_r, c=pc("r"))
-        plt.xscale("log") 
- 
-        plt.figure()
-        plt.plot(r, m, c=pc("r"))
-        plt.yscale("log")
-        plt.xscale("log")
+        x = h["x"][i_sub,235]
+        print("%8.3f %8.3f %8.3f" % (x[0], x[1], x[2]), end=" ")
         
-        plt.xscale("log")
+        infall_tracks[i].next_snap(snap235)
+        x = infall_tracks[i].x[235]
+        print("%8.3f %8.3f %8.3f" % (x[0], x[1], x[2]), end=" ")
         
-    plt.show()
+        rs_tracks[i].next_snap(snap235)
+        x = rs_tracks[i].x[235]
+        print("%8.3f %8.3f %8.3f" % (x[0], x[1], x[2]), end=" ")
 
+        v = rs_tracks[i].v[235]
+        dx = delta(snap235.x[i_sub], x)
+        dv = delta(snap235.v[i_sub], v)
 
-if __name__ == "__main__":
-    main()
-    #main2()
+        ok = snap235.ok[i_sub]
+        rs_r_tidal, rs_m_tidal = prof235.tidal_radius(
+            x, snap235.x[i_sub][ok], v, snap234.v[i_sub][ok], bound_only=False)
+        
+        rs_is_bound, _ = is_bound_iter(10, snap235.param, dx, dv, ok=ok)
+        rs_dr = np.sqrt(np.sum(dx**2, axis=1))
+        rs_m_bound = snap235.param["mp"]*np.sum(rs_is_bound)
+        
+        if rs_m_bound == 0:
+            rs_r99 = 0.0
+        else:
+            rs_r99 = np.quantile(rs_dr[rs_is_bound], 0.99)
+            
+        print("%7.3f %7.3f %7.3f %.3g %.3g %.3g" % (
+            (h["rvir"][i_sub,235], rs_r_tidal, rs_r99,
+             h["mvir"][i_sub,235], rs_m_tidal, rs_m_bound)
+        ))
+        
+if __name__ == "__main__": main()

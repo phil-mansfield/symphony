@@ -602,11 +602,6 @@ class GalaxyHaloModel(object):
             else:
                 x = halo[snap][var_names[i]]
             
-            if var_names[i] in ["rvir", "mvir", "mpeak"]:
-                x /= h100
-            if var_names[i] in ["rvir"]:
-                x *= scale*1e3
-
             kwargs[var_names[i]] = x
 
         return kwargs
@@ -677,18 +672,25 @@ def profile_info(params, x, ok=None, order=None):
     returns r_max, v_max, PE/Vmax, and the order of particles according to
     their radii.
     """
+
     mp, h100 = params["mp"], params["h100"]
     mp /= h100
     
     r = np.sqrt(np.sum(x**2, axis=1))
 
-    if order is None: order = np.argsort(r)
+    if ok is not None:
+        r[np.isnan(r)] = np.max(r[~np.isnan(r)])
     
-    r_sort = np.sqrt(r[order]**2 + (params["eps"]*1e-3)**2)
+    if order is None: order = np.argsort(r)
+    if ok is not None and np.sum(ok) == 0:
+        return 0.0, 0.0, np.zeros(len(x)), order
+    
+    r_sort = np.sqrt(r[order]**2 + (params["eps"])**2)
     dm = np.ones(len(r_sort))*mp
     if ok is not None: dm[~ok] = 0
     m_enc = np.cumsum(dm[order])
-    
+
+    np.sum(np.isnan)
     v_rot = v_circ(m_enc, r_sort)
     i_max = np.argmax(v_rot)
     rmax, vmax = r_sort[i_max], v_rot[i_max]

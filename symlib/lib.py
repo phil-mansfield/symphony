@@ -102,8 +102,9 @@ _carmen_cosmology = { 'flat': True, 'H0': 70.0, 'Om0': 0.25,
 
 """ parameter_table contains simulation-defining parameters. This includes a 
 table of cosmological parameters ("flat", "H0", "Om0", "Ob0", "sigma8", and
-"ns"), the particle mass in Msun, "mp", the Plummer-equivalent force
-softening scale in comoving Mpc, "eps", and for convience, "h100".
+"ns"), the particle mass in Msun/h, "mp", the Plummer-equivalent force
+softening scale in comoving kpc/h, "eps", and for convience, "h100". "n_snap" is
+the number of snapshots in the suite.
 """
 parameter_table = {
     "SymphonyLMC": _chinchilla_cosmology.copy(),
@@ -127,6 +128,13 @@ parameter_table["SymphonyGroup"]["mp"] = 2.25585e6
 parameter_table["SymphonyLCluster"]["mp"] = 1.51441632e8
 parameter_table["SymphonyCluster"]["mp"] = 1.26201360e8
 parameter_table["MWest"]["mp"] = 2.81981e5
+
+parameter_table["SymphonyLMC"]["n_snap"] = 236
+parameter_table["SymphonyMilkyWay"]["n_snap"] = 236
+parameter_table["SymphonyGroup"]["n_snap"] = 236
+parameter_table["SymphonyLCluster"]["n_snap"] = 200
+parameter_table["SymphonyCluster"]["n_snap"] = 200
+parameter_table["MWest"]["n_snap"] = 236
 
 for sim in parameter_table:
     param = parameter_table[sim]
