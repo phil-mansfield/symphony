@@ -13,9 +13,9 @@ import subfind
 import os
 
 #TARGETS = [3, 20, 21, 322, 325]
-TARGETS = [20, 21, 322, 325]
+TARGETS = [20, 21, 98, 99, 100, 110, 138, 145, 257, 325]
 MIN_SNAP = 0
-BASE_PLOT_DIR = "/home/phil/code/src/github.com/phil-mansfield/symphony_pipeline/plots/halo_movies/frames/Halo023"
+BASE_PLOT_DIR = "/oak/stanford/orgs/kipac/users/phil1/project_data/symphony_movies/SymphonyMilkyWay/Halo023/"
 
 def frame_dir(i_sub):
     return path.join(BASE_PLOT_DIR, "sub_%04d" % i_sub)
@@ -60,7 +60,7 @@ def plotting_grid(r, center, pts):
 def main():
     palette.configure(False)
     
-    base_dir = "/home/phil/code/src/github.com/phil-mansfield/symphony_pipeline/tmp_data"
+    base_dir = "/oak/stanford/orgs/kipac/users/phil1/simulations/ZoomIns"
     suite_name = "SymphonyMilkyWay"
     sim_dir = path.join(base_dir, suite_name, "Halo023")
     
@@ -84,26 +84,26 @@ def main():
 
     max_snap = len(scale) - 1
     starting_snap = np.maximum(hist["merger_snap"], MIN_SNAP)
-    infall_cores = lib.read_particles(
-        info, sim_dir, -1, "infall_core")[:,:n_core]
+    infall_cores = [None]*len(h)
 
     print("""# 0 - snap
 # 1 - subhalo index
 # 2-4 - x (infall tracking)
 # 5-7 - x (tree tracking)
 # 8 - R_tidal
-# 9 - R_tidal,klypiin
-# 10 - M_tidal
-# 11 - M_tidal,klypin
-# 12 - M_bound
-# 13 - M_rockstar""")
+# 9 - R_tidal,klypin
+# 10 - R_half,bound
+# 11 - M_tidal
+# 12 - M_tidal,klypin
+# 13 - M_bound
+# 14 - M_rockstar""")
     fig, ax = plt.subplots(1, 2, figsize=(16, 8), sharey=True)
 
     for i_sub in targets:
         os.makedirs(frame_dir(i_sub), exist_ok=True)
     
-    for snap in range(np.min(starting_snap), max_snap + 1):
-        
+    for snap in range(np.min(starting_snap[targets]), max_snap + 1):
+
         sd = sh.SnapshotData(info, sim_dir, snap, scale[snap], h_cmov, param)
         prof = sh.MassProfile(sd.param, snap, h, sd.x, sd.owner, sd.valid)
         
@@ -113,6 +113,12 @@ def main():
             if snap < starting_snap[i_sub]: continue
 
             elif tracks[i_sub] is None:
+                infall_cores[i_sub] = sh.n_most_bound(
+                    h["x"][i_sub,snap], h["v"][i_sub,snap],
+                    sd.x[i_sub], sd.v[i_sub], sd.ok[i_sub],
+                    n_core, sd.param
+                )
+
                 tracks[i_sub] = sh.SubhaloTrack(
                     i_sub, sd, infall_cores[i_sub], param)
                 infall_tracks[i_sub] = sh.SubhaloTrack(
@@ -150,10 +156,13 @@ def main():
 
             is_bound,_ = sh.is_bound_iter(5, sd.param, dxp_t1, dvp_t1, ok=valid)
             m_bound = np.sum(mp[is_bound])
-            
-            print("%d %d %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.3g %.3g %.3g %.3g" %
+            r = np.sqrt(np.sum(dxp_t2**2, axis=1))
+            r_half_bound = np.median(r[sd.valid[i_sub]])
+
+            print("%d %d %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.3g %.3g %.3g %.3g" %
                   (snap, i_sub, x_t1[0], x_t1[1], x_t1[2],
                    x_t2[0], x_t2[1], x_t2[2], r_t2, r_t2_klypin,
+                   r_half_bound,
                    m_t1, m_t2_klypin, m_bound, m_rs))
 
             host_rvir = h["rvir"][0,snap]

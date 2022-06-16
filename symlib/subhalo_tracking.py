@@ -107,15 +107,13 @@ class SubhaloTrack(object):
         self.v = np.ones((n_snap, 3))*np.nan
         self.param = param
 
-        self.cores[snap] = core
-        self._set_xv(snap_data_init)
+        self._set_xv(snap_data_init, core)
         
     def next_snap(self, snap_data, core):    
         snap = snap_data.snap
-        self.cores[snap] = core
-        self._set_xv(snap_data)
+        self._set_xv(snap_data, core)
 
-    def _set_xv(self, snap_data):
+    def _set_xv(self, snap_data, prev_core):
         snap = snap_data.snap
         core = self.cores[snap]
     
