@@ -152,7 +152,7 @@ def colossus_parameters(param):
 P_FILE_FMT = "%s/particles/part_%03d.%d"
 
 def halo_dir_to_suite_name(dir_name):
-    """ dur_to_suite_name returns the name of the suite that a halo in the
+    """ halo_dir_to_suite_name returns the name of the suite that a halo in the
     given directory belongs to.
     """
     suite_dir, halo_name = os.path.split(dir_name)

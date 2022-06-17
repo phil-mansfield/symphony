@@ -22,4 +22,8 @@ from .star_tagging import GalaxyHaloModel
 from .star_tagging import clean_particles, tag_stars, look_back_orbital_time, profile_info
 
 # These are functions that are only really useful for the the tutorial
-from .util import plot_circle, set_units_halos, set_units_x, set_units_v, set_units_param
+from .util import plot_circle
+# Unit conversion
+from .util import set_units_halos, set_units_x, set_units_v, set_units_param
+# Halo names
+from .util import SUITE_NAMES, get_halo_dir, n_halos
