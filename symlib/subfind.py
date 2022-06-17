@@ -26,6 +26,7 @@ def mean_sph(ri, mi, val):
 
 
 def sph_densest_neighbor(x, rho, test, k=64, tree=None):
+    k = min(k, len(x))
     if tree is None:
         tree = spatial.cKDTree(x)
 
@@ -37,6 +38,7 @@ def sph_densest_neighbor(x, rho, test, k=64, tree=None):
     return i_max
     
 def sph_density(x, m, test, k=64, return_tree=False):
+    k = min(k, len(x))
     tree = spatial.cKDTree(x)
     
     rho = np.zeros(len(test))
@@ -50,6 +52,7 @@ def sph_density(x, m, test, k=64, return_tree=False):
         return rho
 
 def sph_scalar_mean(x, val, m, test, k=64, tree=None):
+    k = min(k, len(x))
     if tree is None: tree = spatial.cKDTree(x)
 
     out = np.zeros(len(test))
@@ -60,6 +63,7 @@ def sph_scalar_mean(x, val, m, test, k=64, tree=None):
     return out
         
 def sph_vector_mean(x, vec, m, test, k=64, tree=None):
+    k = min(k, len(x))
     if tree is None: tree = spatial.cKDTree(x)
 
     out = np.zeros((len(test), len(vec[0])))
@@ -95,6 +99,7 @@ def subfind(x, v, mp, k=64):
 
         if owner[i] != -1: continue
         
+        k = min(k, len(x))
         _, n_idx = tree.query(x[i], k)
         n_parents = parent[owner[n_idx]]
         n_parents = np.unique(n_parents[n_parents != -1])

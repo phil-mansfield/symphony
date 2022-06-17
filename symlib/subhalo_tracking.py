@@ -115,7 +115,6 @@ class SubhaloTrack(object):
 
     def _set_xv(self, snap_data, prev_core):
         snap = snap_data.snap
-        core = self.cores[snap]
     
         x, v = snap_data.x[self.i_sub], snap_data.v[self.i_sub]
         valid, owner = snap_data.valid[self.i_sub], snap_data.owner[self.i_sub]
@@ -126,8 +125,9 @@ class SubhaloTrack(object):
         x_sf, v_sf, rho_sf, owner_sf, peak_n = subfind.subfind(x[ok], v[ok], mp)
         owner_all = np.ones(len(x), dtype=int)*-1
         owner_all[ok] = owner_sf
-        
-        owner_votes = owner_all[core]
+
+        owner_votes = owner_all[prev_core]
+
         assert(-1 not in owner_votes)
         i_owner = np.argmax(np.bincount(owner_votes))
         xc_sf, vc_sf = x_sf[i_owner], v_sf[i_owner]
