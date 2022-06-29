@@ -140,7 +140,22 @@ for sim in parameter_table:
     param["h100"] = param["H0"]/100
 
 parameter_table["ExampleSuite"] = parameter_table["MWest"]
-    
+
+def suite_names():
+    """ suite_names returns the names of all the simulation suites.
+    """
+    return ["SymphonyLMC", "SymphonyMilkyWay", "SymphonyGroup",
+            "SymphonyLCluster", "SymphonyCluster", "MWest"]
+
+def simulation_parameters(suite_name):
+    """ parameter_table contains simulation-defining parameters. This includes a
+    table of cosmological parameters ("flat", "H0", "Om0", "Ob0", "sigma8", and
+    "ns"), the particle mass in Msun/h, "mp", the Plummer-equivalent force
+    softening scale in comoving kpc/h, "eps", and for convience, "h100".
+    "n_snap" is the number of snapshots in the suite.
+    """
+    return parameter_table[suite_name]
+
 def colossus_parameters(param):
     """ colossus_parameters converts a parameter dictionary into a colossus-
     comparitble parameter dictionary.

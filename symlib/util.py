@@ -109,18 +109,18 @@ DEFAULT_HALO_NAMES = {
 
 SUITE_NAMES = ["SymphonyLMC", "SymphonyMilkyWay", "SymphonyGroup", "SymphonyLCluster", "SymphonyCluster", "MWest"]
 
-def n_halos(suite_name):
-    """ n_halos returns the number of host halos in a given suite
+def n_hosts(suite_name):
+    """ n_halos returns the number of host halos in a given suite,
     """
     if suite_name not in DEFAULT_HALO_NAMES.keys():
         raise ValueError("Unrecognized suite name, '%s'" % suite_name)
     
     return len(DEFAULT_HALO_NAMES[suite_name])
 
-def get_halo_dir(base_dir, suite_name, halo_name):
-    """ get_halo_dir returns the name of directory containing a given halo.
-    base_dir is the central directory, suite_name is the name of the suite,
-    and halo_name is either the name of the halo. halo_name can either be
+def get_host_directory(base_dir, suite_name, halo_name):
+    """ get_host_directory returns the name of directory containing a given
+    halo. base_dir is the central directory, suite_name is the name of the
+    suite, and halo_name is either the name of the halo. halo_name can either be
     a string with the exact name of the halo or it can be an integer, indexing
     into the list of halo names in sorted order. When looping over all the
     halos in a suite, you'll want to use this second option.
