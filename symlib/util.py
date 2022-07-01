@@ -20,7 +20,7 @@ def set_units_v(v, h, scale, param):
     for dim in range(3): dv[:,dim] = v[:,dim] - h["v"][dim]
     return dv
 
-def set_units_param(scale, param):
+def set_units_parameters(scale, param):
     return param["mp"]/param["h100"], param["eps"]*scale/param["h100"]
 
 def set_units_halos(h, scale, param):

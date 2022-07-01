@@ -5,26 +5,35 @@ Symlib Documentation
 Datatypes
 ---------
 
-.. py:data:: symlib.SUBHALO_DTYPE = [("id", "i4"), ("mvir", "f4"), ("vmax", "f4"), ("rvmax", "f4"), ("x", "f4", (3,)), ("v", "f4", (3,)), ("ok", "?"), ("rvir", "f4"), ("cvir", "f4")]
+``symlib`` halo data is generally returned as a numpy `structured array <https://numpy.org/doc/stable/user/basics.rec.html>`_, which allows for fields to be accessesed and subselected easily. See the :doc:`Getting Started <getting_started>` for usage examples.
 
-.. py:data:: symlib.HISTORY_DTYPE = [("mpeak", "f4"), ("vpeak", "f4"), ("merger_snap", "i4"), ("merger_ratio", "f4"), ("start", "i4"), ("end", "i4"), ("is_real", "?"), ("is_disappear", "?"), ("is_main_sub", "?"), ("preprocess", "i4"), ("first_infall_snap", "i4")]
+**SUBHALO_DTYPE** contains information on the instantaneous properties of a subhalo over time according to the Rockstar halo finder and is returned by ``read_subhalos()``.
 
-.. py:data:: symlib.BRANCH_DTYPE = [("start", "i4"), ("end", "i4"), ("is_real", "?"), ("is_disappear", "?"), ("is_main_sub", "?"), ("preprocess", "i4"), ("first_infall_snap", "i4")]
+**HISTORY_DTYPE** contains information about the full history of a halo across the entire simulation.
 
+**BRANCH_DTYPE**
+
+
+	
 General Functions
 -----------------					
 
 .. autofunction:: symlib.scale_factors
 
+.. autofunction:: symlib.simulation_parameters
+
+Halo Functions
+--------------
+				  
 .. autofunction:: symlib.read_subhalos
 
 .. autofunction:: symlib.read_branches
 
 .. autofunction:: symlib.read_tree
 
-.. autofunction:: symlib.read_particles
 
-.. autofunction:: symlib.read_particle_tags
+Particle Functions
+------------------
 				  
 Star Tracking
 -------------
@@ -32,14 +41,14 @@ Star Tracking
 Utility Functions
 -----------------
 
-.. autodata:: symlib.parameter_table
+.. autofunction:: symlib.set_units_parameters
 
-.. autofunction:: symlib.scale_factors
-
-.. autofunction:: symlib.pristine_merger_indices
-
-.. autofunction:: symlib.propagate_parent_indices
+.. autofunction:: symlib.set_units_halos
 
 .. autofunction:: symlib.colossus_parameters
+				  
+.. autofunction:: symlib.n_hosts
 
-.. autofunciton:: symlib.clean_particles
+.. autofunction:: symlib.get_host_directory
+
+.. autofunction:: symlib.suite_names

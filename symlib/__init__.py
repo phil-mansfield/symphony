@@ -3,7 +3,7 @@ from .lib import SUBHALO_DTYPE, HISTORY_DTYPE, BRANCH_DTYPE
 # I/O function
 from .lib import read_subhalos, read_branches, read_tree, read_particles, ParticleInfo
 # Utilities
-from .lib import simulation_parameters, parameter_table, scale_factors, pristine_merger_indices, merger_stats, propagate_parent_indices, colossus_parameters
+from .lib import simulation_parameters, parameter_table, scale_factors, pristine_merger_indices, merger_stats, propagate_parent_indices, colossus_parameters, suite_names
 # TODO: better names for pristine_merger_indices and propagate_parent_indices
 
 # Abstract models
@@ -24,6 +24,6 @@ from .star_tagging import clean_particles, tag_stars, look_back_orbital_time, pr
 # These are functions that are only really useful for the the tutorial
 from .util import plot_circle
 # Unit conversion
-from .util import set_units_halos, set_units_x, set_units_v, set_units_param
+from .util import set_units_halos, set_units_x, set_units_v, set_units_parameters
 # Halo names
-from .util import suite_names, get_host_directory, n_hosts
+from .util import  get_host_directory, n_hosts
