@@ -63,6 +63,11 @@ BRANCH_DTYPE = [("start", "i4"), ("end", "i4"), ("is_real", "?"),
                  ("is_disappear", "?"), ("is_main_sub", "?"),
                  ("preprocess", "i4"), ("first_infall_snap", "i4")]
 
+
+CORE_DTYPE = [("x", "f4", (3,)), ("v", "f4", (3,)), ("r_tidal", "f4"),
+              ("r50_bound", "f4"), ("r95_bound", "f4"), ("m_tidal", "f4"),
+              ("m_tidal_bound", "f4"), ("m_bound", "f4"), ("ok", "?")]
+
 """ TREE_COL_NAMES is the mapping of variable names to columns in the
 consistent-trees file. These are the variable names you need to pass to
 read_tree().
@@ -361,6 +366,30 @@ def get_subhalo_histories(s, idx, dir_name):
         
     return h
 
+def read_cores(dir_name):
+    file_name = path.join(dir_name, "halos", "cores.dat")
+
+    with open(file_name, "rb") as fp:
+        n_halo, n_snap = struct.unpack("qq", fp.read(16))
+        n = n_halo*n_snap
+        out = np.zeros(n, dtype=CORE_DTYPE)
+
+        x = np.fromfile(fp, np.float32, 3*n)
+        v = np.fromfile(fp, np.float32, 3*n)
+
+        out["x"] = x.reshape((n,3))
+        out["v"] = v.reshape((n,3))
+        out["r_tidal"] = np.fromfile(fp, np.float32, n)
+        out["r50_bound"] = np.fromfile(fp, np.float32, n)
+        out["r95_bound"] = np.fromfile(fp, np.float32, n)
+        out["m_tidal"] = np.fromfile(fp, np.float32, n)
+        out["m_tidal_bound"] = np.fromfile(fp, np.float32, n)
+        out["m_bound"] = np.fromfile(fp, np.float32, n)
+
+        out["ok"] = out["m_bound"] != -1
+
+    return out.reshape((n_halo, n_snap))
+
 def read_branches(dir_name):
     """ read_branches reads main branch data from the halo directory dir_name.
     It returns an array with length n_branches where each element has type
@@ -592,14 +621,14 @@ def read_particles(part_info, base_dir, snap, var_name):
             out[i_halo] = x_full[idx]
 
         return out
-    #elif var_name == "infall_core":
-    #    file_name = os.path.join(base_dir, "halos", "infall_cores.dat")
-    #
-    #    with open(file_name, "rb") as fp:
-    #        n_halo, n_core = struct.unpack("qq", fp.read(16))
-    #        idxs = np.fromfile(fp, dtype=np.int32, count=n_halo*n_core)
-    #        idxs = idxs.reshape((n_halo, n_core))
-    #    return idxs
+    elif var_name == "infall_core":
+        file_name = os.path.join(base_dir, "halos", "infall_cores.dat")
+    
+        with open(file_name, "rb") as fp:
+            n_halo, n_core = struct.unpack("qq", fp.read(16))
+            idxs = np.fromfile(fp, dtype=np.int32, count=n_halo*n_core)
+            idxs = idxs.reshape((n_halo, n_core))
+        return idxs
     #elif var_name == "core":
     #    file_name = os.path.join(base_dir, "halos", "cores.dat")
     #

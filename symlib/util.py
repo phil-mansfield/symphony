@@ -32,15 +32,8 @@ def set_units_halos(h, scale, param):
         for hi in range(len(h)):
             h["x"][hi,:,dim] -= x0
             h["v"][hi,:,dim] -= v0
-            if hi == 0:
-                h["x_core"][hi,:,dim] = 0
-                h["v_core"][hi,:,dim] = 0
-            else:
-                h["x_core"][hi,:,dim] -= x0
-                h["v_core"][hi,:,dim] -= v0
                 
             h["x"][hi,:,dim] *= 1e3*scale/param["h100"]
-            h["x_core"][hi,:,dim] *= 1e3*scale/param["h100"]
             
             if dim == 0:
                 h["rvir"][hi,:] *= 1e3*scale/param["h100"]
@@ -52,18 +45,16 @@ def set_units_halos(h, scale, param):
         h[hi, invalid]["rvir"] = -1
         h[hi, invalid]["x"] = -1
         h[hi, invalid]["v"] = -1
-        h[hi, invalid]["x_core"] = -1
-        h[hi, invalid]["v_core"] = -1
         
     return h
 
 DEFAULT_HALO_NAMES = {
     "SymphonyLMC": sorted([
-        "Halo032", "Halo097", "Halo218", "Halo374", "Halo463 ", "Halo567", "Halo721", "Halo853",
+        "Halo032", "Halo097", "Halo218", "Halo374", "Halo463", "Halo567", "Halo721", "Halo853",
         "Halo059", "Halo104", "Halo296", "Halo380", "Halo4662", "Halo575", "Halo767", "Halo914",
-        "Halo0662", "Halo110", "Halo301", "Halo391", "Halo511 ", "Halo602", "Halo802", "Halo932",
-        "Halo083", "Halo202", "Halo303", "Halo405", "Halo524 ", "Halo697", "Halo824", "Halo933",
-        "Halo088", "Halo208", "Halo340", "Halo440", "Halo539 ", "Halo711", "Halo850"
+        "Halo0662", "Halo110", "Halo301", "Halo391", "Halo511", "Halo602", "Halo802", "Halo932",
+        "Halo083", "Halo202", "Halo303", "Halo405", "Halo524", "Halo697", "Halo824", "Halo933",
+        "Halo088", "Halo208", "Halo340", "Halo440", "Halo539", "Halo711", "Halo850"
     ]),
     "SymphonyMilkyWay": sorted([
         "Halo023", "Halo268", "Halo364", "Halo440", "Halo558", "Halo641", "Halo797", "Halo878", "Halo939",
