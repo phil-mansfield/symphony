@@ -3,27 +3,49 @@ import numpy as np
 import os.path as path
 
 def plot_circle(ax, x0, y0, r, **kwargs):
+    """ plot_circle plots a circle with radius r centered on the position
+    (x0, y0) onto the matplotlib axis, ax. This function accepts all the named
+    arguments that matplotlib's plot function accepts.
+    """
     th = np.linspace(0, 2*np.pi, 100)
     y = np.sin(th)*r + y0
     x = np.cos(th)*r + x0
     ax.plot(x, y, **kwargs)
 
 def set_units_x(x, h, scale, param):
+    """ set_units_x converts an array of positions with Gadget-2 code units
+    to phical kpc, centered on the subhalo h (a single element of a
+    SUBHALO_DTYPE array).
+    """
     dx = np.zeros(x.shape)
     for dim in range(3): dx[:,dim] = x[:,dim] - h["x"][dim]
     dx *= scale*1e3/param["h100"]
     return dx
 
 def set_units_v(v, h, scale, param):
+    """ set_units_v converts an array ofvelocities with Gadget-2 code units
+    to phicalkm/s, centered on the subhalo h (a single element of a
+    SUBHALO_DTYPE array).
+    """
     v *= np.sqrt(scale)
     dv = np.zeros(v.shape)
     for dim in range(3): dv[:,dim] = v[:,dim] - h["v"][dim]
     return dv
 
 def set_units_parameters(scale, param):
+    """ set_units_parameters returns paritcle mass, mp, and Plummer-equivalent
+    force-softening scales in units of Msun and physical kpc, respectively.
+    scale is the current scale factor and param is the parameter dictionary
+    returned by simulation_parameters.
+    """
     return param["mp"]/param["h100"], param["eps"]*scale/param["h100"]
 
 def set_units_halos(h, scale, param):
+    """ set_units_halos takes a array of type SUBHALO_DTYPE and returns a copy
+    with units that have been converted from Rockstar's default units to
+    symlib's default units, physical kpc, and physical km/s centered on the 
+    host halo.
+    """
     h = np.copy(h)    
     for dim in range(3):
         x0 = np.copy(h["x"][0,:,dim])

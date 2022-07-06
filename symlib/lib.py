@@ -64,9 +64,25 @@ BRANCH_DTYPE = [("start", "i4"), ("end", "i4"), ("is_real", "?"),
                  ("preprocess", "i4"), ("first_infall_snap", "i4")]
 
 
+""" CORE_DTYPE is a numpy datatype representing the properties of the
+particle-tracked subhalo.
+ - x: position in pkpc
+ - v: velocity in km/s
+ - r_tidal: tidal radius in pkpc. Accounts for angular momentum and the
+   mass profile of the central halo.
+ - r50_bound: radius enclosing 50% of bound particles
+ - r95_bound: radius enclosing 95% of bound particles
+ - m_tidal: total mass within tidal radius
+ - m_tidal_bound: total bound mass within tidal radius
+ - m_bound: total bound mass
+ - ok: true if the core is being tracked and false otherwise
+ - intact: true if core still corresponds to an intact subhalo and false
+   otherwise.
+"""
 CORE_DTYPE = [("x", "f4", (3,)), ("v", "f4", (3,)), ("r_tidal", "f4"),
               ("r50_bound", "f4"), ("r95_bound", "f4"), ("m_tidal", "f4"),
-              ("m_tidal_bound", "f4"), ("m_bound", "f4"), ("ok", "?")]
+              ("m_tidal_bound", "f4"), ("m_bound", "f4"), ("ok", "?"),
+              ("intact", "?")]
 
 """ TREE_COL_NAMES is the mapping of variable names to columns in the
 consistent-trees file. These are the variable names you need to pass to
@@ -174,6 +190,7 @@ def halo_dir_to_suite_name(dir_name):
     """ halo_dir_to_suite_name returns the name of the suite that a halo in the
     given directory belongs to.
     """
+    if dir_name[-1] == "/": dir_name = dir_name[:-1]
     suite_dir, halo_name = os.path.split(dir_name)
     base_dir, suite_name = os.path.split(suite_dir)
     return suite_name
@@ -382,6 +399,10 @@ def get_subhalo_histories(s, idx, dir_name):
     return h
 
 def read_cores(dir_name):
+    """ read_cores read the particle-tracked halo cores of the halo in the
+    given directory. The returned array is a structured array of type CORE_DTYPE
+    with shape (n_halos, n_snaps).
+    """
     file_name = path.join(dir_name, "halos", "cores.dat")
 
     with open(file_name, "rb") as fp:
