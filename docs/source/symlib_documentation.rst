@@ -18,37 +18,69 @@ Datatypes
 General Functions
 -----------------					
 
-.. autofunction:: symlib.scale_factors
+symlib.n_hosts
 
-.. autofunction:: symlib.simulation_parameters
+symlib.get_host_directory
+    
+
+symlib.scale_factors
+
+symlib.simulation_parameters
+
+symlib.set_units_parameters
+
+symlib.set_units_halos
+
 
 Halo Functions
 --------------
 				  
-.. autofunction:: symlib.read_subhalos
+.. function:: symlib.read_subhalos(params, sim_dir)
 
-.. autofunction:: symlib.read_branches
+    Reads the subhalo data for a single host halo. Two arrays are returned.
 
-.. autofunction:: symlib.read_tree
+    The first return value is a 2D ``symlib.SUBHALO_DTYPE`` array representing the time-dependent behavior of each subhalo (e.g. postions). The array first indexes over subhaloes in order of their peak *M_vir* value and then indexes over snapshots from first to last. The host halo is at the first index.
+
+    The second argument is a 1D ``symlib.HISTORY_DTYPE`` array which represents time-independent information about each subhalo (e.g. merger time). It has the same ordering as the first index of the ``symlib.SUBHALO_DTYPE`` array.
+
+	Subhalos are determined by the Rockstar halo finder and consistent-trees merger tree code. All objects which have ever been within *Rvir* of the host halo are included, meaning that disrupted, merged, and "splashback" subhalos are included.
+
+	:param params: Simulation parameters, as returned by ``symlib.simulation_parameters``
+    :type params: dict
+    :type sim_dir: The directory of the target host halo.
+    :type sim_dir: str
+    :rtype: (``h``, ``hist``): ``h`` is a ``symlib.SUBHALO_DTYPE`` ``np.array`` with shape (``n_subhalos``, ``n_snaps``), ``hist`` is is a ``symlib.HISTORY_DTYPE`` ``np.array`` with length ``n_subhalos``.
+
+symlib.read_branches
+
+symlib.read_tree
 
 
 Particle Functions
 ------------------
+
+.. note::
+   Coming with a future paper release
 				  
 Star Tracking
 -------------
 
+.. note::
+   Coming with a future paper release
+
+
+Halo Core Tracking
+------------------
+
+.. note::
+   Coming with a future paper release
+
+
 Utility Functions
 -----------------
 
-.. autofunction:: symlib.set_units_parameters
-
-.. autofunction:: symlib.set_units_halos
-
-.. autofunction:: symlib.colossus_parameters
+symlib.colossus_parameters
 				  
-.. autofunction:: symlib.n_hosts
+symlib.suite_names
 
-.. autofunction:: symlib.get_host_directory
-
-.. autofunction:: symlib.suite_names
+symlib.plot_circle

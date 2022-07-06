@@ -16,4 +16,5 @@ Contents
 
    getting_started
    symlib_documentation
+   symphony_pipeline_documentation
    terminology
