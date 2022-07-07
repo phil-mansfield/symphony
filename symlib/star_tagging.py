@@ -468,12 +468,12 @@ def tag_stars(base_dir, params, galaxy_halo_model, mergers, halo_idx, tag_snap,
     that with E_snap.
     """
     halo = mergers[halo_idx]
-    scales = lib.scale_factors()
+    scale = lib.scale_factors(base_dir)
     
     star_tag_snap = tag_snap
     if E_snap is None:
         E_tag_snap = look_back_orbital_time(
-            params, star_tag_snap, 0.125, halo, 0.5)
+            params, scale, star_tag_snap, 0.125, halo, 0.5)
     else:
         E_tag_snap = E_snap
         
@@ -483,32 +483,31 @@ def tag_stars(base_dir, params, galaxy_halo_model, mergers, halo_idx, tag_snap,
 
     x_E, v_E, idx_E = clean_particles(
         params, x_E, v_E, mergers[halo_idx,E_tag_snap],
-        scales[E_tag_snap]
+        scale[E_tag_snap]
     )
     x_star, _, idx_star = clean_particles(
         params, x_star, None, mergers[halo_idx,star_tag_snap],
-        scales[star_tag_snap]
+        scale[star_tag_snap]
     )
     
     ranks = RadialEnergyRanking(params, x_E, v_E, idx_E, n_max)
     ranks.load_particles(x_star, None, idx_star)
 
     kwargs = galaxy_halo_model.get_kwargs(
-        params, mergers[halo_idx], star_tag_snap)
+        params, scale, mergers[halo_idx], star_tag_snap)
     mp_star = galaxy_halo_model.set_mp_star(ranks, kwargs)
     
     return mp_star, ranks
     
-def look_back_orbital_time(params, snap, dt_orbit, halo, min_mass_frac):
+def look_back_orbital_time(params, scale, snap, dt_orbit, halo, min_mass_frac):
     """ look_back_orbital_time returns the snapshot of the time which has
     experienced dt_orbit orbital times before the given snapshot, snap. To
     protect against looking back too far, you may specify a maximum amount that
     the halo can grow between the look-back snapshot. halo is an object from
-    the mergers.dat file.
+    the subhalos.dat file.
     """
     cosmo = cosmology.setCosmology("", lib.colossus_parameters(params))
     
-    scale = lib.scale_factors()
     z = 1/scale - 1
     age = cosmo.age(z)
     T_orbit = mass_so.dynamicalTime(z, "vir", "orbit")
@@ -581,13 +580,12 @@ class GalaxyHaloModel(object):
             
         return sorted(list(out_dict.keys()))
 
-    def get_kwargs(self, params, halo, snap):
+    def get_kwargs(self, params, scale, halo, snap):
         """ get_kwargs creates the kwargs that that are needed for a call to
         set_mp_star.
         """
         h100 = params["h100"]
         
-        scale = lib.scale_factors()[snap]
         z = 1/scale - 1
         
         var_names = self.var_names()
@@ -604,11 +602,6 @@ class GalaxyHaloModel(object):
             else:
                 x = halo[snap][var_names[i]]
             
-            if var_names[i] in ["rvir", "mvir", "mpeak"]:
-                x /= h100
-            if var_names[i] in ["rvir"]:
-                x *= scale*1e3
-
             kwargs[var_names[i]] = x
 
         return kwargs
@@ -669,7 +662,7 @@ def v_circ(m, r):
     """
     return 655.8 * (m/1e14)**0.5 * (r/1e3)**-0.5
 
-def profile_info(params, x, ok=None):
+def profile_info(params, x, ok=None, order=None):
     """ profile_info returns basic information about the spherically averaged
     profile of a halo. x is the the position of particles (pkpc) relative to
     the halo center, mp is the particle mass[es] (Msun), and ok flags 
@@ -679,17 +672,25 @@ def profile_info(params, x, ok=None):
     returns r_max, v_max, PE/Vmax, and the order of particles according to
     their radii.
     """
+
     mp, h100 = params["mp"], params["h100"]
     mp /= h100
     
     r = np.sqrt(np.sum(x**2, axis=1))
+
+    if ok is not None:
+        r[np.isnan(r)] = np.max(r[~np.isnan(r)])
     
-    order = np.argsort(r)
-    r_sort = r[order]
+    if order is None: order = np.argsort(r)
+    if ok is not None and np.sum(ok) == 0:
+        return 0.0, 0.0, np.zeros(len(x)), order
+    
+    r_sort = np.sqrt(r[order]**2 + (params["eps"])**2)
     dm = np.ones(len(r_sort))*mp
     if ok is not None: dm[~ok] = 0
     m_enc = np.cumsum(dm[order])
-    
+
+    np.sum(np.isnan)
     v_rot = v_circ(m_enc, r_sort)
     i_max = np.argmax(v_rot)
     rmax, vmax = r_sort[i_max], v_rot[i_max]
@@ -701,12 +702,14 @@ def profile_info(params, x, ok=None):
     r_scaled = (r_sort[1:]*r_sort[:-1]) / dr
     dW[:-1] = v_circ(m_enc[:-1], r_scaled)**2
 
+    # I don't think this is true when there's a tidal radius. Come back to this
+    # later.
     vesc_lim = v_circ(m_enc[-1], r_sort[-1]) * np.sqrt(2)
 
     W = (np.cumsum(dW[::-1])[::-1] + 2*vesc_lim**2)/vmax**2
     out = np.zeros(len(W))
     out[order] = W
-
+    
     return rmax, vmax, -out, order
 
 def rank_by_quantile(quantiles, x, idx, n_max):

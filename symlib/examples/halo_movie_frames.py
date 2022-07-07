@@ -32,7 +32,9 @@ def main():
 
 
     params = symlib.parameter_table[suite_name]
-    snaps, scales = np.arange(236), symlib.scale_factors()
+    snapes = np.arange(len(scales))
+    scales = symlib.scale_factors(sim_dir)
+    
         
     # Work out subdirectory names and create as needed.
     base_dir = path.join(sim_dir, suite_name, "Halo%03d" % host_id)
@@ -215,5 +217,5 @@ def get_c_range(x, y, mp, r_max, bins, frac):
 
     return H[i_min], H[i_max]
     
-    
+
 if __name__ == "__main__": main()

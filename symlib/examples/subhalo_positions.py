@@ -14,18 +14,18 @@ except:
 def main():
     sim_dir = sys.argv[1] # directory containing the simulation suites
     suite_name = sys.argv[2] # Name of the simulation suite of the halo
-    host_id = int(sys.argv[3]) # ID of the host halo
+    halo_name = sys.argv[3] # name of the host halo
     out_base_dir = sys.argv[4] # base dir where the frames are stored
 
-    base_dir = path.join(sim_dir,  suite_name, "Halo%03d" % host_id)
-    out_dir = path.join(out_base_dir, suite_name, "Halo%03d" % host_id)
+    base_dir = path.join(sim_dir,  suite_name, halo_name)
+    out_dir = path.join(out_base_dir, suite_name, halo_name)
     os.makedirs(out_dir, exist_ok=True)
 
     fig, ax = plt.subplots(1, 2, figsize=(16, 8))
 
-    scales = symlib.scale_factors()
+    scales = symlib.scale_factors(base_dir)
     param = symlib.parameter_table[suite_name]
-    halos, _ = symlib.read_subhalos(param, base_dir)
+    halos, hist = symlib.read_subhalos(param, base_dir)
 
     # present day
     snap0 = len(halos[0]) - 1
@@ -46,11 +46,15 @@ def main():
 
             if i == 0:
                 lw = 3
-                color = "tab:red"
+                color = "k"
                 rvir_max = r
-            else:
+            elif (hist[i]["preprocess"] == -1 or
+                  hist[i]["first_infall_snap"] > snap):
                 lw = 1
                 color = "tab:blue"
+            else:
+                lw = 1
+                color = "tab:red"
 
             symlib.plot_circle(ax[j], dx, dy, r, color=color, lw=lw)
 
