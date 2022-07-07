@@ -175,7 +175,13 @@ def simulation_parameters(suite_name):
     softening scale in comoving kpc/h, "eps", and for convience, "h100".
     "n_snap" is the number of snapshots in the suite.
     """
-    return parameter_table[suite_name]
+    if suite_name in parameter_table:
+        return parameter_table[suite_name]
+    else:
+        sim_dir = suite_name
+        suite_name = sim_dir_to_suite_name(dim_dir)
+        if suite_name not in parameter_table:
+            raise ValueError("'%s' is neither a recognized suite name nor a simulation direoctry containing a recognized suite name. Recognized suite names are: " + str(suite_names()))
 
 def colossus_parameters(param):
     """ colossus_parameters converts a parameter dictionary into a colossus-
