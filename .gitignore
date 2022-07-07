@@ -128,4 +128,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-symlib/examples/example_plots
+# Annoying MacOS Stuff
+*.DS_Store
