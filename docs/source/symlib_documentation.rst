@@ -1,6 +1,17 @@
 Symlib Documentation
 ====================
-			 
+
+Units
+-----
+
+``symlib`` functions generally expect and return functions to be in the following units:
+
+- Masses: :math:`M_\odot`
+- Distances/radii: physical :math:`{\rm kpc}`
+- Positions: physical :math:`{\rm kpc}`, centered on the host halo
+- Velocities: physical :math:`{\rm km/s}`, centered on the host halo
+
+Much of the data that ``symlib`` reads in is a processed form of data from another code, which may use different conventions. To convert to ``symlib``'s conventions, use the ``set_units_*`` family of functions: :func:`symlib.set_units_halos`, :func:`symlib.set_units_parameters`, :func:`symlib.set_branches`
 			 
 Datatypes
 ---------
@@ -81,7 +92,8 @@ General Functions
 
     The scale factor arrays of two simulations in different suites may be very different from one another. The scale factor arrays of two simulations in the same suite may be slightly different from one another, depending on whether simulations needed to be restarted midway through.
 
-	:param str sim_dir: The directory of the target host halo.
+    :param str sim_dir: The directory of the target host halo.
+    :rtype: ``np.array`` containing the scale factors of each snapshot in the simulation
 
 .. function:: symlib.simulation_parameters(dim_dir)
 
@@ -106,9 +118,28 @@ General Functions
 	
 
 .. function:: symlib.set_units_parameters(scale, param)
+	      
+   Converts the particle mass (:math:`m_p`, ``"mp"``) and particle size (:math:`\epsilon`, ``"eps"``) to ``symlibs``'s default units.
 
+   :param float mp: particle mass in :math:`M_\odot`
+   :param float eps: Plummer-equivalent force softening scale in physical :math:`{\rm kpc}`.
+	  
+	      
 .. function:: symlib.set_units_halos(h, scale, param)
+	      
+   Converts the units of a 2D ``np.array`` with type :data:`symlib.SUBHALO_DTYPE` to ``symlib``'s default units. All masses will be in units of :math:`M_\odot`, all positions and radii will be units of physical :math:`{\rm kpc}`. Positions will be centered on the first halo in the array at the given snapshot. Velocities will be in physical :math:`{\rm km/s}` and similarly centered on the velocity of the first halo at each snapshot.
 
+   :param symlib.SUBHALO_DTYPE np.array h: A 2D array of subhalos, with the first halo indexing over halos and the second over snapshots. (see :func:`symlib.read_subhalos`).
+   :param np.array scale: An array of the scale factors of each snapshot (see :func:`symlib.scale_factors`)
+   :param dict param: The simulation parameters (see :func:`symlib.simulation_parameters`)
+
+.. function:: symlib.set_units_histories(hist, scale, param)
+	      
+   Converts the units of an ``np.array`` with type :data:`symlib.HISTORY_DTYPE` to ``symlib``'s default units. All masses will be in units of :math:`M_\odot`, all positions and radii will be units of physical :math:`{\rm kpc}`. Positions will be centered on the first halo in the array at the given snapshot. Velocities will be in physical :math:`{\rm km/s}` and similarly centered on the velocity of the first halo at each snapshot.
+
+   :param symlib.HISTORY_DTYPE np.array h: Array of subhalo histories (see :func:`symlib.read_subhalos`).
+   :param np.array scale: An array of the scale factors of each snapshot (see :func:`symlib.scale_factors`)
+   :param dict param: The simulation parameters (see :func:`symlib.simulation_parameters`)
 
 Halo Functions
 --------------
@@ -125,12 +156,31 @@ Halo Functions
 	
     :param dict params: Simulation parameters, as returned by :func:`symlib.simulation_parameters`
     :param str sim_dir: The directory of the target host halo.
-    :rtype: (``h``, ``hist``): ``h`` is a ``symlib.SUBHALO_DTYPE`` ``np.array`` with shape (:math:`N_{\rm subhalos}`, :math:`N_{\rm snaps}`), ``hist`` is is a ``symlib.HISTORY_DTYPE`` ``np.array`` with length :math:`N_{\rm subhalos}`.
-		
-.. function:: symlib.read_tree(sim_dir)
+    :rtype: (``h``, ``hist``): ``h`` is a :data:`symlib.SUBHALO_DTYPE` ``np.array`` with shape (:math:`N_{\rm subhalos}`, :math:`N_{\rm snaps}`), ``hist`` is is a :data:`symlib.HISTORY_DTYPE` ``np.array`` with length :math:`N_{\rm subhalos}`.
+	    
+.. note::
+   TODO: Make writeup on full tree formatting somewhere
+    
+.. function:: symlib.read_tree(sim_dir, var_names)
 
+   This is an expert-level function that is not intended for use by the average user. Reads about the time-dependent properties of every halo in the simulation, not just the subhalos of the central in a "depth first merger tree" format.
+
+   The user supplies a list of variable names and a single, 1D array is returned for each variable. Each element of each array is a halo at a specific snapshot, and these arrays are ordered in a way which encodes which halos evolve and merge into which other halos. To decode this structure, you will need to use the results of :func:`symlib.read_branches`, which breaks the tree into smaller structures called branches.
+
+   The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found **TODO**.
+	      
+   :param str sim_dir: The directory of the target host halo.
+   :param str list var_names: The names of variables.
+   :rtype: tuple of ``np.array``, one for each element in ``var_names``.
+	      
 .. function:: symlib.read_branches(sim_dir)
-
+	      
+   This is an expert-level function that is not intended for use by  the average user.
+	      
+   Reads information about the time-independent properties of every halo in the simulation, not just the subhalos of central. Each element corresonds to a single main branch in the tree (i.e. the evolution of a single halo over time) and gives information on the properties and location of the branch.
+	      
+   :param str sim_dir: The directory of the target host halo.
+   :rtype: :data:`symlib.BRANCH_DTYPE` ``np.array`` 
 
 Particle Functions
 ------------------
@@ -156,7 +206,26 @@ Utility Functions
 -----------------
 
 .. function:: symlib.colossus_parameters(param)
+	      
+   Converts a ``symlib`` parameter dictionary to a parameter dictionary that can be passed to a call to `colossus.cosmology.cosmology.setCosmology <https://bdiemer.bitbucket.io/colossus/cosmology_cosmology.html#cosmology.cosmology.setCosmology>`_. This will allow you to calculate cosmological quantities (e.g. ages concentration-mass relations) using the colossus library.
+
+   :param dict param: A ``symlib`` parameter dictionary returned by :func:`symlib.simulation_parameters`.
+   :rtype: A ``colossus`` parameter dictionary.
+	      
 				  
 .. function:: symlib.suite_names()
+	      
+   Returns a list of all the valid suite names.
 
+   :rtype: string list 
+	      
 .. function:: symlib.plot_circle(ax, x, y, r, **kwargs)
+
+   Plots the a circle to a given `matplotlib.pyplot.Axes <https://matplotlib.org/stable/api/axes_api.html#the-axes-class>`_. This is a convenience function which helps with example code in the tutorial.
+
+   All keyword arguments accepted by `matplotlib.pyplot.plot <https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html>`_ are accepted as keywords arguments by this function.
+
+   :param matplotlib.pyplot.Axes ax: The axis to plot the circle on.
+   :param float x: The :math:`x` coordinate of the circle.
+   :param float y: The :math:`y` coordinate of the circle.
+   :param float r: The radius of the circle.

@@ -40,11 +40,20 @@ def set_units_parameters(scale, param):
     """
     return param["mp"]/param["h100"], param["eps"]*scale/param["h100"]
 
+def set_units_histories(hist, scale, param):
+    """ set_units_histories takes an array of type HISTORY_DTYPE and returns a
+    copy with units that have been converted from Rockstar's detail units to
+    symlib's default units: Msun, physical kpc, and physical km/s.
+    """
+    hist = np.copy(hist)
+    hist["mpeak"] /= param["h100"]
+    return hist
+
 def set_units_halos(h, scale, param):
     """ set_units_halos takes a array of type SUBHALO_DTYPE and returns a copy
     with units that have been converted from Rockstar's default units to
-    symlib's default units, physical kpc, and physical km/s centered on the 
-    host halo.
+    symlib's default units, Msun, physical kpc centered on the host halo,
+    and physical km/s centered on the host halo.
     """
     h = np.copy(h)    
     for dim in range(3):
