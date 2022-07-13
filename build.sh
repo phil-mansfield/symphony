@@ -1,3 +1,3 @@
-rm -r build/*
+rm -r build/* dist/*
 python3 setup.py sdist bdist_wheel
-twine upload -r testpypi dist/*
+twine upload --repository symlib dist/*

@@ -1,25 +1,14 @@
 Getting Started
 ===============
 
-Most users will be interested in ``symlib``, the Python library for reading and
-analyzing Symphony's data. This page will walk you through using this library
-for the first time. It will be enough for you to do real and meaningful
-analysis, but will not try to be a complete reference.
-
-If you are new to analysing simulations, you may want to consult
-the terminology page, which will explain some terms and jargon.
-
 Installation
 ------------
 
-``symlib`` can be installed with pip.
+``symlib`` can be installed with pip. Currently, only Python3 is supported.
 
 .. code-block:: console
 
-	$ pip install -i https://test.pypi.org/simple/ symlib
-
-.. note::
-   Currently hosted on the test PyPi server. Will move to the real one later.
+	$ pip install symlib
 
 Downloading Data
 ----------------
