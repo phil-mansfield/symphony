@@ -4,14 +4,14 @@ Symlib Documentation
 Units
 -----
 
-``symlib`` functions generally expect and return functions to be in the following units:
+``symlib`` functions generally expect variables to be in the following units:
 
 - Masses: :math:`M_\odot`
 - Distances/radii: physical :math:`{\rm kpc}`
 - Positions: physical :math:`{\rm kpc}`, centered on the host halo
 - Velocities: physical :math:`{\rm km/s}`, centered on the host halo
 
-Much of the data that ``symlib`` reads in is a processed form of data from another code, which may use different conventions. To convert to ``symlib``'s conventions, use the ``set_units_*`` family of functions: :func:`symlib.set_units_halos`, :func:`symlib.set_units_parameters`, :func:`symlib.set_branches`
+Much of the data that ``symlib`` reads in is a processed form of data from another code, which may use different conventions. To convert to ``symlib``'s conventions, use the ``set_units_*`` family of functions: :func:`symlib.set_units_halos`, :func:`symlib.set_units_parameters`, :func:`symlib.set_units_branches`
 			 
 Datatypes
 ---------
@@ -25,16 +25,16 @@ Datatypes
 
 .. data:: symlib.SUBHALO_DTYPE
 		   
-    Time-dependent subhalo information (e.g., position) from the Rockstar halo finder. You can get it for all the host's subhalos by calling :func:`symlib.read_subhalos` or :func:`symlib.set_units_halos`. Different instances of this type can use different units, so look at the function that created the array for this information.
+    Time-dependent subhalo information (e.g., position) from the Rockstar halo finder. You can get this information for all a host's subhalos by calling :func:`symlib.read_subhalos`.
 	
     **DATA FIELDS:**
 	
-    * ``"id"`` (*numpy.int32*) - A unique integer identifying each object. Changes from snapshot to snapshot.
-    * ``"mvir"``  (*numpy.float32*) - The mass of the halo, :math:`M_{\rm vir}`. When isolated, this an overdensity mass from the Bryan & Norman (1998) definition of the virial overdensity. When deep in a host halo, this is the bound mass. The transition between these two definitions is fuzzy.
+    * ``"id"`` (*numpy.int32*) - A unique integer identifying each subhalo. Changes from snapshot to snapshot.
+    * ``"mvir"``  (*numpy.float32*) - The mass of the halo, :math:`M_{\rm vir}`. When isolated, this an overdensity mass from the Bryan & Norman (1998) definition of the virial overdensity. When deep in a host halo, this is the bound mass. The transition between these two definitions is ill-defined.
     * ``"rvir"`` (*numpy.float32*) - The overdensity radius of the halo, :math:`R_{\rm vir}`.
     * ``"vmax"`` (*numpy.float32*) - The maximum value of the halo's circular rotation curve, :math:`V_{\rm max} = {\rm max}\left\{V_{\rm rot}(r) = \sqrt{G M(<r)/r}\right\}`.
     * ``"rvmax"`` (*numpy.float32*) - The radius where this maximum rotation velocity occurs.
-    * ``"cvir"`` (*numpy.float32*) - An estimate of how centrally concentrated the subhalo's mass is, :math:`c_{\rm vir}=R_s/R_{\rm vir}`., :math:`R_s` is the transition radius between shallow inner density slopes (:math:`d \ln(\rho)/d \ln(r)` > -2) and steep outer slopes (i.e. :math:`d \ln(\rho)/d \ln(r)` < -2). *cvir* is estimated  by measuring :math:`V_{\rm max}/V_{\rm rot}(R_{\rm vir})`, assuming an NFW profile, and solving for :math:`R_s`. Because of this, the *value* of :math:`c_{\rm vir}` is only meaningful for halos where the assumption of NFW profiles is reasonable (non-subhalos). However, the *relative ordering* of concentrations will be correct regardless.
+    * ``"cvir"`` (*numpy.float32*) - An estimate of how centrally concentrated the subhalo's mass is, :math:`c_{\rm vir}=R_s/R_{\rm vir}`. :math:`R_s` is the transition radius between shallow inner density slopes (:math:`d \ln(\rho)/d \ln(r)` > -2) and steep outer slopes (i.e. :math:`d \ln(\rho)/d \ln(r)` < -2). :math:`c_{\rm vir}` is estimated  by measuring :math:`V_{\rm max}/V_{\rm rot}(R_{\rm vir})`, assuming an NFW profile, and solving for :math:`R_s`. Because of this, the *value* of :math:`c_{\rm vir}` is only meaningful for halos where the assumption of NFW profiles is reasonable (non-subhalos). However, the *relative ordering* of concentrations will be correct regardless.
     * ``"x"`` (*numpy.float32*) - :math:`x`, the position of the subhalo.
     * ``"v"`` (*numpy.float32*) - :math:`v`, The velocity of the subhalo.
     * ``"ok"`` (*bool*) - True if the subhalo exists during the specified snapshot and False otherwise.
@@ -53,7 +53,7 @@ Datatypes
 
 .. data:: symlib.BRANCH_DTYPE
 
-    Information about the main branch of a subhalo in the full consistent-trees merger tree. You probably will not need this unless you walk through the full consistent-trees merger tree, which is an advanced action. You can get it by calling :func:`symlib.read_branches`.
+    Information about the main branch of a subhalo in the full consistent-trees merger tree. You probably will not need this unless you walk through the full merger tree, which is an advanced action. You can get it by calling :func:`symlib.read_branches`.
 	
 	**DATA FIELDS**
 	
@@ -61,8 +61,8 @@ Datatypes
     * ``"end"`` (*numpy.int32*) - The index after the first halo in the branch. This means that the full main branch can be accessed by using index slicing: ``branch = tree[start: end]``.
     * ``"is_real"`` (*bool*) - False if the first tracked halo of this branch is a subhalo and True otherwise. Branches where this is False are virtually always tree-linking errors.
     * ``"is_disappear"`` (*bool*) True if the last tracked halo of this branch disrupts without merging with any other halos and True otherwise. Branches where this is True are virtually always barely-resolved object fluctuating in-and-out of existence near the resolution barrier.
-    * ``"is_main_sub"`` (*bool*) - True if any halo in the branch was every a subhalo of the main host.
-    * ``"preprocess"`` (*numpy.in32*) - A non-negative integer if the branch was ever the subhalo of a larger halo prior to becoming a subhalo of the host and -1 otherwise. If the first case is true, this variable is the index of the largest branch that this branch was a subhalo of. There's some non-trivial bookkeeping required to deal with tree errors caused by major mergers, which will be described in a future paper. For now, suffice to say that it is a generalized version of Section 2.3.1 of Mansfiled & Kravtsov (2020).
+    * ``"is_main_sub"`` (*bool*) - True if any halo in the branch was ever a subhalo of the main host.
+    * ``"preprocess"`` (*numpy.int32*) - A non-negative integer if the branch was ever the subhalo of a larger halo prior to becoming a subhalo of the host and -1 otherwise. If the first case is true, this variable is the index of the largest branch that this branch was a subhalo of. There's some non-trivial bookkeeping required to deal with tree errors caused by major mergers, which will be described in a future paper. For now, suffice to say that it is a generalized version of Section 2.3.1 of Mansfiled & Kravtsov (2020).
     * ``"fist_infall_snap"`` (*numpy.int32*) - If ``"preprocess"`` is non-negative, the snapshot when this branch first fell into a halo of the branch pointed to by ``"preprocess"``.
 
 		  
@@ -78,7 +78,7 @@ General Functions
 
 .. function:: symlib.get_host_directory(base_dir, suite_name, halo_name)
 
-    Returns the name of a simulation directory given the base directory that all the suites are stored in, the suite, and the halo name. The halo name can either be the literal halo name (e.g., ``"Halo023"``) or a number in the range [0, *N_hosts*). This can be combined wiht :func:`symlib.n_hosts` to loop over all the hosts in the suite.
+    Returns the name of a simulation directory given the base directory that all the suites are stored in, the suite, and the halo name. The halo name can either be the literal halo name (e.g., ``"Halo023"``) or a number in the range :math:`[0,\,N_{\rm host})`. This can be combined with :func:`symlib.n_hosts` to loop over all the hosts in the suite.
 
     :param str base_dir: Base directory containing all suites.
     :param str suite_name: Name of the simulation suite.
