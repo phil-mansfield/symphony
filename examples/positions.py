@@ -13,13 +13,8 @@ except:
     pass
 
 def main():
-    # Get directory location.
-    base_dir = "/oak/stanford/orgs/kipac/users/phil1/simulations/ZoomIns/"
-    suite = "SymphonyMilkyWay"
-    halo_num = 0
-    sim_dir = symlib.get_host_directory(base_dir, suite, halo_num)
-
     # Read in simulation data and convert units.
+    sim_dir = "/oak/stanford/orgs/kipac/users/phil1/simulations/ZoomIns/SymphonyMilkyWay/Halo023"
     param = symlib.simulation_parameters(sim_dir)
     scale = symlib.scale_factors(sim_dir)
     h, hist = symlib.read_subhalos(param, sim_dir)
@@ -37,6 +32,7 @@ def main():
         if sub["ok"]:
             symlib.plot_circle(ax, sub["x"][0], sub["x"][1],
                                sub["rvir"], c="tab:blue", lw=1.5)
+
         
     # Some plotting code to make things look nice.
     ax.set_xlim(-1.75*host["rvir"], 1.75*host["rvir"])

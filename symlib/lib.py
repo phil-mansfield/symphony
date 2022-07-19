@@ -5,6 +5,7 @@ import os
 import os.path as path
 import scipy.interpolate as interpolate
 import numpy.random as random
+import glob
 
 """ SUBHALO_DTYPE is the numpy datatype used by the main return value of
 read_subhalos(). Positions and distances are in comvoing Mpc/h, velocities are
@@ -38,7 +39,8 @@ HISTORY_DTYPE = [("mpeak", "f4"), ("vpeak", "f4"), ("merger_snap", "i4"),
                  ("merger_ratio", "f4"),
                  ("start", "i4"), ("end", "i4"), ("is_real", "?"),
                  ("is_disappear", "?"), ("is_main_sub", "?"),
-                 ("preprocess", "i4"), ("first_infall_snap", "i4")]
+                 ("preprocess", "i4"), ("first_infall_snap", "i4"),
+                 ("branch_idx", "i4")]
 
 
 """ BRANCH_DTYPE is a numpy datatype representing the main branch of of halo's
@@ -58,6 +60,7 @@ merger tree. This forms a component of HISTORY_DTYPE, which
    it entered Rvir of the main halo, this is -1. Includes splashback subhaloes
    and doesn't include collisions between subhaloes once they've already been
    accreted.
+ - branch_idx: the index of this halo in the full merger tree.
 """
 BRANCH_DTYPE = [("start", "i4"), ("end", "i4"), ("is_real", "?"),
                  ("is_disappear", "?"), ("is_main_sub", "?"),
@@ -89,29 +92,29 @@ consistent-trees file. These are the variable names you need to pass to
 read_tree().
 """
 TREE_COL_NAMES = {
-    "DFID": 28,
-    "ID": 1,
-    "DescID": 3,
-    "UPID": 6,
-    "Phantom": 8,
-    "Snap": 31,
-    "NextProg": 32,
-    "Mvir": 10,
-    "Rs": 12,
-    "Vmax": 16,
-    "M200b": 39,
-    "M200c": 40,
-    "M500c": 41,
-    "Xoff": 43,
-    "SpinBullock": 45,
-    "BToA": 46,
-    "CToA": 47,
-    "VirialRatio": 56,
-    "RVmax": 60,
-    "X": 17,
-    "V": 20,
-    "J": 23,
-    "A": 48,
+    "dfid": 28,
+    "id": 1,
+    "desc_idx": 3,
+    "upid": 6,
+    "phantom": 8,
+    "snap": 31,
+    "next_co_prog": 32,
+    "mvir": 10,
+    "rs": 12,
+    "vmax": 16,
+    "m200b": 39,
+    "m200c": 40,
+    "m500c": 41,
+    "xoff": 43,
+    "spin_bullock": 45,
+    "b_to_a": 46,
+    "c_to_a": 47,
+    "t_to_u": 56,
+    "r_vmax": 60,
+    "x": 17,
+    "v": 20,
+    "j": 23,
+    "a": 48,
 }
 _chinchilla_cosmology = { 'flat': True, 'H0': 70.0, 'Om0': 0.286,
                           'Ob0': 0.049, 'sigma8': 0.82, 'ns': 0.95 }
@@ -179,9 +182,10 @@ def simulation_parameters(suite_name):
         return parameter_table[suite_name]
     else:
         sim_dir = suite_name
-        suite_name = sim_dir_to_suite_name(dim_dir)
+        suite_name = halo_dir_to_suite_name(sim_dir)
         if suite_name not in parameter_table:
             raise ValueError("'%s' is neither a recognized suite name nor a simulation direoctry containing a recognized suite name. Recognized suite names are: " + str(suite_names()))
+        return parameter_table[suite_name]
 
 def colossus_parameters(param):
     """ colossus_parameters converts a parameter dictionary into a colossus-
@@ -385,6 +389,7 @@ def get_subhalo_histories(s, idx, dir_name):
     # TODO: point into subhalos, not branches
     h["preprocess"] = b[idx]["preprocess"]
     h["first_infall_snap"] = b[idx]["first_infall_snap"]
+    h["branch_idx"] = idx
 
     central = s[0]
 
@@ -461,10 +466,9 @@ def read_tree(dir_name, var_names):
     TREE_COL_NAMES). A list of arrays is returned. Use the branches and merger
     files to identify main branches and important haloes, respectively.
     """
-    paths = [path.join(dir_name, fname) for fname in os.listdir(dir_name)]
-    paths = sorted(paths)
-    tree_files = [p for p in paths if path.isfile(p) and
-                  len(p) > 6 and p[-6:] == "df.bin"]
+    tree_files = sorted(glob.glob(path.join(dir_name, "halos", "tree_*.dat")))
+    tree_files = [fname for fname in tree_files if
+                  path.basename(fname) != "tree_header.dat"]
 
     out = []
     for i in range(len(var_names)):
@@ -547,7 +551,40 @@ def tree_var_offset(hd, var_name):
     hd_size = 4*4 + 4*(hd.n_int + hd.n_float + hd.n_vec)
     return hd.n*4*(i + 2*max(0, i - hd.n_int - hd.n_float)) + hd_size    
 
+def merger_lookup_table(b, dfid):
+    """ merger_lookup_table creates a look-up table for finding the branches of
+    mergers. It's used alongsize find_merger_branch and
+    find_all_merger_branches.
 
+    b is an array of branches (BRANCH_DTYPE) and dfid is an array of
+    depth-first IDs with merger tree ordering (can be read by calling 
+    read_tree on "dfid")
+    """
+    return dfid[b["start"]]
+
+def find_merger_branch(lookup_table, co_prog):
+    """ find_merger_branch returns the index of the branch corresponding to
+    a given co-progenitor ID.
+    """
+    return np.searchsorted(lookup_table, co_prog)
+
+def find_all_merger_branches(b, lookup_table, co_prog, i):
+    """ find_all_merger_branches returns an array with the indexes of all the
+    branches that merge with a halo in the given snapshot (i.e. this is the
+    last resolved snapshot of those branches). b is an array of branches,
+    (BRANCH_DTYPE), lookup_table is a table returned by merger_lookup_table,
+    co_prog is an array of co-progenitor IDs (can be read by calling read_tree
+    on "next_co_prog"), and i is the index of the halo whose mergers you're
+    trying to find within the merger tree.
+    """
+    branches = []
+    while co_prog[i] != -1:
+        bi = find_merger_branch(lookup_table, co_prog[i])
+        branches.append(bi)
+        i = b["start"][bi]
+
+    return np.array(branches, dtype=int)
+        
 def read_particle_header(base_dir):
     n_snap = struct.unpack("i", f.read(4))[0]
     n_merger = struct.unpack("i", f.read(4))[0]
