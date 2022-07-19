@@ -4,221 +4,264 @@ Getting Started
 Installation
 ------------
 
-``symlib`` can be installed with pip. Currently, only Python3 is supported.
+``symlib`` can be installed with pip. It depends on the standard scientific python libraries, `numpy <https://numpy.org/install/>`__, `scipy <https://scipy.org/install/>`__, and `matplotlib <https://matplotlib.org/stable/users/installing/index.html>`__. It also depends on the cosmology library `colossus <https://bdiemer.bitbucket.io/colossus/installation.html>`__. You can find installation instructions for all four libraries on their respective web pages.
 
 .. code-block:: console
 
 	$ pip install symlib
 
+Currently, only Python3 is supported.
+	
 Downloading Data
 ----------------
 
-Symphony data is organized by halo. You can download an example halo,
-``HaloExample.tar.gz`` for the purposes of this tutorial from my
-`Google Drive <https://drive.google.com/file/d/1pnSqMtXDT_cE8lD3tMsA1NIxZEfQNS2z/view?usp=sharing>`_. Expand this file into a directory with the following
-command. You can delete the tar file afterwards.
+Symphony data is organized into several suites of halos. Each suite corresponds to a different halo mass range. The entire dataset is stored in a single base directory. Each suite has is its own sub-directory within the base, and each halo has a subdirectory within its suite. 
 
-.. code-block:: console
+You can download data from
 
-	$ tar xzf HaloExample.tar.gz 
-
-(This halo is a portion of Halo169 from the MWest suite.)
-	
 .. note::
-   Obviously we'll do something different later. We'll use a non-MWest halo and
-   won't use my Drive account for the example file.
-   
-Working With Subhaloes
-----------------------
+   Finish writing once we know where data can be downloaded from.
+
+Currently only halo data is available.
+
+Reading in Subhalo Data
+-----------------------
 
 The first step to working with simulation data is loading the simulation
 parameters. This is a dictionary containing cosmological and numerical
-information. These can be looked up in ``parameter_table`` by supplying the
-name of the simulation suite.
+information. These can be looked up with :func:`symlib.simulation_parameters` by giving the directory of the halo as an argument.
 
 .. code-block:: python
 
 	import symlib
 
-	params = symlib.parameter_table["ExampleSuite"]
+	sim_dir = "path/to/ExampleHalo"
+	params = symlib.simulation_parameters(sim_dir)
 	print(params)
 
 .. code-block:: python
 				
-	>>> {'flat': True, 'H0': 70.0, 'Om0': 0.286, 'Ob0': 0.049, 'sigma8': 0.82, 'ns': 0.95, 'eps': 0.17, 'mp': 281981.0, 'h100': 0.7}
+    {'flat': True, 'H0': 70.0, 'Om0': 0.286, 'Ob0': 0.049,
+     'sigma8': 0.82, 'ns': 0.95, 'eps': 0.17, 'mp': 281981.0,
+     'h100': 0.7}
 
-The first six values are `colossus <https://bdiemer.bitbucket.io/colossus/>`_-compatible cosmological parameters, and the last three are the Plummer equivalent force softening scale in comoving kpc/h, the dark matter particle mass in Msun/h, and H0/(100 km/s/Mpc).
+The first six values are `colossus <https://bdiemer.bitbucket.io/colossus/>`__-compatible cosmological parameters, the next two are numerical parameters (``"eps"`` is the radius each particle in comoving :math:`h^{-1}{\rm kpc}`, and ``mp`` is the mass of each particle in :math:`h^{-1}M_\odot`). The last value is :math:`h_{100} = H_0/(100\ {\rm km/s})`, which is often convenient to have.
 
-Read in the largest subhalos of the example host halo with the
-``read_subhaloes(parameters, directory)`` function.
+Next, we read in the subhaloes with the function :func:`symlib.read_subhalos`
 
 .. code-block::
 
-   subhalos, histories = symlib.read_subhalos(
+   halos, histories = symlib.read_subhalos(
        params, "path/to/HaloExample")
 
-There are two return return values, ``subhalos`` and ``histories``. In your
-code, you'll probably want to abbreviate these as ``s`` and ``h``.
+There are two return return values, ``halos`` and ``histories``. In your
+code, you'll probably want to abbreviate these as ``h`` and ``hist``, or something similar. The library code does.
 
-``subhalos`` is a 2D array where the first index accesses different halos and
-second different times. It contains time-dependent information, like mass and
-position. ``subhalos[0,235]`` is the central subhalo at snapshot
-235, the last snapshot in the simulation. ``subhalos[3, 100]`` is the third
-largest subhalo, surviving or disrupted, at snapshot 100. Subhalos are ordered
-according to the largest mass they ever had, Mpeak. ``histories`` contains
-time-independent information on each halo, like Mpeak and and the snapshot
-when the subhalo first falls into the central.
+``halos`` is a 2D array that represents how the host halo and all its subhaloes evolve over time. The first index accesses different halos and
+second different times. It contains information like mass and
+position. ``halos[0,235]`` is the host halo at snapshot
+235, the last snapshot in the simulation. ``halos[3, 100]`` is the third
+largest subhalo, including disrupted subhalos, at snapshot 100. Subhalos are ordered according to the largest mass they ever had, :math:`M_{\rm peak}`. Halos stay at the same index across their lifetimes.
 
-``subhalos`` is a numpy structured array has type ``SUBHALO_DTYPE`` and has
-various fields that can be accessed by their names:
+``histories`` contains summary information about a halo's full history, including :math:`M_{\rm peak}` and when that the subhalo fell into the host. Its length and ordering are the same as the first index of ``halos``, meaning that ``histories[0]`` is the 
 
-* ``"x"`` - Position in comoving Mpc/h
-* ``"v"`` - Velocity in km/s
-* ``"mvir"`` - Mass in Msun/h
-* ``"rvir"`` - Radius in comoving Mpc/h
-* ``"ok"`` - ``True`` if the halo exists at the given snapshot, ``False``
-  otherwise.
+``halos`` is a numpy structured array has type :data:`symlib.SUBHALO_DTYPE`, and ``histories`` is a structured array with type :data:`symlib.HISTORY_DTYPE`. Structured arrays are arrays that have different fields which can be accessed with strings. For example, ``halos[3,100]["mvir"]`` and ``halos["mvir"][3,100]`` both return the mass, :math:`M_{\rm vir}` of the third most massive halo. The non-string indices obey normal numpy indexing rules, so you can use slicing, boolean indexing, axis removal and whatever other tricks you use with normal numpy arrays.
 
-``subhalos`` contains other value, too. These are described in the full symlib
-documentation.
+The full set of fields in ``halos`` is described in the :data:`symlib.SUBHALO_DTYPE` documentation. In this tutorial we will only use:
 
+* ``"x"`` - Position
+* ``"v"`` - Velocity
+* ``"mvir"`` - Mass
+* ``"rvir"`` - Radius
+* ``"ok"`` - ``True`` if the halo exists at the given snapshot, ``False`` otherwise.
+
+Fields in ``histories`` will be explained as needed, but can be found in full in the :data:`symlib.HISTORY_DTYPE` documentation.
+
+Lastly, before we do any science, we need to handle units. The data used by ``symlib`` comes from a variety of sources, and needs to be converted into a standard set of units: physical kpc centered on the host halo for postions, km/s for velocities and :math:`M_\odot` for masses. This is done with the function :func:`symlib.set_units_halos` and :func:`symlib.set_units_histories`. This leads to a block of standard "boiler plate" code which will be in almost every ``symlib`` file.
+   
+.. code-block:: python
+
+    sim_dir = "path/to/ExampleHalo"
+
+    param = symlib.simulation_parameters(sim_dir)
+    scale = symlib.scale_factors(sim_dir)
+
+    halos, histories = symlib.read_subhalos(param, sim_dir)
+    h = symlib.set_units_halos(h, scale, param)
+    hist = symlib.set_units_histories(hist, scale, param)
+
+The last new function here, :func:`symlib.scale_factors`, returns the scale factor, :math:`a(z)`, for each snapshot.
+    
+.. note::
+   I hate having this much boiler plate code. Open to suggestions on making
+   this better. Maybe I should make the unit conversions an optional argument that defaults to being true? (issue is that it's impossible to invert the conversion because it inovles centering, so you can't get the old units back). If I did it like that, the boiler plate code becomes
+
+   ``sim_dir = path/to/ExampleHalo``
+   
+   ``param = symlib.simulation_parameters(sim_dir)``
+   
+   ``h, hist = symlib.read_subhalos(param, sim_dir)``
+
+   which is much less painful. Im going to write the rest of the tutotial as if this is true, but would like some feedback on it before changing things. Keep that in mind if you're following along with the examples.
+
+Example Subhalo Analysis: Subhalo Postions
+------------------------------------------
+   
 Our first step with analyzing any simulation data should be to look at it
 qualitatively. We'll start by looking at the positions of the major subhalos
-around our central halo at the last snapshot of the simulation (z=0).
+around our central halo at the last snapshot of the simulation. We will plot the central halo in one color and the subhalos in another. We'll also need to skip all the subhalos that were destroyed before the end of the simulation.
+
+We'll also use a utility function, :func:`symlib.plot_circle` to make the
+circles.
 
 .. code-block:: python
 
-	import matplotlib.pyplot as plt
-				
-	for i in range(len(subhalos)):
-		subhalo = subhalos[i]
-		if not subhalo[-1]["ok"]: continue
+    import symlib
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots()
+    
+    sim_dir = "path/to/ExampleHalo"
+    param = symlib.simulation_parameters(sim_dir)
+    halos, histories = symlib.read_subhalos(param, sim_dir)
+    
+    host = halos[0,-1] # First halo, last snapshot.
+    symlib.plot_circle(ax, host["x"][0], host["x"][1],
+                       host["rvir"], c="tab:red")
+		       
+    for i in range(1, len(h)):
+        sub = halos[i,-1] # i-th halo, last snapshot.
+        if not sub["ok"]: continue
+        symlib.plot_circle(
+            ax, sub["x"][0], sub["x"][1],
+            sub["rvir"], c="tab:blue"
+        )
+    
+With a little bit of additional pyplot work, this gives us the following. The full script used to create this image, including the omitted pyplot code is shown in `examples/positions.py <https://github.com/phil-mansfield/symphony/blob/main/examples/positions.py>`__.
 
-		if i == 0:
-			# Color the central halo differently.
-			color = "tab:red"
-		else:
-			color = "tab:blue"
+.. image:: positions.png
+   :width: 500
 
-		x = subhalo["x"][-1,0]
-		y = subhalo["x"][-1,1]
-		r = subhalo["rvir"][-1]
-		symlib.plot_circle(x, y, r, c=color, lw=3)
+From this, we can see that our host halo is surrounded by a swarm of subhalos. Bigger subhalos are rarer and generally closer to the center of the host. Some subhalos ar outside the radius of the host. These "splashback subhalos" had been inside the host in the past but have temporarily orbited outside of it.They  are included in the symlink catalogs by default.
+	   
+Let's review the concepts that went into creating this image:
 
-	plt.xlim(-0.3, +0.3)
-	plt.ylim(-0.3, +0.3)
-	plt.xlabel(r"$X\ (h^{-1}{\rm Mpc})$")
-	plt.ylabel(r"$Y\ (h^{-1}{\rm Mpc})$")
-
+* We read in simulation parameters and halo information with :func:`symlib.simulation_parameters` and :func:`symlib.read_subhalos`.
+* We got the host halo at the last snapshot with ``halos[0,-1]`` and the subhalos with ``halos[i,-1]``.
+* We got a vector representing the postion of the host by accessing ``host["x"]`` and the radius with ``host["rvir"]`` and were able to get similar quantities for subhalos.
+* We needed to check ``sub["ok"]`` to make sure that the halo still existed at the snapshot we were interested in.
 
 Here, the central halo at index 0 is red and all is subhalos are blue.
 We used a built-in utility function called ``plot_circle`` and
 needed to skip over some subhalos which disrupted before the final snapshot.
 
-.. note::
-   Currently only the ten largest subhalos are stored in this file. That will be
-   changed later.
+**Practice**
 
-We can also plot the growth of the largest subhalos over time. We will track
-time through the scale factor, a(z), which we can get from the library
-function ``scale_factors``. We'll check against the maximum mass value tabulated
-in ``histories``, which are labeled at ``"mpeak"``.
+In the ``histories`` array, there is a field called ``merger_snap`` that gives the snapshot when a subhalo first fell into the host. Try coloring subhalos that fell in from the left side of the halo (:math:`x_{\rm infall} < 0`) differently from ones that fell in from the right. Do you notice anything different about where the two groups end up?
+
+Example Analysis: Mass Growth
+-----------------------------
+
+Now, we'll try analysis that's a bit more quantitative. We'll look at the growth of subhalos over time. To do this, we'll need to get the scale factors, :math:`a(z)`, for each snapshot with :func:`symlib.scale_factors`. We'll also use one of the fields in ``histories``, ``"merger_snap"`` which is the snapshot when the subhalo first fell into the host. We'll use it to plot times before infall as dashed lines and times afterwards as solid lines.
 
 .. code-block:: python
-
-	colors = ["k", "tab:red",
-	          "tab:orange", "tab:green",
-			  "tab:blue", "tab:purple"]
-
-	scales = symlib.scale_factors()
-			  
-	for i in range(6):
-		subhalo = subhalos[i]
-
-		# Plot growth history
-		ok = subhalo["ok"]
-		plt.plot(scales[ok], subhalo["mvir"][ok],
-		    color=colors[i], lw=3)
-
-		# Plot M_peak.
-		mpeak = histories[i]["mpeak"]
-		plt.plot([1/50, 1], [mpeak, mpeak],
-		    "--", lw=1.5, color=colors[i])
 		
-	plt.xscale("log")
-	plt.yscale("log")
-	plt.xlabel(r"$a(z)$")
-	plt.ylabel(r"$M_{\rm vir}$")
+    sim_dir = "path/to/ExampleHalo"
 
-Here the central halo is in black and its subhalos are in color. We can see that
-the maximum masses tracked by the ``histories`` look correct and that a number
-of significant subhalos disrupted within our halo long ago. The red curve is an
-analog for our Milky Way's LMC, and the orange curve is an analog for the
-Gaia-Enceladus event.
+    param = symlib.simulation_parameters(sim_dir)
+    scale = symlib.scale_factors(sim_dir)
+    h, hist = symlib.read_subhalos(param, sim_dir)
 
-.. note::
-  Will put other insights here.
+    snaps = np.arange(len(h[0])) # Snapshots #s, for making cuts.
 
+    fig, ax = plt.subplots()
+    colors = ["k", "tab:red", "tab:orange", "tab:green",
+              "tab:blue", "tab:purple"]
+    for i in range(6):
+        ok = h[i,:]["ok"] # Snapshots where the halo exists
+        if i == 0:
+            # Plot the host halo
+            plt.plot(scale[ok], h[i,ok]["mvir"], c=colors[i])
+        else:
+            # Plot the full history of the subhalo as a dahsed line
+            plt.plot(scale[ok], h[i,ok]["mvir"], "--", c=colors[i])
+            # Plot its history inside the host halo as a solid line
+            is_sub = (snaps >= hist["merger_snap"][i]) & ok
+            plt.plot(scale[is_sub], h[i,is_sub]["mvir"], c=colors[i])
 
-Working With Particles
-----------------------
+With a little bit of additional pyplot work, this gives us the following. The full script used to create this image, including the omitted pyplot code is shown in `examples/mah.py <https://github.com/phil-mansfield/symphony/blob/main/examples/mah.py>`__.
 
-Particles are split up by subhalo. A subhalo owns all the particles that were
-part of it before it became a subhalo, except the ones that belong to its own
-subhalos or that already belonged to a bigger halo.
+.. image:: mah.png
+   :width: 500
 
-.. note::
-   Need to put in an option that allows people to ignore that first constraint.
+Here we see that our subhaloes spend most of their time in the simulation building up mass prior to falling in. The earlier-infalling halos shown here don't last for very long: they disrupt in a few snapshots! Others, like the green subhalo last much longer.
 
-Let's analyze the particles of a subhalo at the time that it first falls into
-out central halo. We'll focus on subhalo 4 and use the function
-``read_particles``.
+Let's review the concepts that went into creating this image:
+
+* We needed to read in scale factors with :func:`symlib.scale_factors` to figure out when each snapshot occured.
+* We were able to figure out the snapshot when a subhalo fell into the host with ``histories``'s ``"merger_snap"`` field.
+* The indices of structured arrays work just like normal numpy arrays, so we were able to select parts of them with the boolean arrays ``ok`` and ``is_sub``.
+
+**Practice:**
+
+You might have noticed that subhaloes start losing before they actually start falling into the host (look at the green curve in particular). Using logic similar to the above plot, try figuring out how far away subhalos are on average from a host when they reach their peak mass.
+
+Example Analysis: The Subhalo Mass Functions
+--------------------------------------------
+
+Lastly, let's try some more rigorous statistical analysis. We're going to measure the subhalo mass function of the entire Milky Way-mass suite. We'll look at :math:`N(>M_{\rm peak})`, the average number of subhalos per host halo whose maximum mass was larger than :math:`M_{\rm peak}`. To do this, we'll need to access the ``"mpeak"`` field of the ``histories`` array.
+
+More importantly, to get good statistics we'll need to loop over all the host halos in the Milky Way-mass suite, ``SymphonyMilkyWay``. One way to do this would be to manually store the names of all the halo directories, but instead we'll use library functions to do it. First, we'll count the number of halos in the Milky Way-mass suite with :func:`symlib.n_hosts`. Then, we can get directory names :func:`symlib.get_host_directory`, which takes the base directory, suite name, and the index of the halo you want to read. Together this lets you loop over halo directories.
+
+Constructing a mass function has a bit more code overhead than the earlier examples: the important part is how the loop over files works.
 
 .. code-block:: python
 
-	merger_snap = histories[4]["merger_snap"]
-	x, v = symlib.read_particles(
-	    "path/to/HaloExample", 4, merger_snap, ["x", "v"])
+    base_dir = "path/to/base/dir"
+    suite_name = "SymphonyMilkyWay"
+    param = symlib.simulation_parameters(suite_name)
+    
+    # Mass function bins and empty histogram.
+    log_m_min, log_m_max, n_bin = 8, 12, 200
+    bins = np.logspace(log_m_min), np.logspace(log_m_max)
+    N_vir = np.zeros(n_bin)
 
-The function requires that you tell it the subhalo you want, the snapshot you
-want, and the names of the variables you're reading. We'll make two plots: the
-first will be the positions of the subhalo's particles around it and the second
-will be a "phase diagram" showing their radii and radial velocities. We'll use
-the function ``clean_particles``, which handles transforming everything out
-of the simulation's code units, transforming into the inertial frame of the
-subhalo, and removing particles that don't belong to the subhalo yet.
+    n_hosts = symlib.n_hosts(suite_name)
+    for i_host in range(n_hosts):
+        sim_dir = symlib.get_host_directory(base_dir, suite_name, i_host)
+	h, hist = symlib.read_subhalos(param, sim_dir)
 
-.. code-block:: python
+	# Only count objects within R_vir
+        ok = h["ok"][:,-1] & (r < host_rvir)
+        n_vir, _ = np.histogram(hist["mpeak"][ok][1:], bins=bins)
 
-	import matplotlib.colors as mpl_colors
-				
-	fig, ax = plt.subplots(2, figsize=(16, 8))
+	# Add to the cumulative histogram.
+	N_vir += np.cumsum(n_vir[::-1])[::-1]/n_hosts
 
-	scale = scales[merger_snap]
-	x, v, idx = symlib.clean_particles(
-	    params, x, v, subhalos[4], scale)
+    plt.plot(bins[:-1], N_vir, "k")
 
-	r_max = 100 # kpc
-	v_max = 100 # km/s
+With a little bit of additional pyplot work, this gives us the following. The full script used to create this image, including the omitted pyplot code is shown in `examples/mass_func.py <https://github.com/phil-mansfield/symphony/blob/main/examples/mass_func.py>`__.
 
-	r = np.sqrt(np.sum(x**2, axis=1))
-	r_hat = x / r
-	vr = np.dot(r_hat, v)
-	
-	ax[0].hist2d(
-		x[:,0], x[:,1], bins=100,
-		range=((-r_max, r_max), (-r_max, r_max)),
-		norm=mpl_colors.LogNorm(1, 1000)
-	)
-
-	ax[1].hist2d(
-		r, v, bins=100,
-		range=((-r_max, r_max), (-r_max, r_max)),
-		norm=mpl_colors.LogNorm(1, 1000)
-	)
-
-Put text discussing this here. (``"merger_snap"``, ``idx``, what's in the plots,
-etc.)
+.. image:: mass_func.png
+   :width: 500
 
 .. note::
-   Note that the units changed here. Need to figure out how to handle this...
+   Need to regenerate this plot so it only has one curve.
+
+Here, we can see the classic form of the subhalo mass function. At smaller subhalo masses, decreasing the subhalo mass by a increses the number of subhalos by roughly the same multiplicative factor, and there's a cutoff as the subhalos get close to the host mass.
+   
+Let's review the concepts that went into creating this image: 
+
+* We needed to use :func:`symlib.n_hosts` to find the number of host halos in our target suite
+* We needed to use :func:`symlib.get_host_directory` to find the names of the directories in the host halo.
+* We needed the ``"mpeak"`` field of ``histories``
+* We needed to do a little bit of array magic with numpy arrays, although this could also have been done in a less concise way.
+
+**Practice:**
+
+Try adding a curve for the mass function of surviving "splashback" subhalos to this plot.
+  
+Full Merger Trees
+-----------------
+
+.. note::
+   TODO

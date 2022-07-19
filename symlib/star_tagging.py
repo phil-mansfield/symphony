@@ -1,7 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import palette
-from palette import pc
 import numpy.random as random
 import scipy.stats as stats
 import abc
