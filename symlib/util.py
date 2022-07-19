@@ -14,7 +14,7 @@ def plot_circle(ax, x0, y0, r, **kwargs):
 
 def set_units_x(x, h, scale, param):
     """ set_units_x converts an array of positions with Gadget-2 code units
-    to phical kpc, centered on the subhalo h (a single element of a
+    to physical kpc, centered on the subhalo h (a single element of a
     SUBHALO_DTYPE array).
     """
     dx = np.zeros(x.shape)
@@ -23,8 +23,8 @@ def set_units_x(x, h, scale, param):
     return dx
 
 def set_units_v(v, h, scale, param):
-    """ set_units_v converts an array ofvelocities with Gadget-2 code units
-    to phicalkm/s, centered on the subhalo h (a single element of a
+    """ set_units_v converts an array of velocities with Gadget-2 code units
+    to physical km/s, centered on the subhalo h (a single element of a
     SUBHALO_DTYPE array).
     """
     v *= np.sqrt(scale)
@@ -33,7 +33,7 @@ def set_units_v(v, h, scale, param):
     return dv
 
 def set_units_parameters(scale, param):
-    """ set_units_parameters returns paritcle mass, mp, and Plummer-equivalent
+    """ set_units_parameters returns particle mass, mp, and Plummer-equivalent
     force-softening scales in units of Msun and physical kpc, respectively.
     scale is the current scale factor and param is the parameter dictionary
     returned by simulation_parameters.
@@ -140,9 +140,9 @@ def n_hosts(suite_name):
     return len(DEFAULT_HALO_NAMES[suite_name])
 
 def get_host_directory(base_dir, suite_name, halo_name):
-    """ get_host_directory returns the name of directory containing a given
+    """ get_host_directory returns the name of the directory containing a given
     halo. base_dir is the central directory, suite_name is the name of the
-    suite, and halo_name is either the name of the halo. halo_name can either be
+    suite, and halo_name is the name of the halo. halo_name can either be
     a string with the exact name of the halo or it can be an integer, indexing
     into the list of halo names in sorted order. When looping over all the
     halos in a suite, you'll want to use this second option.
