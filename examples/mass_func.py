@@ -41,14 +41,6 @@ def main():
         h = symlib.set_units_halos(h, scale, param)
         hist = symlib.set_units_histories(hist, scale, param)
 
-        # All halos that have ever fallen into the host, including destroyed
-        # ones. Don't include the host itself.
-        n_infall, _ = np.histogram(hist["mpeak"][1:], bins=bins)
-
-        # All surviving subhaloes that have ever fallen into the host.
-        ok = h["ok"][:,-1]
-        n_splashback, _ = np.histogram(hist["mpeak"][ok][1:], bins=bins)
-
         # All suriving subhalos which are currently within Rvir of the host.
         r = np.sqrt(np.sum(h["x"][:,-1]**2, axis=1)) # z=0 distance to the host
         host_rvir = h["rvir"][0,-1]
@@ -56,24 +48,16 @@ def main():
         n_vir, _ = np.histogram(hist["mpeak"][ok][1:], bins=bins)
         
         # Add to the cumulative histograms
-        N_infall += np.cumsum(n_infall[::-1])[::-1]/n_hosts
-        N_splashback += np.cumsum(n_splashback[::-1])[::-1]/n_hosts
         N_vir += np.cumsum(n_vir[::-1])[::-1]/n_hosts
 
     # plot
     left_bins = bins[:-1]
-    plt.plot(left_bins, N_infall,
-             c="tab:red", label=r"${\rm infall}$")
-    plt.plot(left_bins, N_splashback, 
-             c="tab:orange", label=r"${\rm splashback}$")
-    plt.plot(left_bins, N_vir,
-             c="tab:blue", label=r"${\rm virial}$")
+    plt.plot(left_bins, N_vir, c="tab:blue")
 
     # Some additional plotting code to make things look nice.
     ax.set_xlim(1e8, 1e12)
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.legend(loc="upper right", fontsize=18)
     ax.set_xlabel(r"$M_{\rm sub,peak}$")
     ax.set_ylabel(r"$N(>M_{\rm sub,peak})$")
     fig.savefig("plots/mass_func.png")
