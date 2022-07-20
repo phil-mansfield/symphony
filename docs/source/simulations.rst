@@ -6,7 +6,7 @@ About the Simulations
 
 ``Symphony`` is a compilation of 262 cosmological, cold dark matter-only zoom-in simulations spanning four decades of host halo mass, from 10^11 Msun to 10^15 Msun. In particular, ``Symphony`` includes zoom-in simulations of 39 Large Magellanic Cloud-mass host halos (10^11 Msun), 45 Milky Way-mass host halos (10^12 Msun), 49 strong lens analog Group host halos (10^13 Msun), 33 Low-mass Cluster host halos (5*10^14 Msun), and 96 Cluster host halos (10^15 Msun).
 
-Each simulation is run at high resolution relative to the corresponding host halo mass scale, such that hosts are typically composed of several million dark matter particles. ``Symphony``'s large statistical host halo sample, spanning several orders of magnitude in host halo mass, combined with its high resolution, enables measurements of host halo and subhalo population properties over a wide dynamic range. Furthermore, a unified set of analysis tools was used to process these simulations, and the documentation provided in this library allows simulation data to be accessed with ease.
+Each simulation is run at high resolution relative to the corresponding host halo mass scale, such that hosts are typically composed of several million dark matter particles. ``Symphony``'s large statistical host halo sample, spanning several orders of magnitude in host halo mass, combined with its high resolution, enables measurements of host halo and subhalo population properties over a wide dynamic range. Furthermore, a unified set of analysis tools was used to process these simulations, and the documentation provided in this library allows simulation data to be accessed with ease across the suites.
 	
 .. image:: zoomin_grid.png
    :width: 1000
