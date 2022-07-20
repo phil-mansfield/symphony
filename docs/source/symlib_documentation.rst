@@ -242,25 +242,6 @@ Halo Functions
    :param int np.array co_prog: A tree-ordered array of co-progenitor IDs (``"next_co_prog"`` in calls to :func:`read_tree`).
    :param int i: The index of the halo in the tree that you 
    :rtype: int np.array
-	   
-Particle Functions
-------------------
-
-.. note::
-   Coming with a future paper release
-				  
-Star Tracking
--------------
-
-.. note::
-   Coming with a future paper release
-
-
-Halo Core Tracking
-------------------
-
-.. note::
-   Coming with a future paper release
 
 
 Utility Functions
