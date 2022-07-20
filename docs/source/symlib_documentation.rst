@@ -49,8 +49,9 @@ Datatypes
     * ``"vpeak"`` (*numpy.float32*) - :math:`V_{\rm peak}`, the largest :math:`V_{\rm max}` that the subhalo ever had. This is useful in the same places that :math:`M_{\rm peak}` is.
     * ``"merger_snap"`` (*numpy.int32*) - The snapshot where the subhalo first fell within the virial radius of the host halo.
     * ``"merger_ratio"`` (*numpy.float32*) - The ratio of masses at this infall snapshot.
+    * ``"branch_idx"`` (*numpy.int32*) - The index of this halo's branch in the full merger tree. This allows you to switch back and forther between the two data structures as needed.
     * :data:`symlib.HISTORY_DTYPE` also contains all the fields in :func:`symlib.BRANCH_DTYPE`. Note, however, that subhalos where ``is_disappear`` is True or ``is_real`` is False have already been removed, so there is no need to make cuts on this.
-
+    
 .. data:: symlib.BRANCH_DTYPE
 
     Information about the main branch of a subhalo in the full consistent-trees merger tree. You probably will not need this unless you walk through the full merger tree, which is an advanced action. You can get it by calling :func:`symlib.read_branches`.
@@ -64,8 +65,37 @@ Datatypes
     * ``"is_main_sub"`` (*bool*) - True if any halo in the branch was ever a subhalo of the main host.
     * ``"preprocess"`` (*numpy.int32*) - A non-negative integer if the branch was ever the subhalo of a larger halo prior to becoming a subhalo of the host and -1 otherwise. If the first case is true, this variable is the index of the largest branch that this branch was a subhalo of. There's some non-trivial bookkeeping required to deal with tree errors caused by major mergers, which will be described in a future paper. For now, suffice to say that it is a generalized version of Section 2.3.1 of Mansfiled & Kravtsov (2020).
     * ``"fist_infall_snap"`` (*numpy.int32*) - If ``"preprocess"`` is non-negative, the snapshot when this branch first fell into a halo of the branch pointed to by ``"preprocess"``.
+      
+Merger Tree Variables
+---------------------
 
-		  
+The following variables can be read in from merger trees with the :func:`symlib.read_tree` function. These variables are taken directly from the consistent-trees output files and still retain its units and ID conventions.
+
+* ``"dfid"`` - The depth-first ID of the halo.
+* ``"id"`` - The ID of the halo.
+* ``"desc_id`` - The ID (``id``, not ``dfid``) of the descendant. -1 if the halo has no descendants.
+* ``"upid"`` - The UpID of a halo. This is -1 if the halo is not within a larger halo's virial radius, otherwise it is the ID (``id``, not ``dfid``) of that larger halo.
+* ``"phantom"`` - A flag indicating whether consistent-trees was able to track the object during this snapshot. 1 if so, and 0 otherwise. If 0, this halo's properties were interpolated during this snapshot.
+* ``"snap"`` -  This halo's snapshot.
+* ``"next_co_prog"`` - The depth-first ID (``dfid``, not ``id``) of this halo's co-progenitor, if it exists. If this halo doesn't have a co-progenitor, this variable is -1. See :doc:`Getting Started <getting_started>` for a description of what this is.
+* ``"mvir"`` -  The mass of the halo, :math:`M_{\rm vir}`. When isolated, this an overdensity mass from the Bryan & Norman (1998) definition of the virial overdensity. When deep in a host halo, this is the bound mass. The transition between these two definitions is ill-defined.
+* ``"rs"`` - The NFW scale radius of the halo, :math:`R_s`. Units are comoving :math:`h^{-1}{\rm kpc}`
+* ``"vmax"`` -  The maximum value of the halo's circular rotation curve, :math:`V_{\rm max} = {\rm max}\left\{V_{\rm rot}(r) = \sqrt{G M(<r)/r}\right\}`. Units are physical km/s.
+* ``"m200b"`` - The overdensity mass, :math:`M_{\rm 200b}`, corresponding to :math:`200\times \rho_m`.
+* ``"m200c"`` - The overdensity mass, :math:`M_{\rm 200b}`, corresponding to :math:`200\times \rho_c`.
+* ``"m500c"`` - The overdensity mass, :math:`M_{\rm 200b}`, corresponding to :math:`500\times \rho_c`.
+* ``"xoff"`` - The distance between the center of mass and the densest part fo the halo. units are comoving :math:`h^{-1}{\rm kpc}`.
+* ``"spin_bullock"`` - Unitless paramater that tracks the specific anular momentum of the halo. :math:`|\vec{J}|/(\sqrt{2}\,M_{\rm vir}\,V_{\rm vir}\,R_{\rm vir})`
+* ``"c_to_a"`` - The unitless minor-to-major axis ratio of the halo.
+* ``"b_to_a"`` - The unitless intermediate-to-major axis ratio of the halo.
+* ``"t_to_u"`` - The virial ratio, :math:`T/|U|`.
+* ``"r_vmax"`` - The radius, :math:`R_{\rm vmax}`, at which :math:`V_{\rm max}` occurs.
+* ``"x"`` - A 3-vector, :math:`\vec{x}` giving the position of the halo in comivng :math:`h^{-1}{\rm Mpc}`.
+* ``"v"`` - A 3-vector, :math:`\vec{v}`, giving the velocity of the halo in physical km/s.
+* ``"j"`` - A 3-vector, :math:`\vec{J}`, giving the angular momentum of the halo in physical :math:`h^{-2}M_\odot\cdot{\rm Mpc}\cdot{\rm km/s}`
+* ``"a"`` - A 3-vector, :math:`\vec{A}`, pointing in the direction of the halo's major axis with length equal to that major axis. Units are comoving :math:`h^{-1}{\rm kpc}`.
+
+  
 General Functions
 -----------------					
 
@@ -157,31 +187,58 @@ Halo Functions
     :param dict params: Simulation parameters, as returned by :func:`symlib.simulation_parameters`
     :param str sim_dir: The directory of the target host halo.
     :rtype: (``h``, ``hist``): ``h`` is a :data:`symlib.SUBHALO_DTYPE` ``np.array`` with shape (:math:`N_{\rm subhalos}`, :math:`N_{\rm snaps}`), ``hist`` is is a :data:`symlib.HISTORY_DTYPE` ``np.array`` with length :math:`N_{\rm subhalos}`.
-	    
-.. note::
-   TODO: Make writeup on full tree formatting somewhere
-    
+	
 .. function:: symlib.read_tree(sim_dir, var_names)
 
-   This is an expert-level function that is not intended for use by the average user. Reads about the time-dependent properties of every halo in the simulation, not just the subhalos of the central in a "depth first merger tree" format.
+   Reads about the time-dependent properties of every halo in the simulation, not just the subhalos of the central in a "depth-first merger tree" format.
 
    The user supplies a list of variable names and a single, 1D array is returned for each variable. Each element of each array is a halo at a specific snapshot, and these arrays are ordered in a way which encodes which halos evolve and merge into which other halos. To decode this structure, you will need to use the results of :func:`symlib.read_branches`, which breaks the tree into smaller structures called branches.
 
-   The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found **TODO**.
+   The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found on the :doc:`Getting Started <getting_started>` page.
 	      
    :param str sim_dir: The directory of the target host halo.
    :param str list var_names: The names of variables.
    :rtype: tuple of ``np.array``, one for each element in ``var_names``.
 	      
 .. function:: symlib.read_branches(sim_dir)
-	      
-   This is an expert-level function that is not intended for use by  the average user.
-	      
-   Reads information about the time-independent properties of every halo in the simulation, not just the subhalos of central. Each element corresonds to a single main branch in the tree (i.e. the evolution of a single halo over time) and gives information on the properties and location of the branch.
-	      
+	      	      
+   Reads information about the time-independent properties of every halo in the simulation, not just the subhalos of central. Each element corresonds to a single branch in the tree (i.e. the evolution of a single halo over time) and gives information on the properties and location of the branch.
+
+   The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found on the :doc:`Getting Started <getting_started>` page.
+   
    :param str sim_dir: The directory of the target host halo.
    :rtype: :data:`symlib.BRANCH_DTYPE` ``np.array`` 
 
+.. function:: merger_lookup_table(b, dfid)
+
+   Creates a lookup table to aid with finding the branches of merging halos. The details of this table are not important and may be changed at any time to improve performance.
+
+   :param b:
+   :type b: :data:`symlib.BRANCH_DTYPE` np.array
+   :param int np.array dfid:
+   :rtype: int np.array
+   
+.. function:: find_merger_branch(lookup_table, co_prog)
+
+   Searches for the index of the branch corresponding of a given mergering subhalo. The subhalo is identified by a "co-progenitor" ID. See the writeup in :doc:`Getting Started <getting_started>` for more discussion on what this means.
+
+   In practice, most users will want to use :func:`symlib.find_all_merger_branches`.
+
+   :param int np.array lookup_table: A look up table, as created by :func:`symlib.merger_lookup_table`.
+   :param int co_prog: a single "co-progenitor depth-first ID" (``"next_co_prog"`` in calls to :func:`read_tree`).
+   :rtype: int
+		       
+.. function:: find_all_merger_branches(b, lookup_table, co_prog, i)
+
+   Returns the indices of all the branches that merge with a given halo. (i.e. branches which exist in the current snapshot but disrupt in the next snapshot).
+
+   :param b: The branch information for the merger tree.
+   :type b: :data:`symlib.BRANCH_DTYPE` np.array
+   :param int np.array lookup_table: A look up table, as created by :func:`symlib.merger_lookup_table`.
+   :param int np.array co_prog: A tree-ordered array of co-progenitor IDs (``"next_co_prog"`` in calls to :func:`read_tree`).
+   :param int i: The index of the halo in the tree that you 
+   :rtype: int np.array
+	   
 Particle Functions
 ------------------
 
