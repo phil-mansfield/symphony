@@ -94,7 +94,7 @@ read_tree().
 TREE_COL_NAMES = {
     "dfid": 28,
     "id": 1,
-    "desc_idx": 3,
+    "desc_id": 3,
     "upid": 6,
     "phantom": 8,
     "snap": 31,
