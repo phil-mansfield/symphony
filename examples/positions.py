@@ -13,13 +13,9 @@ except:
     pass
 
 def main():
-    # Read in simulation data and convert units.
+    # Read in simulation data.
     sim_dir = "/oak/stanford/orgs/kipac/users/phil1/simulations/ZoomIns/SymphonyMilkyWay/Halo023"
-    param = symlib.simulation_parameters(sim_dir)
-    scale = symlib.scale_factors(sim_dir)
-    h, hist = symlib.read_subhalos(param, sim_dir)
-    h = symlib.set_units_halos(h, scale, param)
-    hist = symlib.set_units_histories(hist, scale, param)
+    h, hist = symlib.read_subhalos(sim_dir)
 
     fig, ax = plt.subplots()
 

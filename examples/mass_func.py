@@ -35,11 +35,8 @@ def main():
     for halo_num in range(n_hosts):
         sim_dir = symlib.get_host_directory(base_dir, suite, halo_num)
 
-        # Read in simulation data and convert units.
-        scale = symlib.scale_factors(sim_dir)
-        h, hist = symlib.read_subhalos(param, sim_dir)
-        h = symlib.set_units_halos(h, scale, param)
-        hist = symlib.set_units_histories(hist, scale, param)
+        # Read in simulation data.
+        h, hist = symlib.read_subhalos(sim_dir)
 
         # All suriving subhalos which are currently within Rvir of the host.
         r = np.sqrt(np.sum(h["x"][:,-1]**2, axis=1)) # z=0 distance to the host

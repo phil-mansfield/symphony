@@ -24,9 +24,7 @@ def main():
 
     # We'll need the normal subhalos so we can find the host.
     scale = symlib.scale_factors(sim_dir)
-    h, hist = symlib.read_subhalos(param, sim_dir)
-    h = symlib.set_units_halos(h, scale, param)
-    hist = symlib.set_units_histories(hist, scale, param)
+    h, hist = symlib.read_subhalos(sim_dir)
 
     # Read in tree data
     b = symlib.read_branches(sim_dir)

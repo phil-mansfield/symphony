@@ -6,6 +6,7 @@ import os.path as path
 import scipy.interpolate as interpolate
 import numpy.random as random
 import glob
+from . import util
 
 """ SUBHALO_DTYPE is the numpy datatype used by the main return value of
 read_subhalos(). Positions and distances are in comvoing Mpc/h, velocities are
@@ -314,7 +315,7 @@ def merger_stats(b, m, x, mvir, snap):
 
     return mpeak, m_snap, ratio, sub_idx
 
-def read_subhalos(params, dir_name):
+def read_subhalos(dir_name, comoving=False):
     """ read_subhalos reads major merger data from the halo directory dir_name.
     It returns two arrays. The first, m_idx, is the indices of the major
     mergers within the branches arrays. Index 0 is the main halo, index 1 is the
@@ -325,6 +326,8 @@ def read_subhalos(params, dir_name):
     given by SUBHALO_DTYPE (see the header of this file). If a halo doesn't
     exist at a given snapshot, values are set -1 ok will be set to false.
     """
+    params = simulation_parameters(dir_name)
+
     fname = path.join(dir_name, "halos", "subhalos.dat")
     f = open(fname, "rb")
 
@@ -370,15 +373,18 @@ def read_subhalos(params, dir_name):
             v = np.fromfile(f, np.float32, 3*n_halo*n_snap)
             x = x.reshape((n_halo, n_snap, 3))
             v = v.reshape((n_halo, n_snap, 3))
-            #out["x_core"] = x
-            #out["v_core"] = v
-    #else:
-    #    out["x_core"] = np.nan
-    #    out["v_core"] = np.nan
         
+    if not comoving:
+        scale = scale_factors(dir_name)
+        out = util.set_units_halos(out, scale, params)
+        histories = util.set_units_histories(histories, scale, params)
     return out, histories
 
 def get_subhalo_histories(s, idx, dir_name):
+    if s["x"][0,-1,0] == 0:
+        raise ValueError("The input subhalo array has already been " + 
+                         "converted to symlib's default units.")
+
     b = read_branches(dir_name)
     h = np.zeros(len(s), dtype=HISTORY_DTYPE)
 
