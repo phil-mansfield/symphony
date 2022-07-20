@@ -101,18 +101,18 @@ General Functions
 
 .. function:: symlib.n_hosts(suite_name)
 
-    Returns the number of hosts in a simulation suite. Can be used with :func:`symlib.get_host_directory` to loop over all the host halos in a suite.
+    Returns the number of zoom-in simulations, each of which is associated with one "target" host halo, in a simulation suite (the Symphony suites are: LMC, Milky Way, Group, L-Cluster, and Cluster). Can be used with :func:`symlib.get_host_directory` to loop over all target host halos in a suite.
 
     :param str suite_name: The name of the simulation suite.
     :rtype: int
 
 .. function:: symlib.get_host_directory(base_dir, suite_name, halo_name)
 
-    Returns the name of a simulation directory given the base directory that all the suites are stored in, the suite, and the halo name. The halo name can either be the literal halo name (e.g., ``"Halo023"``) or a number in the range :math:`[0,\,N_{\rm host})`. This can be combined with :func:`symlib.n_hosts` to loop over all the hosts in the suite.
+    Returns the name of a simulation directory given the base directory that all the suites are stored in, the suite, and the halo name. The halo name can either be the literal halo name (e.g., ``"Halo023"``) or a number in the range :math:`[0,\,N_{\rm host})`. This can be combined with :func:`symlib.n_hosts` to loop over all the hosts in a suite.
 
     :param str base_dir: Base directory containing all suites.
     :param str suite_name: Name of the simulation suite.
-    :param halo_name: Name or index of the halo.
+    :param halo_name: Name or index of the target host halo.
     :type halo_name: str or int
     :rtype: str, the name of the host's simulation directory.
     
@@ -120,7 +120,7 @@ General Functions
 
     Returns an array of the scale factors, :math:`a(z)`, of each of snapshot. Sorted from earliest to latest.
 
-    The scale factor arrays of two simulations in different suites may be very different from one another. The scale factor arrays of two simulations in the same suite may be slightly different from one another, depending on whether simulations needed to be restarted midway through.
+    The scale factor arrays of two simulations in different suites may be different from one another. The scale factor arrays of two simulations in the same suite sometimes also slightly differ, depending on whether simulations needed to be restarted midway through.
 
     :param str sim_dir: The directory of the target host halo.
     :rtype: ``np.array`` containing the scale factors of each snapshot in the simulation
@@ -134,7 +134,7 @@ General Functions
     * ``"n_snap"`` - :math:`N_{\rm snap}`, the number of snapshots in the simulation.
     * ``"h100"`` - :math:`h_{100} = H_0 / (100\ {\rm km/s/Mpc})`, the scaled Hubble parameter.
 
-    It also contains `colossus <https://bdiemer.bitbucket.io/colossus/cosmology_cosmology.html>`_-compatible cosmology parameters. These are not the same between all suites.
+    It also contains `colossus <https://bdiemer.bitbucket.io/colossus/cosmology_cosmology.html>`_-compatible cosmology parameters. Note that these are not the same between all suites.
 	
     * ``"flat"`` - True if the universe is flat and False otherwise.
     * ``"H0"`` - :math:`H_0`, the Hubble constant in units of km/s/Mpc.
@@ -178,11 +178,11 @@ Halo Functions
 
     Reads the subhalo data for a single host halo. Two arrays are returned.
 
-    The first return value is a 2D :data:`symlib.SUBHALO_DTYPE` array representing the time-dependent behavior of each subhalo (e.g. postions). The array first indexes over subhaloes in order of their peak :math:`M_{\rm vir}` value and then indexes over snapshots from first to last. The host halo is at the first index. The second argument is a 1D :data:`symlib.SUBHALO_DTYPE` array which represents time-independent information about each subhalo (e.g. merger time). It has the same ordering as the first index of the :data:`symlib.SUBHALO_DTYPE` array.
+    The first return value is a 2D :data:`symlib.SUBHALO_DTYPE` array representing the time-dependent behavior of each subhalo (e.g. positions). The array first indexes over subhaloes in order of their peak :math:`M_{\rm vir}` value and then indexes over snapshots from first to last. The host halo is at the first index. The second argument is a 1D :data:`symlib.SUBHALO_DTYPE` array which represents time-independent information about each subhalo (e.g. merger time). It has the same ordering as the first index of the :data:`symlib.SUBHALO_DTYPE` array.
 	
-    Subhalos are determined by the Rockstar halo finder and consistent-trees merger tree code. All objects which have ever been within :math:`R_{\rm vir,host}` of the host halo are included, meaning that disrupted, merged, and "splashback" subhalos are included.
+    Subhalos are determined by the Rockstar halo finder and consistent-trees merger tree code. All objects that have ever been within :math:`R_{\rm vir,host}` of the host halo are included, meaning that disrupted, merged, and "splashback" subhalos are included.
 
-    The output arrays use Rockstar's unit conventions by default: all masses, positions, and distances have :math:`h_{100}`-scalings: masses have units of :math:`h^{-1}M_\odot`, positions comoving :math:`h^{-1}{\rm Mpc}`, and radii comoving :math:`h^{-1}{\rm kpc}`. Positions are centered on the zero-point of the box. Almost all users will want to call ``symlib.set_units_halos`` on the returned :data:`symlib.SUBHALO_DTYPE` array to convert to more convenient conventions.
+    The output arrays use Rockstar's unit conventions by default: all masses, positions, and distances have :math:`h_{100}`-scalings: masses have units of :math:`h^{-1}M_\odot`, positions comoving :math:`h^{-1}{\rm Mpc}`, and radii comoving :math:`h^{-1}{\rm kpc}`. Positions are centered on the zero-point of the box. Almost all users will want to call ``symlib.set_units_halos`` on the returned :data:`symlib.SUBHALO_DTYPE` array to convert to more convenient units.
 	
     :param dict params: Simulation parameters, as returned by :func:`symlib.simulation_parameters`
     :param str sim_dir: The directory of the target host halo.
@@ -190,9 +190,9 @@ Halo Functions
 	
 .. function:: symlib.read_tree(sim_dir, var_names)
 
-   Reads about the time-dependent properties of every halo in the simulation, not just the subhalos of the central in a "depth-first merger tree" format.
+   Reads the time-dependent properties of every halo in the simulation, not just the subhalos of the target host in a "depth-first merger tree" format.
 
-   The user supplies a list of variable names and a single, 1D array is returned for each variable. Each element of each array is a halo at a specific snapshot, and these arrays are ordered in a way which encodes which halos evolve and merge into which other halos. To decode this structure, you will need to use the results of :func:`symlib.read_branches`, which breaks the tree into smaller structures called branches.
+   The user supplies a list of variable names and a single, 1D array is returned for each variable. Each element of each array is a halo at a specific snapshot, and these arrays are ordered in a way that encodes which halos evolve and merge into which other halos. To decode this structure, you will need to use the results of :func:`symlib.read_branches`, which breaks the tree into smaller structures, or "branches."
 
    The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found on the :doc:`Getting Started <getting_started>` page.
 	      
@@ -202,7 +202,7 @@ Halo Functions
 	      
 .. function:: symlib.read_branches(sim_dir)
 	      	      
-   Reads information about the time-independent properties of every halo in the simulation, not just the subhalos of central. Each element corresonds to a single branch in the tree (i.e. the evolution of a single halo over time) and gives information on the properties and location of the branch.
+   Reads information about the time-independent properties of every halo in the simulation, not just the subhalos of target host. Each element corresonds to a single branch in the tree (i.e. the evolution of a single halo over time) and gives information on the properties and location of the branch.
 
    The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found on the :doc:`Getting Started <getting_started>` page.
    
@@ -220,7 +220,7 @@ Halo Functions
    
 .. function:: find_merger_branch(lookup_table, co_prog)
 
-   Searches for the index of the branch corresponding of a given mergering subhalo. The subhalo is identified by a "co-progenitor" ID. See the writeup in :doc:`Getting Started <getting_started>` for more discussion on what this means.
+   Searches for the index of the branch corresponding of a given merging subhalo. The subhalo is identified by a "co-progenitor" ID. See the writeup in :doc:`Getting Started <getting_started>` for more discussion on what this means.
 
    In practice, most users will want to use :func:`symlib.find_all_merger_branches`.
 
@@ -230,7 +230,7 @@ Halo Functions
 		       
 .. function:: find_all_merger_branches(b, lookup_table, co_prog, i)
 
-   Returns the indices of all the branches that merge with a given halo. (i.e. branches which exist in the current snapshot but disrupt in the next snapshot).
+   Returns the indices of all the branches that merge with a given halo. (i.e. branches that exist in the current snapshot but disrupt in the next snapshot).
 
    :param b: The branch information for the merger tree.
    :type b: :data:`symlib.BRANCH_DTYPE` np.array
@@ -264,7 +264,7 @@ Utility Functions
 
 .. function:: symlib.colossus_parameters(param)
 	      
-   Converts a ``symlib`` parameter dictionary to a parameter dictionary that can be passed to a call to `colossus.cosmology.cosmology.setCosmology <https://bdiemer.bitbucket.io/colossus/cosmology_cosmology.html#cosmology.cosmology.setCosmology>`_. This will allow you to calculate cosmological quantities (e.g. ages concentration-mass relations) using the colossus library.
+   Converts a ``symlib`` parameter dictionary to a parameter dictionary that can be passed to a call to `colossus.cosmology.cosmology.setCosmology <https://bdiemer.bitbucket.io/colossus/cosmology_cosmology.html#cosmology.cosmology.setCosmology>`_. This will allow you to calculate cosmological quantities (e.g. the mass-concentration relation) using the colossus library.
 
    :param dict param: A ``symlib`` parameter dictionary returned by :func:`symlib.simulation_parameters`.
    :rtype: A ``colossus`` parameter dictionary.
@@ -278,7 +278,7 @@ Utility Functions
 	      
 .. function:: symlib.plot_circle(ax, x, y, r, **kwargs)
 
-   Plots the a circle to a given `matplotlib.pyplot.Axes <https://matplotlib.org/stable/api/axes_api.html#the-axes-class>`_. This is a convenience function which helps with example code in the tutorial.
+   Plots the a circle to a given `matplotlib.pyplot.Axes <https://matplotlib.org/stable/api/axes_api.html#the-axes-class>`_. This is a convenience function that helps with example code in the tutorial.
 
    All keyword arguments accepted by `matplotlib.pyplot.plot <https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html>`_ are accepted as keywords arguments by this function.
 

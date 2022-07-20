@@ -154,9 +154,9 @@ Here, the central halo at index 0 is red and all is subhalos are blue.
 We used a built-in utility function called ``plot_circle`` and
 needed to skip over some subhalos which disrupted before the final snapshot.
 
-**Practice**
+**Example exercise**
 
-In the ``histories`` array, there is a field called ``merger_snap`` that gives the snapshot when a subhalo first fell into the host. Try coloring subhalos that fell in from the left side of the halo (:math:`x_{\rm infall} < 0`) differently from ones that fell in from the right. Do you notice anything different about where the two groups end up?
+In the ``histories`` array, there is a field called ``merger_snap`` that gives the snapshot when a subhalo first fell into the host. Try coloring subhalos that fell in from the left side of the halo (:math:`x_{\rm infall} < 0`) differently from ones that fell in from the right.
 
 Example Analysis: Mass Growth
 -----------------------------
@@ -201,7 +201,7 @@ Let's review the concepts that went into creating this image:
 * We were able to figure out the snapshot when a subhalo fell into the host with ``histories``'s ``"merger_snap"`` field.
 * The indices of structured arrays work just like normal numpy arrays, so we were able to select parts of them with the boolean arrays ``ok`` and ``is_sub``.
 
-**Practice:**
+**Example exercise:**
 
 You might have noticed that subhalos start losing mass before they actually start falling into the host (look at the green curve in particular). Using logic similar to the above plot, try figuring out how far away subhalos are on average from a host when they reach their peak mass.
 
