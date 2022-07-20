@@ -8,7 +8,7 @@ About the Simulations
 
 Each simulation is run at high resolution relative to the corresponding host halo mass scale, such that hosts are typically composed of several million dark matter particles. ``Symphony``'s large statistical host halo sample, spanning several orders of magnitude in host halo mass, combined with its high resolution, enables measurements of host halo and subhalo population properties over a wide dynamic range. Furthermore, a unified set of analysis tools was used to process these simulations, and the documentation provided in this library allows simulation data to be accessed with ease.
 	
-.. image:: zoomin_grid.pdf
+.. image:: zoomin_grid.png
    :width: 1000
 
 Technical Details
