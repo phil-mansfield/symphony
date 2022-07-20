@@ -15,14 +15,14 @@ Currently, only Python3 is supported.
 Downloading Data
 ----------------
 
-Symphony data is organized into several suites of halos. Each suite corresponds to a different halo mass range. The entire dataset is stored in a single base directory. Each suite has is its own sub-directory within the base, and each halo has a subdirectory within its suite. 
+Symphony data is organized into several suites of zoom-in simulations: the LMC, Milky Way, Group, L-Cluster, and Cluster suites. These suites respectively correspond to host halos with masses of 10^11, 10^12, 10^13, 5*10^14, and 10^15 Msun. The entire dataset is stored in a single base directory. Each suite has is its own sub-directory within the base, and each zoom-in simulation has a subdirectory within its suite. 
 
 You can download data from
 
 .. note::
    Finish writing once we know where data can be downloaded from.
 
-Currently only halo data is available.
+Currently only halo data is available; please contact the developers about access to particle snapshots.
 
 Reading in Subhalo Data
 -----------------------
@@ -45,9 +45,9 @@ information. These can be looked up with :func:`symlib.simulation_parameters` by
      'sigma8': 0.82, 'ns': 0.95, 'eps': 0.17, 'mp': 281981.0,
      'h100': 0.7}
 
-The first six values are `colossus <https://bdiemer.bitbucket.io/colossus/>`__-compatible cosmological parameters, the next two are numerical parameters (``"eps"`` is the radius each particle in comoving :math:`h^{-1}{\rm kpc}`, and ``mp`` is the mass of each particle in :math:`h^{-1}M_\odot`). The last value is :math:`h_{100} = H_0/(100\ {\rm km/s})`, which is often convenient to have.
+The first six values are `colossus <https://bdiemer.bitbucket.io/colossus/>`__-compatible cosmological parameters, the next two are numerical parameters (``"eps"`` is the radius of each particle in comoving :math:`h^{-1}{\rm kpc}`, and ``mp`` is the mass of each particle in :math:`h^{-1}M_\odot`). The last value is :math:`h_{100} = H_0/(100\ {\rm km/s})`, which is often convenient to have.
 
-Next, we read in the subhaloes with the function :func:`symlib.read_subhalos`
+Next, we read in the subhalos with the function :func:`symlib.read_subhalos`
 
 .. code-block::
 
@@ -55,15 +55,15 @@ Next, we read in the subhaloes with the function :func:`symlib.read_subhalos`
        params, "path/to/HaloExample")
 
 There are two return return values, ``halos`` and ``histories``. In your
-code, you'll probably want to abbreviate these as ``h`` and ``hist``, or something similar. The library code does.
+code, you'll probably want to abbreviate these as ``h`` and ``hist``, or something similar, following the library code.
 
-``halos`` is a 2D array that represents how the host halo and all its subhaloes evolve over time. The first index accesses different halos and
+``halos`` is a 2D array that represents how the host halo and all its subhalos evolve over time. The first index accesses different halos and
 second different times. It contains information like mass and
 position. ``halos[0,235]`` is the host halo at snapshot
 235, the last snapshot in the simulation. ``halos[3, 100]`` is the third
 largest subhalo, including disrupted subhalos, at snapshot 100. Subhalos are ordered according to the largest mass they ever had, :math:`M_{\rm peak}`. Halos stay at the same index across their lifetimes.
 
-``histories`` contains summary information about a halo's full history, including :math:`M_{\rm peak}` and when that the subhalo fell into the host. Its length and ordering are the same as the first index of ``halos``, meaning that ``histories[0]`` is the 
+``histories`` contains summary information about a halo's full history, including :math:`M_{\rm peak}` and when that subhalo fell into the host. Its length and ordering are the same as the first index of ``halos``. 
 
 ``halos`` is a numpy structured array has type :data:`symlib.SUBHALO_DTYPE`, and ``histories`` is a structured array with type :data:`symlib.HISTORY_DTYPE`. Structured arrays are arrays that have different fields which can be accessed with strings. For example, ``halos[3,100]["mvir"]`` and ``halos["mvir"][3,100]`` both return the mass, :math:`M_{\rm vir}` of the third most massive halo. The non-string indices obey normal numpy indexing rules, so you can use slicing, boolean indexing, axis removal and whatever other tricks you use with normal numpy arrays.
 
@@ -141,7 +141,7 @@ With a little bit of additional pyplot work, this gives us the following. The fu
 .. image:: positions.png
    :width: 500
 
-From this, we can see that our host halo is surrounded by a swarm of subhalos. Bigger subhalos are rarer and generally closer to the center of the host. Some subhalos ar outside the radius of the host. These "splashback subhalos" had been inside the host in the past but have temporarily orbited outside of it.They  are included in the symlink catalogs by default.
+From this, we can see that our host halo is surrounded by a swarm of subhalos. Bigger subhalos are rarer and generally closer to the center of the host. Some subhalos are outside the radius of the host. These "splashback subhalos" had been inside the host in the past but have temporarily orbited outside of it. They are included in the symlink catalogs by default.
 	   
 Let's review the concepts that went into creating this image:
 
@@ -193,7 +193,7 @@ With a little bit of additional pyplot work, this gives us the following. The fu
 .. image:: mah.png
    :width: 500
 
-Here we see that our subhaloes spend most of their time in the simulation building up mass prior to falling in. The earlier-infalling halos shown here don't last for very long: they disrupt in a few snapshots! Others, like the green subhalo last much longer.
+Here we see that our subhalos spend most of their time in the simulation building up mass prior to falling in. The earlier-infalling halos shown here don't last for very long: they disrupt in a few snapshots! Others, like the green subhalo survive much longer.
 
 Let's review the concepts that went into creating this image:
 
@@ -203,14 +203,14 @@ Let's review the concepts that went into creating this image:
 
 **Practice:**
 
-You might have noticed that subhaloes start losing before they actually start falling into the host (look at the green curve in particular). Using logic similar to the above plot, try figuring out how far away subhalos are on average from a host when they reach their peak mass.
+You might have noticed that subhalos start losing mass before they actually start falling into the host (look at the green curve in particular). Using logic similar to the above plot, try figuring out how far away subhalos are on average from a host when they reach their peak mass.
 
 Example Analysis: The Subhalo Mass Functions
 --------------------------------------------
 
-Lastly, let's try some more rigorous statistical analysis. We're going to measure the subhalo mass function of the entire Milky Way-mass suite. We'll look at :math:`N(>M_{\rm peak})`, the average number of subhalos per host halo whose maximum mass was larger than :math:`M_{\rm peak}`. To do this, we'll need to access the ``"mpeak"`` field of the ``histories`` array.
+Lastly, let's try some more rigorous statistical analysis. We're going to measure the subhalo mass function of the entire Milky Way suite. We'll look at :math:`N(>M_{\rm peak})`, the average number of subhalos per host halo whose maximum mass was larger than :math:`M_{\rm peak}`. To do this, we'll need to access the ``"mpeak"`` field of the ``histories`` array.
 
-More importantly, to get good statistics we'll need to loop over all the host halos in the Milky Way-mass suite, ``SymphonyMilkyWay``. One way to do this would be to manually store the names of all the halo directories, but instead we'll use library functions to do it. First, we'll count the number of halos in the Milky Way-mass suite with :func:`symlib.n_hosts`. Then, we can get directory names :func:`symlib.get_host_directory`, which takes the base directory, suite name, and the index of the halo you want to read. Together this lets you loop over halo directories.
+More importantly, to get good statistics we'll need to loop over all the host halos in the Milky Way suite, ``SymphonyMilkyWay``. One way to do this would be to manually store the names of all the halo directories, but instead we'll use library functions to do it. First, we'll count the number of halos in the Milky Way-mass suite with :func:`symlib.n_hosts`. Then, we can get directory names :func:`symlib.get_host_directory`, which takes the base directory, suite name, and the index of the halo you want to read. Together this lets you loop over halo directories.
 
 Constructing a mass function has a bit more code overhead than the earlier examples: the important part is how the loop over files works.
 
@@ -265,9 +265,9 @@ Introduction to Merger Trees
 
 For some analysis, the set of subhaloes described above won't be enough. In some cases you might want to know about the extended history of subhalos, including objects that merged with those subhalos before they fell into the host. You would need to use a merger tree.
 
-A merger tree is an array that contains all the halos and subhalos in a simulation across all times. It also has additional structure and information which allows one to figure out evolve into which earlier halos evolve into which later halos. This includes "mergers," events that occur when subhalos disrupt and contribute most of their mass to a larger host. This is a bit of a different definition than what we qualitatively think of as a merger: tree-mergers can happen many many orbits after a subhalo falls into a host.
+A merger tree is an array that contains all the halos and subhalos in a simulation across all times. It also has additional structure and information which allows one to figure out which halos at an earlier snapshot evolve into which halos at a later snapshot. This includes "mergers," events that occur when subhalos disrupt and contribute most of their mass to a larger host. This is a bit of a different definition than what we qualitatively think of as a merger: tree-mergers can happen many orbits after a subhalo falls into a host.
 
-The merger trees in Symphony (generated with the merger tree code `consistent-trees <https://bitbucket.org/pbehroozi/consistent-trees>`__) are 1D arrays. These arrays are made of of separate sequences called "branches." A branch contains a single halo as it evolves over time. In Symphony's trees, halos in a branch are stored together, starting with the the halo's *last* and ending with the *first*. Every snapshot between the first and the last is included. Below is an example of what the merger tree in a simulation with four snapshot and one halo that survived through all of them. The numbers in each circle show the index of that halo's data in the array.
+The merger trees in Symphony (generated with the merger tree code `consistent-trees <https://bitbucket.org/pbehroozi/consistent-trees>`__) are 1D arrays. These arrays are made of of separate sequences called "branches." A branch contains a single halo as it evolves over time. In Symphony's trees, halos in a branch are stored together, starting with the the halo's *last* and ending with the *first*. Every snapshot between the first and the last is included. Below is an example of the merger tree in a simulation with four snapshots, which has one halo that survived through all of these snapshots. The numbers in each circle show the index of that halo's data in the array.
 
 .. image:: tree_1.png
     :height: 400
@@ -282,25 +282,25 @@ The tree also contains information on what happens to a halo after it disrupts. 
 .. image:: tree_3.png
     :height: 400
 
-Note that more than one merger can occur within a halo in a single snapshot. This image also illustrates the ordering of branches within the tree ("depth-first ordering"), but it's unlikely that this fact will be useful to you.
+Note that more than one merger can occur within a halo in a single snapshot. This image also illustrates the ordering of branches within the tree ("depth-first ordering").
 
-Merger information is stored in the tree the snapshot before the merger occurs. Each halo keeps track of its "co-progenitor", the last halo in the next branch that merges in that snapshot. It's easiest to see with pictures:
+Merger information is stored in the tree the snapshot before the merger occurs. Each halo keeps track of its "co-progenitor", the last halo in the next branch that merges in that snapshot. It's easiest to understand visually:
 	     
 .. image:: tree_4.png
     :height: 400
 
 In practice, this means that finding all the mergers for a host halo invovles hopping around from halo to halo.
 
-This is an advanced technique and will not be useful to most users. If one is interested in resolved substracture in of the host halo, virtually all can be done with the subhalo arrays above. The tree essentially only allows one to analyze subresolution subhalos and objects far away from the host halo. Both tasks must be done with caution.
+Mergr tree analysis is an advanced technique and may not be necessary for many users. If one is only interested in resolved substructure of the host halo, virtually everything can be done with the subhalo arrays above. The tree essentially only allows one to analyze subresolution subhalos and objects far away from the host halo. Both tasks must be done with caution.
 
 Using Merger Trees with Symlib
 ------------------------------
 
-Full merger trees are more computationally intense than subhalo catalogs, meaning that they are a little more complicated to use than the host's subhalos.  Instead of using structured arrays, individual variables are read from disk as 1D arrays that have the tree's ordering. This allows you to only load variables you need. Additionally, snapshots where a halo does not exist are not included in the tree. This makes indexing more complicated, but saves memory.
+Full merger trees are more computationally intense than subhalo catalogs, meaning that they are a little more complicated to use than the host's subhalos. Instead of using structured arrays, individual variables are read from disk as 1D arrays that have the tree's ordering. This allows you to only load variables you need. Additionally, snapshots where a halo does not exist are not included in the tree. This makes indexing more complicated, but saves memory.
 
 One last caveat is that tree variables are stored in consistent-trees's native units. These are inhomogenous and are listed in the full ``symlib`` documentation page.
 
-As a first example, we'll do some analysis that doesn't care about the connections between different branches. We'll calculate :math:`M_{\rm peak}` (the maximum :math:`M_{\rm vir}` that the halo ever had). Because tree reading is a more advanced and less useful procedure than reading host subhalo information, this will be done purely by example. The full symlib documentation contains more detailed information on tree-reading and tree-manipulating functions.
+As a first example, we'll do some analysis that doesn't care about the connections between different branches. We'll calculate :math:`M_{\rm peak}` (the maximum :math:`M_{\rm vir}` that the halo ever had). Because tree reading is a more advanced and less useful procedure than reading the host's subhalo information, this will be done purely by example. The full symlib documentation contains more detailed information on tree-reading and tree-manipulating functions.
 
 Omitting some standard preamble and most of the plotting code, the following code block will:
 
@@ -351,7 +351,7 @@ This results in the following plot
 .. image:: tree_mass_func.png
     :width: 500
 
-The dashed vertical line has been added to show a rough resolution limit, 300 particles. As this plot shows, most of the contents of the tree file are outside the target host halo and most of those are poorly resolved. The objects returned by :func:`symlib.read_subhalos` only consist of the red curve down to the black dashed line.
+The dashed vertical line has been added to show a rough resolution limit, 300 particles. As this plot shows, most of the contents of the tree file are outside the target host halo and most of the corresponding objects are poorly resolved. The objects returned by :func:`symlib.read_subhalos` only consist of the red curve down to the black dashed line.
 
 As a second example, we will navigate through the merger tree to find the number of mergers in each snapshot. These will be split into real mergers and artifacts. The latter includes a few criteria, but mostly it's objects whose first snapshots occured already inside the host halo. The time resolution of these simulations is high enough that any instances where this happens are either statistical noise or a halo which the merger tree had previously lost track of (i.e. a halo that merges twice). These objects have already been removed in the standard subhalo arrays.
 
