@@ -200,10 +200,13 @@ Constructing a mass function has a bit more code overhead than the earlier examp
 	h, hist = symlib.read_subhalos(sim_dir)
 
 	# Only count objects within R_vir
+        host_rvir = h[0,-1]["rvir"]
+        sub_x = h[:,-1]["x"]
+        r = np.sqrt(np.sum(sub_x**2, axis=1))
         ok = h["ok"][:,-1] & (r < host_rvir)
-        n_vir, _ = np.histogram(hist["mpeak"][ok][1:], bins=bins)
 
-	# Add to the cumulative histogram.
+        # Put in bins and add to cumulative histogram
+        n_vir, _ = np.histogram(hist["mpeak"][ok][1:], bins=bins)
 	N_vir += np.cumsum(n_vir[::-1])[::-1]/n_hosts
 
     plt.plot(bins[:-1], N_vir, "k")
@@ -213,10 +216,7 @@ With a little bit of additional pyplot work, this gives us the following. The fu
 .. image:: mass_func.png
    :width: 500
 
-.. note::
-   Need to regenerate this plot so it only has one curve.
-
-Here, we can see the classic form of the subhalo mass function. At smaller subhalo masses, decreasing the subhalo mass by a increses the number of subhalos by roughly the same multiplicative factor, and there's a cutoff as the subhalos get close to the host mass.
+Here, we can see the classic form of the subhalo mass function. At smaller subhalo masses, decreasing the subhalo mass by a increses the number of subhalos by :math:`N \lesssim M^{-1}`, and there's an exponential cutoff as the subhalos get close to the host mass.
    
 Let's review the concepts that went into creating this image: 
 
