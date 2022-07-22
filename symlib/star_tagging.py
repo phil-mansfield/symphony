@@ -4,7 +4,8 @@ import numpy.random as random
 import scipy.stats as stats
 import abc
 import scipy.optimize as optimize
-import symlib.lib as lib
+from . import lib
+from . import util
 
 # cosmology information
 from colossus.cosmology import cosmology
@@ -173,7 +174,7 @@ class AbstractRanking(abc.ABC):
         return np.median(core, axis=0)
         
     def set_mp_star(self, rvir, profile_model, r_half, m_star,
-                r_bins=DEFAULT_R_BINS):
+                    r_bins=DEFAULT_R_BINS):
         r = np.sqrt(np.sum(self.x**2, axis=1))/rvir
         M = ranked_np_profile_matrix(self.ranks, self.idx, r, r_bins)
         n = M.shape[1]
@@ -184,7 +185,7 @@ class AbstractRanking(abc.ABC):
         dm_star_enc_target = np.zeros(len(m_star_enc_target))
         dm_star_enc_target[1:] = m_star_enc_target[1:] - m_star_enc_target[:-1]
         dm_star_enc_target[0] = m_star_enc_target[0]
-        
+
         res = optimize.lsq_linear(
             M, dm_star_enc_target, bounds=(np.zeros(n), np.inf*np.ones(n))
         )
@@ -433,7 +434,7 @@ class RadialEnergyRanking(AbstractRanking):
 
         self.ke_vmax2 = 0.5*np.sum(v**2, axis=1) / self.vmax**2
         self.E_vmax2 = self.ke_vmax2 + self.pe_vmax2
-        
+
         core_q = min(core_particles / len(self.E_vmax2), 1)
         core_E_vmax2 = np.quantile(self.E_vmax2, core_q)
         
@@ -442,17 +443,123 @@ class RadialEnergyRanking(AbstractRanking):
         E_edges = np.linspace(-10, 0, 41)
         quantile_edges = [np.sum(self.E_vmax2< E_edges[i])/
                           len(self.E_vmax2) for i in range(len(E_edges))]
-        
+
         ranks, self.E_edges = rank_by_quantile(
             quantile_edges, self.E_vmax2, idx, n_max)
-                
+    
         super(RadialEnergyRanking, self).__init__(ranks, core_idx)
         
 #################################
 # General classes and functions #
 #################################
 
-def tag_stars(base_dir, params, galaxy_halo_model, mergers, halo_idx, tag_snap,
+def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
+              target_subs=None):
+    # Basic simulation information
+    param = lib.simulation_parameters(sim_dir)
+    h, hist = lib.read_subhalos(sim_dir)
+    h_cmov, _ = lib.read_subhalos(sim_dir, comoving=True)
+    c = lib.read_cores(sim_dir)
+    scale = lib.scale_factors(sim_dir)
+
+    if target_subs is None:
+        # Don't read in the host: wouldn't make sense.
+        target_subs = np.arange(1, len(h), dtype=int)
+
+    if 0 in target_subs:
+        raise ValueError("Cannot do star-tagging on the central halo. " + 
+                         "Remove 0 from the target_subs array.")
+
+    # Set the optional arguments to their default values
+    if star_snap is None:
+        # Match profiles at the snapshot when the subhalo first crosses the
+        # virial radius.
+        star_snap = hist["first_infall_snap"]
+    if E_snap is None:
+        E_snap = np.zeros(len(h), dtype=int)
+        for i in target_subs:
+            # Look back an eighth of an orbital time, or to the half-mass
+            # scale, whichever is later.
+            if star_snap[i] == 0:
+                raise ValueError(("Subhalo %d has a star-tagging snapshot " + 
+                                  "of 0. Either change star_snap for " + 
+                                  "this subhalo or remove it from " + 
+                                  "target_subs") % i)
+            E_snap[i] = look_back_orbital_time(
+                param, scale, star_snap[i], 0.125, h[i,:], 0.5)
+
+    # Set up buffers and shared information for I/O.
+
+    # Total number of particles in each snapshot
+    n_max = np.zeros(len(h), dtype=int)
+    # The indices of the particles stored at the two stages. They get trimmed
+    # down to only the valid and self-owned particles.
+    idx_star, idx_E = [None]*len(h), [None]*len(h)
+    # Position and velocity information for the different particles.
+    x_star, x_E, v_E = [None]*len(h), [None]*len(h), [None]*len(h)
+    # Shared information across snapshots.
+    part_info = lib.ParticleInfo(sim_dir)
+
+    for snap in range(param["n_snap"]):
+        # If nobody needs this snapshot, don't read it in.
+        if (snap not in E_snap[target_subs] and
+            snap not in star_snap[target_subs]): continue
+
+        # Work out which objects we actually need to read in this snapshot.
+        star_ok = np.zeros(len(h), dtype=bool)
+        E_ok = np.zeros(len(h), dtype=bool)
+        star_ok[target_subs], E_ok[target_subs] = True, True
+        star_ok = star_ok & (star_snap == snap)
+        E_ok = E_ok & (E_snap == snap)
+        i_star, i_E = np.where(star_ok)[0], np.where(E_ok)[0]
+
+        print("    snap: %d, stars, E:" % snap, i_star, i_E)
+
+        # Read in data.
+        owner = lib.read_particles(part_info, sim_dir, snap, "ownership")
+        valid = lib.read_particles(part_info, sim_dir, snap, "valid")
+        x = lib.read_particles(part_info, sim_dir, snap, "x")
+        v = lib.read_particles(part_info, sim_dir, snap, "v")
+
+        host, a_z = h_cmov[0,snap], scale[snap]
+
+        # Add information at the snapshot stellar masses are assigned
+        for i in i_star:
+            ok = valid[i] & (owner[i] == 0)
+            idx_star[i] = np.where(ok)[0]
+            sx = h[i,snap]["x"]
+            x_star[i] = util.set_units_x(x[i][ok], host, a_z, param) - sx
+            n_max[i] = len(x[i])
+
+        # Add information at the snapshot energies are measured
+        for i in i_E:
+            ok = valid[i] & (owner[i] == 0)
+            idx_E[i] = np.where(ok)[0]
+            sx, sv = h[i,snap]["x"], h[i,snap]["v"]
+            x_E[i] = util.set_units_x(x[i][ok], host, a_z, param) - sx
+            v_E[i] = util.set_units_v(v[i][ok], host, a_z, param) - sv
+
+    # Finally, assign stellar masses and create ranking objects for each halo.
+    mp_star, ranks = [None]*len(h), [None]*len(h)
+    for i in target_subs:
+        ranks[i] = RadialEnergyRanking(
+            param, x_E[i], v_E[i], idx_E[i], n_max[i])
+        ranks[i].load_particles(x_star[i], None, idx_star[i])
+
+        # It's some tiny subhalo that Rockstar made a mistake on. Doesn't have
+        # any bins with more than 10 particles in them.
+        if np.max(ranks[i].ranks) == -1:
+            mp_star[i] = np.zeros(len(ranks[i].ranks))
+            continue
+
+        kwargs = galaxy_halo_model.get_kwargs(
+            param, scale, h[i], star_snap[i])
+        mp_star[i] = galaxy_halo_model.set_mp_star(ranks[i], kwargs)
+
+    return mp_star, ranks
+
+
+def old_tag_stars(base_dir, params, galaxy_halo_model, mergers, halo_idx, tag_snap,
               E_snap=None):
     """ tag_stars returns an array of star particle masses and an object
     that implements AbstractRanking (for core-tracking purposes) of the
@@ -515,8 +622,9 @@ def look_back_orbital_time(params, scale, snap, dt_orbit, halo, min_mass_frac):
 
     orbit_start = np.searchsorted(dT_orbit, -dt_orbit)
 
+    if snap == orbit_start: return snap
+
     for snap_start in range(snap, orbit_start, -1):
-        # This also catches cases where mvir = -1
         if halo["mvir"][snap_start-1] < min_mass_frac*halo["mvir"][snap]:
             break
 
@@ -584,7 +692,7 @@ class GalaxyHaloModel(object):
         """
         h100 = params["h100"]
         
-        z = 1/scale - 1
+        z = 1/scale[snap] - 1
         
         var_names = self.var_names()
 
@@ -596,7 +704,7 @@ class GalaxyHaloModel(object):
                 continue
 
             if var_names[i] == "mpeak":
-                x = np.max(halo["mvir"])
+                x = np.max(halo["mvir"][:snap+1])
             else:
                 x = halo[snap][var_names[i]]
             
