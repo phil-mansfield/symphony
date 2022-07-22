@@ -16,7 +16,12 @@ def set_units_x(x, h, scale, param):
     """ set_units_x converts an array of positions with Gadget-2 code units
     to physical kpc, centered on the subhalo h (a single element of a
     SUBHALO_DTYPE array).
+
+    h must be in comoving units.
     """
+    if h["x"][0] == 0: 
+        raise ValueError("The centering halo, h, must be in comoving units.")
+
     dx = np.zeros(x.shape)
     for dim in range(3): dx[:,dim] = x[:,dim] - h["x"][dim]
     dx *= scale*1e3/param["h100"]
@@ -26,7 +31,12 @@ def set_units_v(v, h, scale, param):
     """ set_units_v converts an array of velocities with Gadget-2 code units
     to physical km/s, centered on the subhalo h (a single element of a
     SUBHALO_DTYPE array).
+
+    h must be in comoving units.
     """
+    if h["x"][0] == 0: 
+        raise ValueError("The centering halo, h, must be in comoving units.")
+
     v *= np.sqrt(scale)
     dv = np.zeros(v.shape)
     for dim in range(3): dv[:,dim] = v[:,dim] - h["v"][dim]
