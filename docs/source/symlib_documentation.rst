@@ -11,7 +11,7 @@ Units
 - Positions: physical :math:`{\rm kpc}`, centered on the host halo
 - Velocities: physical :math:`{\rm km/s}`, centered on the host halo
 
-Much of the data that ``symlib`` reads in is a processed form of data from another code, which may use different conventions. To convert to ``symlib``'s conventions, use the ``set_units_*`` family of functions: :func:`symlib.set_units_halos`, :func:`symlib.set_units_parameters`, :func:`symlib.set_units_branches`
+Much of the data that ``symlib`` reads in is a processed form of data from another code, which may use different conventions. To convert to ``symlib``'s conventions, use the ``set_units_*`` family of functions: :func:`symlib.set_units_halos`, :func:`symlib.set_units_parameters`, :func:`symlib.set_units_branches` as needed.
 			 
 Datatypes
 ---------
@@ -159,6 +159,8 @@ General Functions
 	      
    Converts the units of a 2D ``np.array`` with type :data:`symlib.SUBHALO_DTYPE` to ``symlib``'s default units. All masses will be in units of :math:`M_\odot`, all positions and radii will be units of physical :math:`{\rm kpc}`. Positions will be centered on the first halo in the array at the given snapshot. Velocities will be in physical :math:`{\rm km/s}` and similarly centered on the velocity of the first halo at each snapshot.
 
+   This function only needs to be called if `comoving=True` in :func:`symlib.read_subhalos`. This is not true by default
+   
    :param symlib.SUBHALO_DTYPE np.array h: A 2D array of subhalos, with the first halo indexing over halos and the second over snapshots. (see :func:`symlib.read_subhalos`).
    :param np.array scale: An array of the scale factors of each snapshot (see :func:`symlib.scale_factors`)
    :param dict param: The simulation parameters (see :func:`symlib.simulation_parameters`)
@@ -167,6 +169,8 @@ General Functions
 	      
    Converts the units of an ``np.array`` with type :data:`symlib.HISTORY_DTYPE` to ``symlib``'s default units. All masses will be in units of :math:`M_\odot`, all positions and radii will be units of physical :math:`{\rm kpc}`. Positions will be centered on the first halo in the array at the given snapshot. Velocities will be in physical :math:`{\rm km/s}` and similarly centered on the velocity of the first halo at each snapshot.
 
+   This function only needs to be called if `comoving=True` in :func:`symlib.read_subhalos`. This is true by default.
+   
    :param symlib.HISTORY_DTYPE np.array h: Array of subhalo histories (see :func:`symlib.read_subhalos`).
    :param np.array scale: An array of the scale factors of each snapshot (see :func:`symlib.scale_factors`)
    :param dict param: The simulation parameters (see :func:`symlib.simulation_parameters`)
@@ -174,7 +178,7 @@ General Functions
 Halo Functions
 --------------
 				  
-.. function:: symlib.read_subhalos(params, sim_dir)
+.. function:: symlib.read_subhalos(sim_dir)
 
     Reads the subhalo data for a single host halo. Two arrays are returned.
 
@@ -182,7 +186,7 @@ Halo Functions
 	
     Subhalos are determined by the Rockstar halo finder and consistent-trees merger tree code. All objects that have ever been within :math:`R_{\rm vir,host}` of the host halo are included, meaning that disrupted, merged, and "splashback" subhalos are included.
 
-    The output arrays use Rockstar's unit conventions by default: all masses, positions, and distances have :math:`h_{100}`-scalings: masses have units of :math:`h^{-1}M_\odot`, positions comoving :math:`h^{-1}{\rm Mpc}`, and radii comoving :math:`h^{-1}{\rm kpc}`. Positions are centered on the zero-point of the box. Almost all users will want to call ``symlib.set_units_halos`` on the returned :data:`symlib.SUBHALO_DTYPE` array to convert to more convenient units.
+    If ``comoving=False``, ``symlib``'s default units are used. Positions and velocities are centered on the host halo. Otherwise, the output arrays use Rockstar's unit conventions by default: all masses, positions, and distances have :math:`h_{100}`-scalings: masses have units of :math:`h^{-1}M_\odot`, positions comoving :math:`h^{-1}{\rm Mpc}`, and radii comoving :math:`h^{-1}{\rm kpc}`. In this case positions will be centered on the zero-point of the box.
 	
     :param dict params: Simulation parameters, as returned by :func:`symlib.simulation_parameters`
     :param str sim_dir: The directory of the target host halo.
@@ -238,25 +242,6 @@ Halo Functions
    :param int np.array co_prog: A tree-ordered array of co-progenitor IDs (``"next_co_prog"`` in calls to :func:`read_tree`).
    :param int i: The index of the halo in the tree that you 
    :rtype: int np.array
-	   
-Particle Functions
-------------------
-
-.. note::
-   Coming with a future paper release
-				  
-Star Tracking
--------------
-
-.. note::
-   Coming with a future paper release
-
-
-Halo Core Tracking
-------------------
-
-.. note::
-   Coming with a future paper release
 
 
 Utility Functions

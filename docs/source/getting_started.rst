@@ -51,8 +51,7 @@ Next, we read in the subhalos with the function :func:`symlib.read_subhalos`
 
 .. code-block::
 
-   halos, histories = symlib.read_subhalos(
-       params, "path/to/HaloExample")
+   halos, histories = symlib.read_subhalos("path/to/HaloExample")
 
 There are two return return values, ``halos`` and ``histories``. In your
 code, you'll probably want to abbreviate these as ``h`` and ``hist``, or something similar, following the library code.
@@ -77,33 +76,6 @@ The full set of fields in ``halos`` is described in the :data:`symlib.SUBHALO_DT
 
 Fields in ``histories`` will be explained as needed, but can be found in full in the :data:`symlib.HISTORY_DTYPE` documentation.
 
-Lastly, before we do any science, we need to handle units. The data used by ``symlib`` comes from a variety of sources, and needs to be converted into a standard set of units: physical kpc centered on the host halo for postions, km/s for velocities and :math:`M_\odot` for masses. This is done with the function :func:`symlib.set_units_halos` and :func:`symlib.set_units_histories`. This leads to a block of standard "boiler plate" code which will be in almost every ``symlib`` file.
-   
-.. code-block:: python
-
-    sim_dir = "path/to/ExampleHalo"
-
-    param = symlib.simulation_parameters(sim_dir)
-    scale = symlib.scale_factors(sim_dir)
-
-    halos, histories = symlib.read_subhalos(param, sim_dir)
-    h = symlib.set_units_halos(h, scale, param)
-    hist = symlib.set_units_histories(hist, scale, param)
-
-The last new function here, :func:`symlib.scale_factors`, returns the scale factor, :math:`a(z)`, for each snapshot.
-    
-.. note::
-   I hate having this much boiler plate code. Open to suggestions on making
-   this better. Maybe I should make the unit conversions an optional argument that defaults to being true? (issue is that it's impossible to invert the conversion because it inovles centering, so you can't get the old units back). If I did it like that, the boiler plate code becomes
-
-   ``sim_dir = path/to/ExampleHalo``
-   
-   ``param = symlib.simulation_parameters(sim_dir)``
-   
-   ``h, hist = symlib.read_subhalos(param, sim_dir)``
-
-   which is much less painful. Im going to write the rest of the tutotial as if this is true, but would like some feedback on it before changing things. Keep that in mind if you're following along with the examples.
-
 Example Subhalo Analysis: Subhalo Postions
 ------------------------------------------
    
@@ -121,8 +93,7 @@ circles.
     fig, ax = plt.subplots()
     
     sim_dir = "path/to/ExampleHalo"
-    param = symlib.simulation_parameters(sim_dir)
-    halos, histories = symlib.read_subhalos(param, sim_dir)
+    halos, histories = symlib.read_subhalos(sim_dir)
     
     host = halos[0,-1] # First halo, last snapshot.
     symlib.plot_circle(ax, host["x"][0], host["x"][1],
@@ -167,9 +138,8 @@ Now, we'll try analysis that's a bit more quantitative. We'll look at the growth
 		
     sim_dir = "path/to/ExampleHalo"
 
-    param = symlib.simulation_parameters(sim_dir)
     scale = symlib.scale_factors(sim_dir)
-    h, hist = symlib.read_subhalos(param, sim_dir)
+    h, hist = symlib.read_subhalos(sim_dir)
 
     snaps = np.arange(len(h[0])) # Snapshots #s, for making cuts.
 
@@ -218,7 +188,6 @@ Constructing a mass function has a bit more code overhead than the earlier examp
 
     base_dir = "path/to/base/dir"
     suite_name = "SymphonyMilkyWay"
-    param = symlib.simulation_parameters(suite_name)
     
     # Mass function bins and empty histogram.
     log_m_min, log_m_max, n_bin = 8, 12, 200
@@ -228,13 +197,16 @@ Constructing a mass function has a bit more code overhead than the earlier examp
     n_hosts = symlib.n_hosts(suite_name)
     for i_host in range(n_hosts):
         sim_dir = symlib.get_host_directory(base_dir, suite_name, i_host)
-	h, hist = symlib.read_subhalos(param, sim_dir)
+	h, hist = symlib.read_subhalos(sim_dir)
 
 	# Only count objects within R_vir
+        host_rvir = h[0,-1]["rvir"]
+        sub_x = h[:,-1]["x"]
+        r = np.sqrt(np.sum(sub_x**2, axis=1))
         ok = h["ok"][:,-1] & (r < host_rvir)
-        n_vir, _ = np.histogram(hist["mpeak"][ok][1:], bins=bins)
 
-	# Add to the cumulative histogram.
+        # Put in bins and add to cumulative histogram
+        n_vir, _ = np.histogram(hist["mpeak"][ok][1:], bins=bins)
 	N_vir += np.cumsum(n_vir[::-1])[::-1]/n_hosts
 
     plt.plot(bins[:-1], N_vir, "k")
@@ -244,10 +216,7 @@ With a little bit of additional pyplot work, this gives us the following. The fu
 .. image:: mass_func.png
    :width: 500
 
-.. note::
-   Need to regenerate this plot so it only has one curve.
-
-Here, we can see the classic form of the subhalo mass function. At smaller subhalo masses, decreasing the subhalo mass by a increses the number of subhalos by roughly the same multiplicative factor, and there's a cutoff as the subhalos get close to the host mass.
+Here, we can see the classic form of the subhalo mass function. At smaller subhalo masses, decreasing the subhalo mass by a increses the number of subhalos by :math:`N \lesssim M^{-1}`, and there's an exponential cutoff as the subhalos get close to the host mass.
    
 Let's review the concepts that went into creating this image: 
 
@@ -367,6 +336,9 @@ As before, some plotting code and standard setup code that reads in parameters a
 
 .. code-block:: python
 
+    sim_dir = "path/to/ExampleHalo"
+    h, hist = symlib.read_subhalos(sim_dir)
+		
     # Read in tree data
     b = symlib.read_branches(sim_dir)
     dfid, next_co_prog, snap = symlib.read_tree(
