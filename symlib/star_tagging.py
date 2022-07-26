@@ -312,7 +312,7 @@ class Nadler2020RHalf(RHalfModel):
         return ["rvir"]
 
 class FixedRHalf(object):
-    def __init__(self, ratio):
+    def __init__(self, ratio=0.015):
         self.ratio = ratio
 
     def r_half(self, no_scatter=False **kwargs):
