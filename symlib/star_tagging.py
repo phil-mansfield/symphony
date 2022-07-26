@@ -195,7 +195,11 @@ class AbstractRanking(abc.ABC):
         is_nil = self.ranks[self.idx] == NIL_RANK
         self.mp_star[self.idx[is_nil]] = 0
 
-        correction_frac = m_star/np.sum(self.mp_star)
+        mp_star_tot = np.sum(self.mp_star)
+        if mp_star_tot == 0:
+            correction_frac = 1.0
+        else:
+            correction_frac = m_star/np.sum(self.mp_star)
         self.mp_star *= correction_frac
         self.mp_star_table *= correction_frac
         
@@ -288,19 +292,33 @@ class Nadler2020RHalf(RHalfModel):
         self.R0 = R0
         self.sigma_log_R = sigma_log_R
 
-    def r_half(self, **kwargs):
+    def r_half(self, no_scatter=False, **kwargs):
         """ r_half returns the half-mass radius of a a galaxy in physical kpc.
         Required keyword arguments:
          - rvir
         """
         # inputs and outputs are in pMpc (no h).
         log_R = np.log10(self.A * (rvir/self.R0)**self.n)
-        log_scatter = self.sigma_log_R*random.normal(0, 1, size=np.shape(rvir))
-        return 10**(log_R + log_scatter)
+        if no_scatter:
+            return 10**log_R
+        else:
+            log_scatter = self.sigma_log_R*random.normal(
+                0, 1, size=np.shape(rvir))
+            return 10**(log_R + log_scatter)
 
     def var_names(self):
         """ var_names returns the names of the variables this model requires.
         """
+        return ["rvir"]
+
+class FixedRHalf(object):
+    def __init__(self, ratio):
+        self.ratio = ratio
+
+    def r_half(self, no_scatter=False **kwargs):
+        return rvir*self.ratio
+
+    def var_names(self):
         return ["rvir"]
 
 class Jiang2019RHalf(RHalfModel):
@@ -512,8 +530,6 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
         star_ok = star_ok & (star_snap == snap)
         E_ok = E_ok & (E_snap == snap)
         i_star, i_E = np.where(star_ok)[0], np.where(E_ok)[0]
-
-        print("    snap: %d, stars, E:" % snap, i_star, i_E)
 
         # Read in data.
         owner = lib.read_particles(part_info, sim_dir, snap, "ownership")
