@@ -213,7 +213,7 @@ Halo Functions
    :param str sim_dir: The directory of the target host halo.
    :rtype: :data:`symlib.BRANCH_DTYPE` ``np.array`` 
 
-.. function:: merger_lookup_table(b, dfid)
+.. function:: symlib.merger_lookup_table(b, dfid)
 
    Creates a lookup table to aid with finding the branches of merging halos. The details of this table are not important and may be changed at any time to improve performance.
 
@@ -222,7 +222,7 @@ Halo Functions
    :param int np.array dfid:
    :rtype: int np.array
    
-.. function:: find_merger_branch(lookup_table, co_prog)
+.. function:: symlib.find_merger_branch(lookup_table, co_prog)
 
    Searches for the index of the branch corresponding of a given merging subhalo. The subhalo is identified by a "co-progenitor" ID. See the writeup in :doc:`Getting Started <getting_started>` for more discussion on what this means.
 
@@ -232,7 +232,7 @@ Halo Functions
    :param int co_prog: a single "co-progenitor depth-first ID" (``"next_co_prog"`` in calls to :func:`read_tree`).
    :rtype: int
 		       
-.. function:: find_all_merger_branches(b, lookup_table, co_prog, i)
+.. function:: symlib.find_all_merger_branches(b, lookup_table, co_prog, i)
 
    Returns the indices of all the branches that merge with a given halo. (i.e. branches that exist in the current snapshot but disrupt in the next snapshot).
 
