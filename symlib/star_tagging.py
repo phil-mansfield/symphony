@@ -315,7 +315,7 @@ class FixedRHalf(object):
     def __init__(self, ratio=0.015):
         self.ratio = ratio
 
-    def r_half(self, no_scatter=False **kwargs):
+    def r_half(self, no_scatter=False, **kwargs):
         return rvir*self.ratio
 
     def var_names(self):
