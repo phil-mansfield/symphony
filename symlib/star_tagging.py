@@ -557,6 +557,8 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
 
     # Finally, assign stellar masses and create ranking objects for each halo.
     mp_star, ranks = [None]*len(h), [None]*len(h)
+
+    r_half, m_star = np.ones(len(h))*-1, np.ones(len(h))*-1
     for i in target_subs:
         ranks[i] = RadialEnergyRanking(
             param, x_E[i], v_E[i], idx_E[i], n_max[i])
@@ -570,9 +572,10 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
 
         kwargs = galaxy_halo_model.get_kwargs(
             param, scale, h[i], star_snap[i])
-        mp_star[i] = galaxy_halo_model.set_mp_star(ranks[i], kwargs)
+        mp_star[i], r_half[i], m_star[i] = galaxy_halo_model.set_mp_star(
+            ranks[i], kwargs)
 
-    return mp_star, ranks
+    return mp_star, ranks, r_half, m_star
 
 
 def old_tag_stars(base_dir, params, galaxy_halo_model, mergers, halo_idx, tag_snap,
@@ -671,6 +674,9 @@ class GalaxyHaloModel(object):
         r_half_model arguments. You may also fix the half-mass radius and
         stellar mass to whatever you want with r_half (units: pkpc) and m_star
         (units: Msun).
+        
+        This function also returns the r_half and M_star value that it assigned
+        to the halo.
         """
         if m_star is None:
             check_var_names(kwargs, self.m_star_model)
@@ -684,7 +690,7 @@ class GalaxyHaloModel(object):
                 **self.r_half_model.trim_kwargs(kwargs))
 
         return ranks.set_mp_star(
-            kwargs["rvir"], self.profile_model, r_half, m_star)
+            kwargs["rvir"], self.profile_model, r_half, m_star), r_half, m_star
     
     def var_names(self):
         """ var_names returns the names of the variables this model requires.
