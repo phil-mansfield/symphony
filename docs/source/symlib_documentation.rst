@@ -63,8 +63,8 @@ Datatypes
     * ``"is_real"`` (*bool*) - False if the first tracked halo of this branch is a subhalo and True otherwise. Branches where this is False are virtually always tree-linking errors.
     * ``"is_disappear"`` (*bool*) True if the last tracked halo of this branch disrupts without merging with any other halos and False otherwise. Branches where this is True are virtually always barely-resolved object fluctuating in-and-out of existence near the resolution barrier.
     * ``"is_main_sub"`` (*bool*) - True if any halo in the branch was ever a subhalo of the main host.
-    * ``"preprocess"`` (*numpy.int32*) - A non-negative integer if the branch was ever the subhalo of a larger halo prior to becoming a subhalo of the host and -1 otherwise. If the first case is true, this variable is the index of the largest branch that this branch was a subhalo of. There's some non-trivial bookkeeping required to deal with tree errors caused by major mergers, which will be described in a future paper. For now, suffice to say that it is a generalized version of Section 2.3.1 of Mansfiled & Kravtsov (2020).
-    * ``"fist_infall_snap"`` (*numpy.int32*) - If ``"preprocess"`` is non-negative, the snapshot when this branch first fell into a halo of the branch pointed to by ``"preprocess"``.
+    * ``"preprocess"`` (*numpy.int32*) - A non-negative integer if the branch was ever the subhalo of a larger halo prior to becoming a subhalo of the host and -1 otherwise. If the first case is true, this variable is the index of the largest branch that this branch was a subhalo of. There's some non-trivial bookkeeping required to deal with tree errors caused by major mergers, which will be described in a future paper. For now, suffice to say that it is a generalized version of Section 2.3.1 of Mansflied & Kravtsov (2020).
+    * ``"first_infall_snap"`` (*numpy.int32*) - If ``"preprocess"`` is non-negative, the snapshot when this branch first fell into a halo of the branch pointed to by ``"preprocess"``.
       
 Merger Tree Variables
 ---------------------
@@ -213,7 +213,7 @@ Halo Functions
    :param str sim_dir: The directory of the target host halo.
    :rtype: :data:`symlib.BRANCH_DTYPE` ``np.array`` 
 
-.. function:: merger_lookup_table(b, dfid)
+.. function:: symlib.merger_lookup_table(b, dfid)
 
    Creates a lookup table to aid with finding the branches of merging halos. The details of this table are not important and may be changed at any time to improve performance.
 
@@ -222,7 +222,7 @@ Halo Functions
    :param int np.array dfid:
    :rtype: int np.array
    
-.. function:: find_merger_branch(lookup_table, co_prog)
+.. function:: symlib.find_merger_branch(lookup_table, co_prog)
 
    Searches for the index of the branch corresponding of a given merging subhalo. The subhalo is identified by a "co-progenitor" ID. See the writeup in :doc:`Getting Started <getting_started>` for more discussion on what this means.
 
@@ -232,7 +232,7 @@ Halo Functions
    :param int co_prog: a single "co-progenitor depth-first ID" (``"next_co_prog"`` in calls to :func:`read_tree`).
    :rtype: int
 		       
-.. function:: find_all_merger_branches(b, lookup_table, co_prog, i)
+.. function:: symlib.find_all_merger_branches(b, lookup_table, co_prog, i)
 
    Returns the indices of all the branches that merge with a given halo. (i.e. branches that exist in the current snapshot but disrupt in the next snapshot).
 
