@@ -708,6 +708,7 @@ def read_particles(part_info, base_dir, snap, var_name, owner=None):
             return valid
         else:
             valid = (tags.snap[owner] <= snap)[tags.flag[owner] == 0]
+            return valid
     elif var_name in ["x", "v"]:
         x_full = np.zeros((hd.n_particle, 3))
 

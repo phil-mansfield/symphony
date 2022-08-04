@@ -11,7 +11,7 @@ from .star_tagging import ProfileModel, RHalfModel, MStarModel, AbstractRanking
 # Profile models
 from .star_tagging import PlummerProfile
 # R_half models
-from .star_tagging import Nadler2020RHalf, Jiang2019RHalf
+from .star_tagging import Nadler2020RHalf, Jiang2019RHalf, FixedRHalf
 # M_star models
 from .star_tagging import UniverseMachineMStar
 # Ranking schemes
