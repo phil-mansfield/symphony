@@ -448,7 +448,8 @@ class RadialEnergyRanking(AbstractRanking):
         only_tag may be set so that only a subset of particles may be tagged
         (e.g. early-accreted particles).
         """        
-        self.rmax, self.vmax, self.pe_vmax2, self.order = profile_info(params,x)
+        (self.rmax, self.vmax,
+         self.pe_vmax2, self.order) = profile_info(params, x)
 
         self.ke_vmax2 = 0.5*np.sum(v**2, axis=1) / self.vmax**2
         self.E_vmax2 = self.ke_vmax2 + self.pe_vmax2
@@ -532,28 +533,36 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
         i_star, i_E = np.where(star_ok)[0], np.where(E_ok)[0]
 
         # Read in data.
-        owner = lib.read_particles(part_info, sim_dir, snap, "ownership")
-        valid = lib.read_particles(part_info, sim_dir, snap, "valid")
-        x = lib.read_particles(part_info, sim_dir, snap, "x")
-        v = lib.read_particles(part_info, sim_dir, snap, "v")
-
         host, a_z = h_cmov[0,snap], scale[snap]
 
         # Add information at the snapshot stellar masses are assigned
         for i in i_star:
-            ok = valid[i] & (owner[i] == 0)
+            ok = lib.read_particles(
+                part_info, sim_dir, snap, "valid", owner=i)
+            x = lib.read_particles(
+                part_info, sim_dir, snap, "x", owner=i)
+            v = lib.read_particles(
+                part_info, sim_dir, snap, "v", owner=i)
+
             idx_star[i] = np.where(ok)[0]
             sx = h[i,snap]["x"]
-            x_star[i] = util.set_units_x(x[i][ok], host, a_z, param) - sx
-            n_max[i] = len(x[i])
+            x_star[i] = util.set_units_x(x[ok], host, a_z, param) - sx
+            n_max[i] = len(x)
 
         # Add information at the snapshot energies are measured
         for i in i_E:
-            ok = valid[i] & (owner[i] == 0)
+            ok = lib.read_particles(
+                part_info, sim_dir, snap, "valid", owner=i)
+            x = lib.read_particles(
+                part_info, sim_dir, snap, "x", owner=i)
+            v = lib.read_particles(
+                part_info, sim_dir, snap, "v", owner=i)
+
             idx_E[i] = np.where(ok)[0]
             sx, sv = h[i,snap]["x"], h[i,snap]["v"]
-            x_E[i] = util.set_units_x(x[i][ok], host, a_z, param) - sx
-            v_E[i] = util.set_units_v(v[i][ok], host, a_z, param) - sv
+
+            x_E[i] = util.set_units_x(x[ok], host, a_z, param) - sx
+            v_E[i] = util.set_units_v(v[ok], host, a_z, param) - sv
 
     # Finally, assign stellar masses and create ranking objects for each halo.
     mp_star, ranks = [None]*len(h), [None]*len(h)
