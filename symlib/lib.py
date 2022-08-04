@@ -623,7 +623,8 @@ class ParticleTags(object):
         self.flag = [None]*part_hd.n_halo
 
         for i_file in range(part_hd.n_file):
-            file_name = path.join(base_dir, "particles", "tags.%d.dat" % i_file)
+            file_name = path.join(base_dir, "particles",
+                                  "tags.%d.dat" % i_file)
             f = open(file_name, "rb")
             
             to_read = np.where(i_file == part_hd.file_idxs)[0]
@@ -635,6 +636,32 @@ class ParticleTags(object):
             f.close()
 
         self.n0 = part_hd.n0
+        self.n_file = part_hd.n_file
+        self.n_halo =  part_hd.n_halo
+        self.file_idxs = part_hd.file_idxs
+
+        self._n0_snaps = [self.snap[i][self.flag[i] == 0]
+                          for i in range(part_hd.n_halo)]
+        self._offset_lookup = {}
+
+    def halo_offset(self, snap, i_halo):
+        if snap in self._offset_lookup:
+            return self._offset_lookup[snap][i_halo]
+        else:
+            offsets = np.zeros(self.n_halo, dtype=int)
+            for i_file in range(self.n_file):
+                to_read = np.where(i_file == self.file_idxs)[0]
+                curr_offset = 4
+                for i in to_read:
+                    offsets[i] = curr_offset
+
+                    if len(self._n0_snaps[i]) == 0: continue
+                    n = np.sum(self._n0_snaps[i] <= snap)
+                    if n == 0: continue
+
+                    curr_offset += 6*n + 8 + 12 + 12
+            self._offset_lookup[snap] = offsets
+            return self._offset_lookup[snap][i_halo]
 
 class TagLookup(object):
     def __init__(self, base_dir):
@@ -655,25 +682,61 @@ class ParticleInfo(object):
         self.global_offset = global_offset
         self.global_index = global_offset[self.lookup.halo] + self.lookup.index
         
-def read_particles(part_info, base_dir, snap, var_name):
+def read_particles(part_info, base_dir, snap, var_name, owner=None):
     hd, tags = part_info.part_hd, part_info.tags
     
     if var_name == "id":
-        return tags.id
+        if owner is None:
+            return tags.id
+        else:
+            return tags.id[owner][tags.flag[owner] == 0]
     elif var_name == "snap":
-        return tags.snap
+        if owner is None:
+            return tags.snap
+        else:
+            return tags.snap[owner][tags.flag[owner] == 0]
     elif var_name == "ownership":
-        return tags.flag
+        if owner is None:
+            return tags.flag
+        else:
+            return tags.flag[owner][tags.flag[owner] == 0]
     elif var_name == "valid":
-        valid = [None]*len(tags.snap)
-        for i in range(len(valid)):
-            valid[i] = tags.snap[i] <= snap
-        return valid
+        if owner is None:
+            valid = [None]*len(tags.snap)
+            for i in range(len(valid)):
+                valid[i] = tags.snap[i] <= snap
+            return valid
+        else:
+            valid = (tags.snap[owner] <= snap)[tags.flag[owner] == 0]
     elif var_name in ["x", "v"]:
         x_full = np.zeros((hd.n_particle, 3))
 
+        snap_name = "snap_%03d" % snap
+        if owner is not None:
+            i_file = hd.file_idxs[owner]
+            file_name = "%s.%d.dat" % (var_name, i_file)
+
+            path = os.path.join(hd.base_dir, "particles", snap_name, file_name)
+            f = open(path, "rb")
+
+            code = struct.unpack("i", f.read(4))[0]
+            if code != 0: raise ValueError("%s is not a vector file." % path)
+
+            offset = tags.halo_offset(snap, owner)
+            f.seek(offset, 0)
+
+            size = struct.unpack("q", f.read(8))[0]
+            min = np.array(struct.unpack("fff", f.read(12)))
+            max = np.array(struct.unpack("fff", f.read(12)))
+            
+            qx_i = np.fromfile(f, np.uint16, size*3)
+            x_i = _dequantize_vector(qx_i, min, max)
+            x_i = _expand_vector(tags, x_i, owner, snap)
+
+            f.close()
+            return x_i
+
         for i_file in range(hd.n_file):
-            snap_name = "snap_%03d" % snap
             file_name = "%s.%d.dat" % (var_name, i_file)
             path = os.path.join(hd.base_dir, "particles", snap_name, file_name)
             f = open(path, "rb")
@@ -686,6 +749,8 @@ def read_particles(part_info, base_dir, snap, var_name):
                 if hd.n0[i_halo] == 0: continue
                 ok = tags.snap[i_halo][tags.flag[i_halo] == 0] <= snap
                 if np.sum(ok) == 0: continue
+
+                curr_offset = f.seek(0, 1)
 
                 size = struct.unpack("q", f.read(8))[0]
                 min = np.array(struct.unpack("fff", f.read(12)))
@@ -707,6 +772,8 @@ def read_particles(part_info, base_dir, snap, var_name):
 
         return out
     elif var_name == "infall_core":
+        # Setting owner doesn't do anything for infall_core.
+
         file_name = os.path.join(base_dir, "halos", "infall_cores.dat")
     
         with open(file_name, "rb") as fp:
