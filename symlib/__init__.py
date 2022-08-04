@@ -28,3 +28,6 @@ from .util import  get_host_directory, n_hosts
 
 # These are functions that are only really useful for the the tutorial
 from .util import plot_circle
+
+# File management
+from .file_management import tar_files
