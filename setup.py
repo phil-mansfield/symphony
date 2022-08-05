@@ -12,7 +12,7 @@ setuptools.setup(
     description="A library for working with data from the Symphony and MW-est zoom-in suites.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    install_requires=["numpy", "scipy", "matplotlib", "colossus"],
+    install_requires=["numpy", "scipy", "matplotlib", "colossus", "gdown"],
     url="https://github.com/phil-mansfield/symlib",
     keywords=["python"],
     classifiers = [
