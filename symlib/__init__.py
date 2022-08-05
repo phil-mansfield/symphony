@@ -30,4 +30,4 @@ from .util import  get_host_directory, n_hosts
 from .util import plot_circle
 
 # File management
-from .file_management import pack_files, download_packed_files, download_files
+from .file_management import pack_files, download_packed_files, download_files, unpack_files
