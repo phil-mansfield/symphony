@@ -51,6 +51,7 @@ Datatypes
     * ``"merger_ratio"`` (*numpy.float32*) - The ratio of masses at this infall snapshot.
     * ``"branch_idx"`` (*numpy.int32*) - The index of this halo's branch in the full merger tree. This allows you to switch back and forther between the two data structures as needed.
     * :data:`symlib.HISTORY_DTYPE` also contains all the fields in :func:`symlib.BRANCH_DTYPE`. Note, however, that subhalos where ``is_disappear`` is True or ``is_real`` is False have already been removed, so there is no need to make cuts on this.
+    * ``false_selection`` (*bool*) - True if the branch has :math:`M_{\rm peak} \geq 300\cdot m_p` after infall, but :math:`M_{\rm peak} < 300\codt m_p`.
     
 .. data:: symlib.BRANCH_DTYPE
 
@@ -178,7 +179,7 @@ General Functions
 Halo Functions
 --------------
 				  
-.. function:: symlib.read_subhalos(sim_dir)
+.. function:: symlib.read_subhalos(sim_dir, comoving=False, include_false_selections=False)
 
     Reads the subhalo data for a single host halo. Two arrays are returned.
 
@@ -187,9 +188,12 @@ Halo Functions
     Subhalos are determined by the Rockstar halo finder and consistent-trees merger tree code. All objects that have ever been within :math:`R_{\rm vir,host}` of the host halo are included, meaning that disrupted, merged, and "splashback" subhalos are included.
 
     If ``comoving=False``, ``symlib``'s default units are used. Positions and velocities are centered on the host halo. Otherwise, the output arrays use Rockstar's unit conventions by default: all masses, positions, and distances have :math:`h_{100}`-scalings: masses have units of :math:`h^{-1}M_\odot`, positions comoving :math:`h^{-1}{\rm Mpc}`, and radii comoving :math:`h^{-1}{\rm kpc}`. In this case positions will be centered on the zero-point of the box.
-	
-    :param dict params: Simulation parameters, as returned by :func:`symlib.simulation_parameters`
+
+    By default, subhalos which have :math:`M_{\rm peak}` above the 300-particle cutoff, but were below the cutoff when they first became a subhalo are considered numerical artifacts and are _not_ included. They can be reintroduced to the catalog by setting ``include_false_selections=True``
+    
     :param str sim_dir: The directory of the target host halo.
+    :param bool comoving=False: Controls whether the resturn values are in default Rockstar/consistent-trees units (``False``) or default symlib units (``True``).
+    :param bool include_false_selections=False: Controls whether subhalos which only have :math:`M_{\rm peak}` above the catalog cutoff due toa consistent-trees error are included (``True``) or excluded (``False``).
     :rtype: (``h``, ``hist``): ``h`` is a :data:`symlib.SUBHALO_DTYPE` ``np.array`` with shape (:math:`N_{\rm subhalos}`, :math:`N_{\rm snaps}`), ``hist`` is is a :data:`symlib.HISTORY_DTYPE` ``np.array`` with length :math:`N_{\rm subhalos}`.
 	
 .. function:: symlib.read_tree(sim_dir, var_names)

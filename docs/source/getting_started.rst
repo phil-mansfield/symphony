@@ -15,7 +15,7 @@ Currently, only Python3 is supported.
 Downloading Data
 ----------------
 
-Symphony data is organized into several suites of zoom-in simulations: the LMC, Milky Way, Group, L-Cluster, and Cluster suites. These suites respectively correspond to host halos with masses of 10^11, 10^12, 10^13, 5*10^14, and 10^15 Msun. The entire dataset is stored in a single base directory. Each suite has is its own sub-directory within the base, and each zoom-in simulation has a subdirectory within its suite. 
+Symphony data is organized into several suites of zoom-in simulations: the LMC, Milky Way, Group, L-Cluster, and Cluster suites. These suites respectively correspond to host halos with masses of :math:`10^{11}`, :math:`10^{12}`, :math:`10^{13}`, :math:`5\times 10^14`, and :math:`10^{15}` :math:`M_\odot`. The entire dataset is stored in a single base directory. Each suite has is its own sub-directory within the base, and each zoom-in simulation has a subdirectory within its suite. 
 
 You can download data from
 
