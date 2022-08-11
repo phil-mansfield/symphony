@@ -12,6 +12,8 @@ from .star_tagging import ProfileModel, RHalfModel, MStarModel, AbstractRanking
 from .star_tagging import PlummerProfile
 # R_half models
 from .star_tagging import Nadler2020RHalf, Jiang2019RHalf, FixedRHalf
+# Metallicity models
+from .star_tagging import Kirby2013Metallicity
 # M_star models
 from .star_tagging import UniverseMachineMStar
 # Ranking schemes

@@ -70,6 +70,10 @@ def set_units_halos(h, scale, param):
         x0 = np.copy(h["x"][0,:,dim])
         v0 = np.copy(h["v"][0,:,dim])
 
+        if x0[-1] == 0:
+            raise ValueError("Calling set_units_halos() on a set of halos " +
+                             "already in physical units.")
+
         for hi in range(len(h)):
             h["x"][hi,:,dim] -= x0
             h["v"][hi,:,dim] -= v0

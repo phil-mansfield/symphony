@@ -41,7 +41,7 @@ HISTORY_DTYPE = [("mpeak", "f4"), ("vpeak", "f4"), ("merger_snap", "i4"),
                  ("start", "i4"), ("end", "i4"), ("is_real", "?"),
                  ("is_disappear", "?"), ("is_main_sub", "?"),
                  ("preprocess", "i4"), ("first_infall_snap", "i4"),
-                 ("branch_idx", "i4")]
+                 ("branch_idx", "i4"), ("false_selection", "?")]
 
 
 """ BRANCH_DTYPE is a numpy datatype representing the main branch of of halo's
@@ -206,20 +206,39 @@ def halo_dir_to_suite_name(dir_name):
     base_dir, suite_name = os.path.split(suite_dir)
     return suite_name
 
+_SCALE_FACTOR_CACHE = { }
+
 def scale_factors(dir_name):
     """ scale_factors returns the scale factors of each snapshot for a halo in
     the given directory.
     """
+    if dir_name in _SCALE_FACTOR_CACHE:
+        return _SCALE_FACTOR_CACHE[dir_name]
+
     # TODO: individual halo-by-halo scale factors
     suite_name = halo_dir_to_suite_name(dir_name)
     if suite_name in ["SymphonyLMC", "SymphonyGroup",
                       "SymphonyMilkyWay", "MWest"]:
-        return 10**np.linspace(np.log10(0.05), np.log10(1), 236)
+        default = 10**np.linspace(np.log10(0.05), np.log10(1), 236)
     elif suite_name in ["SymphonyLCluster",  "SymphonyCluster"]:
-        return 10**np.linspace(np.log10(0.075), np.log10(1), 200)
+        default = 10**np.linspace(np.log10(0.075), np.log10(1), 200)
     else:
         raise ValueError(("The halo in %s does not bleong to a " + 
                           "recognized suite.") % dir_name)
+
+    file_name = path.join(dir_name, "halos", "snap_table.dat")
+    if not path.exists(file_name):
+        _SCALE_FACTOR_CACHE[dir_name] = default
+        return default
+
+    f = open(fname, "rb")
+    n_snap = struct.unpack("q", f.read(8))[0]
+    scale = np.fromfile(f, np.float64, n_snap)
+    f.close()
+
+    _SCALE_FACTOR_CACHE[dir_name] = scale
+    return scale
+
 
 def mvir_to_rvir(mvir, a, omega_M):
     """ mvir_to_rvir converts a Bryan & Norman virial mass in Msun/h to a virial
@@ -315,7 +334,7 @@ def merger_stats(b, m, x, mvir, snap):
 
     return mpeak, m_snap, ratio, sub_idx
 
-def read_subhalos(dir_name, comoving=False):
+def read_subhalos(dir_name, comoving=False, include_false_selections=False):
     """ read_subhalos reads major merger data from the halo directory dir_name.
     It returns two arrays. The first, m_idx, is the indices of the major
     mergers within the branches arrays. Index 0 is the main halo, index 1 is the
@@ -325,6 +344,11 @@ def read_subhalos(dir_name, comoving=False):
     halo at the index halo_idx in m_idx and the snapshot snap. The fields are
     given by SUBHALO_DTYPE (see the header of this file). If a halo doesn't
     exist at a given snapshot, values are set -1 ok will be set to false.
+
+    If comoving is True, the subhaloes will be returned in Rockstar's default,
+    comoving units. Otherwise it's returned in symlib's units. If
+    include_false_slections is true, haloes which would be included with a
+    straight M_peak > 300*mp cutoff are included. If False (the default)
     """
     params = simulation_parameters(dir_name)
 
@@ -334,7 +358,7 @@ def read_subhalos(dir_name, comoving=False):
     n_snap = struct.unpack("i", f.read(4))[0]
     n_merger = struct.unpack("i", f.read(4))[0]
 
-    idx = np.fromfile(f, np.int32, n_merger)    
+    idx = np.fromfile(f, np.int32, n_merger)
     out = np.zeros((n_merger, n_snap), dtype=SUBHALO_DTYPE)
     a = scale_factors(dir_name)
 
@@ -378,6 +402,11 @@ def read_subhalos(dir_name, comoving=False):
         scale = scale_factors(dir_name)
         out = util.set_units_halos(out, scale, params)
         histories = util.set_units_histories(histories, scale, params)
+
+    if not include_false_selections:
+        out = out[~histories["false_selection"]]
+        histories = histories[~histories["false_selection"]]
+
     return out, histories
 
 def get_subhalo_histories(s, idx, dir_name):
@@ -385,6 +414,7 @@ def get_subhalo_histories(s, idx, dir_name):
         raise ValueError("The input subhalo array has already been " + 
                          "converted to symlib's default units.")
 
+    param = simulation_parameters(dir_name)
     b = read_branches(dir_name)
     h = np.zeros(len(s), dtype=HISTORY_DTYPE)
 
@@ -413,9 +443,13 @@ def get_subhalo_histories(s, idx, dir_name):
 
         h[i]["merger_snap"], h[i]["merger_ratio"] = m_snap, m_ratio
         
+        infall_snap = h["first_infall_snap"][i]
+        mpeak_infall = np.max(s[i,:infall_snap+1]["mvir"])
+        h["false_selection"][i] = mpeak_infall < 300*param["mp"]
+
     return h
 
-def read_cores(dir_name):
+def read_cores(dir_name, include_false_selections=False):
     """ read_cores read the particle-tracked halo cores of the halo in the
     given directory. The returned array is a structured array of type CORE_DTYPE
     with shape (n_halos, n_snaps).
@@ -441,7 +475,13 @@ def read_cores(dir_name):
 
         out["ok"] = out["m_bound"] != -1
 
-    return out.reshape((n_halo, n_snap))
+    out = out.reshape((n_halo, n_snap))
+
+    if not include_false_selections:
+        h, hist = read_subhalos(dir_name, include_false_selections=True)
+        out = out[~hist["false_selection"]]
+
+    return out
 
 def read_branches(dir_name):
     """ read_branches reads main branch data from the halo directory dir_name.
@@ -682,22 +722,36 @@ class ParticleInfo(object):
         self.global_offset = global_offset
         self.global_index = global_offset[self.lookup.halo] + self.lookup.index
         
-def read_particles(part_info, base_dir, snap, var_name, owner=None):
+        # Used to find false selections
+        _, self.hist_false = read_subhalos(
+            base_dir, include_false_selections=True)
+
+
+def read_particles(part_info, base_dir, snap, var_name,
+                   owner=None, include_false_selections=False):
     hd, tags = part_info.part_hd, part_info.tags
     
+    h_idx = np.arange(len(part_info.hist_false), dtype=int)
+    if include_false_selections:
+        false_remapping = h_idx
+    else:
+        false_remapping = h_idx[~part_info.hist_false["false_selection"]]
+    if owner is not None and not include_false_selections:
+        owner = false_remapping[owner]
+
     if var_name == "id":
         if owner is None:
-            return tags.id
+            return [tags.id[i] for i in false_remapping]
         else:
             return tags.id[owner][tags.flag[owner] == 0]
     elif var_name == "snap":
         if owner is None:
-            return tags.snap
+            return [tags.snap[i] for i in false_remapping]
         else:
             return tags.snap[owner][tags.flag[owner] == 0]
     elif var_name == "ownership":
         if owner is None:
-            return tags.flag
+            return [tags.flag[i] for i in false_remapping]
         else:
             return tags.flag[owner][tags.flag[owner] == 0]
     elif var_name == "valid":
@@ -705,7 +759,7 @@ def read_particles(part_info, base_dir, snap, var_name, owner=None):
             valid = [None]*len(tags.snap)
             for i in range(len(valid)):
                 valid[i] = tags.snap[i] <= snap
-            return valid
+            return [valid[i] for i in false_remapping]
         else:
             valid = (tags.snap[owner] <= snap)[tags.flag[owner] == 0]
             return valid
@@ -771,7 +825,7 @@ def read_particles(part_info, base_dir, snap, var_name, owner=None):
             idx = part_info.global_index[tags.id[i_halo] - 1]
             out[i_halo] = x_full[idx]
 
-        return out
+        return [out[i] for i in false_remapping]
     elif var_name == "infall_core":
         # Setting owner doesn't do anything for infall_core.
 
@@ -781,15 +835,7 @@ def read_particles(part_info, base_dir, snap, var_name, owner=None):
             n_halo, n_core = struct.unpack("qq", fp.read(16))
             idxs = np.fromfile(fp, dtype=np.int32, count=n_halo*n_core)
             idxs = idxs.reshape((n_halo, n_core))
-        return idxs
-    #elif var_name == "core":
-    #    file_name = os.path.join(base_dir, "halos", "cores.dat")
-    #
-    #    with open(file_name, "rb") as fp:
-    #        n_halo, n_snap, n_core = struct.unpack("qqq", fp.read(24))
-    #        idxs = np.fromfile(fp, dtype=np.int32, count=n_halo*n_snap*n_core)
-    #        idxs = idxs.reshape(n_halo, n_snap, n_core)
-    #    return idxs
+        return [idxs[i] for i in false_remapping]
     else:
         raise ValueError("Unknown property name, '%s'" % var_name)    
     
