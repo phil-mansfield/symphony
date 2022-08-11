@@ -19,6 +19,7 @@ Variables names:
 'rvir' - Bryan & Norman virial radius (pkpc)
 'cvir' - NFW concentration relative to the Bryan & Norman virial radius
 'z' redshift
+'mstar' - The stellar mass assinged to this halo (Msun)
 """
 
 NIL_RANK = -1
@@ -92,6 +93,28 @@ class MStarModel(abc.ABC):
     @abc.abstractmethod
     def m_star(self, **kwargs):
         """ m_star returns the stellar mass of a galaxy in Msun.
+        """
+        pass
+
+    @abc.abstractmethod
+    def var_names(self):
+        """ var_names returns the names of the variables this model requires.
+        """
+        pass
+
+    def trim_kwargs(self, kwargs):
+        out = {}
+        for key in self.var_names():
+            out[key] = kwargs[key]
+        return out
+
+class MetallicityModel(abc.ABC):
+    """ MetallicityModel is an abstract base class for models of the
+    M* - [FE/H] relation.
+    """
+    @abc.abstractmethod
+    def Fe_H(self, **kwargs):
+        """ Fe_H returns the 
         """
         pass
 
@@ -311,6 +334,7 @@ class Nadler2020RHalf(RHalfModel):
         """
         return ["rvir"]
 
+
 class FixedRHalf(RHalfModel):
     def __init__(self, ratio=0.015):
         self.ratio = ratio
@@ -361,6 +385,69 @@ class Jiang2019RHalf(RHalfModel):
         """ var_names returns the names of the variables this model requires.
         """
         return ["rvir", "cvir", "z"]
+
+class Carlsten2021RHalf(RHalfModel):
+    """ Carlsten2022RHalf models galaxies according to a z=0 size-mass relation
+    calibrated off of observations in the local volume.
+    (https://arxiv.org/pdf/2105.03435.pdf) (10^5.5 Msun < M* < 10^8.5 Msun).
+    """
+    def __init__(self, sigma_log_R=0.181, a=1.071, b=0.247):
+        """ The constructor for Carlsten2021RHalf is just a power law with 
+        log-normal scatter that lets yuo
+        """
+        self.sigma_log_R = sigma_log_R
+        self.a = a
+        self.b = b
+    
+    def r_half(self, rvir=None, cvir=None, z=None, no_scatter=False):
+        """ r_half returns the half-mass radius of a a galaxy in physical kpc.
+        Required keyword arguments:
+         - mstar
+        """
+        R = 10**(self.a + self.b*np.log10(0.247))
+        log_scatter = self.sigma_log_R*random.normal(0, 1, size=np.shape(rvir))
+        if not no_scatter:
+            return 10**(np.log10(R) + log_scatter)
+        else:
+            return R
+
+
+    def var_names(self):
+        """ var_names returns the names of the variables this model requires.
+        """
+        return ["mstar"]
+
+class Kirby2013Metallicity(MetallicityModel):
+    """ Kirby2013Metallicity models galaxy metallicity according to the
+    z-agnostic fit in Kirby et al. 2013 (https://arxiv.org/pdf/1310.0814.pdf;
+    Equation 4).
+    """
+    def __init__(self, sigma_Fe_H=0.17, Fe_H_dist_width=0.3):
+        """ The constructor for Kirby2013Metallicity allows you to change the
+        intrinsic scatter in the relation.
+        """
+        self.sigma_Fe_H = sigma_Fe_H
+        self.Fe_H_dist_width = Fe_H_dist_width
+    
+    def Fe_H(self, n_part, mstar=None, no_scatter=False):
+        """ Fe_H returns the metallicity of a given galaxy.
+        Required keyword arguments:
+         - mstar
+        """
+        if mstar is None: raise ValueError("mstar not supplied")
+        
+        Fe_H_mean = -1.69 + 0.30*np.log10(mstar/1e6)
+        scatter_mean = self.sigma_Fe_H*random.normal(0,1,size=np.shape(mstar))
+        if not no_scatter:
+            Fe_H_mean = Fe_H_mean + scatter_mean
+
+        return random.normal(Fe_H_mean, self.Fe_H_dist_width, size=n_part)
+
+
+    def var_names(self):
+        """ var_names returns the names of the variables this model requires.
+        """
+        return ["mstar"]
     
 class UniverseMachineMStarFit(MStarModel):
     def m_star(self, mpeak=None, z=None, no_scatter=False):
@@ -568,6 +655,7 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
     mp_star, ranks = [None]*len(h), [None]*len(h)
 
     r_half, m_star = np.ones(len(h))*-1, np.ones(len(h))*-1
+    Fe_H = [None]*len(h)
     for i in target_subs:
         ranks[i] = RadialEnergyRanking(
             param, x_E[i], v_E[i], idx_E[i], n_max[i])
@@ -577,14 +665,17 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
         # any bins with more than 10 particles in them.
         if np.max(ranks[i].ranks) == -1:
             mp_star[i] = np.zeros(len(ranks[i].ranks))
+            Fe_H[i] = np.zeros(len(ranks[i].ranks))
             continue
 
         kwargs = galaxy_halo_model.get_kwargs(
             param, scale, h[i], star_snap[i])
-        mp_star[i], r_half[i], m_star[i] = galaxy_halo_model.set_mp_star(
+
+        (mp_star[i], m_star[i], r_half[i],
+         Fe_H[i]) = galaxy_halo_model.set_mp_star(
             ranks[i], kwargs)
 
-    return mp_star, ranks, r_half, m_star
+    return mp_star, ranks, m_star, r_half, Fe_H
 
 
 def old_tag_stars(base_dir, params, galaxy_halo_model, mergers, halo_idx, tag_snap,
@@ -660,22 +751,24 @@ def look_back_orbital_time(params, scale, snap, dt_orbit, halo, min_mass_frac):
             
 
 class GalaxyHaloModel(object):
-    def __init__(self, m_star_model, r_half_model, profile_model,
+    def __init__(self, m_star_model, r_half_model, profile_model, metal_model,
                  no_scatter=False):
         """ GalaxyHaloModel requires a model for the M*-Mhalo relation,
         m_star_model, a model for how the projected half-mass radius and Mhalo
         are related, and a model for the halo profile, profile_model. These
         should be types that inherit from AbstractMstarModel,
-        AbstractRHalfModel, and AbstractProfileModel, respectively.
+        AbstractRHalfModel, AbstractProfileModel, and AbstractMetallicityModel
+        respectively.
 
         If you'd like to remove scatter from your model, set no_scatter=True.
         """
         self.m_star_model = m_star_model
         self.r_half_model = r_half_model
         self.profile_model = profile_model
+        self.metal_model = metal_model
         self.no_scatter = no_scatter
         
-    def set_mp_star(self, ranks, kwargs, r_half=None, m_star=None):
+    def set_mp_star(self, ranks, kwargs, r_half=None, m_star=None, Fe_H=None):
         """ set_mp_star sets the stellar masses of a halo's dark matter
         particles given their positions relative to the halo center, and
         ranking, ranks (type: inherits from AbstractParticleRanking). This
@@ -684,22 +777,34 @@ class GalaxyHaloModel(object):
         stellar mass to whatever you want with r_half (units: pkpc) and m_star
         (units: Msun).
         
-        This function also returns the r_half and M_star value that it assigned
-        to the halo.
+        This function also returns the M_star, r_half, and [Fe/H] values that
+        it assigned to the halo.
         """
         if m_star is None:
             check_var_names(kwargs, self.m_star_model)
             m_star = self.m_star_model.m_star(
                 no_scatter=self.no_scatter,
                 **self.m_star_model.trim_kwargs(kwargs))
+
+        kwargs["mstar"] = m_star
+
         if r_half is None:
             check_var_names(kwargs, self.r_half_model)
             r_half = self.r_half_model.r_half(
                 no_scatter=self.no_scatter,
                 **self.r_half_model.trim_kwargs(kwargs))
+            
+        mp_star = ranks.set_mp_star(kwargs["rvir"], self.profile_model,
+                                    r_half, m_star)
 
-        return ranks.set_mp_star(
-            kwargs["rvir"], self.profile_model, r_half, m_star), r_half, m_star
+
+        if Fe_H is None:
+            check_var_names(kwargs, self.metal_model)
+            Fe_H = self.metal_model.Fe_H(
+                len(mp_star), no_scatter=self.no_scatter,
+                **self.metal_model.trim_kwargs(kwargs))
+
+        return mp_star, m_star, r_half, Fe_H
     
     def var_names(self):
         """ var_names returns the names of the variables this model requires.

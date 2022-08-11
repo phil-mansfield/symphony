@@ -70,6 +70,10 @@ def set_units_halos(h, scale, param):
         x0 = np.copy(h["x"][0,:,dim])
         v0 = np.copy(h["v"][0,:,dim])
 
+        if x0[-1] == 0:
+            raise ValueError("Calling set_units_halos() on a set of halos " +
+                             "already in physical units.")
+
         for hi in range(len(h)):
             h["x"][hi,:,dim] -= x0
             h["v"][hi,:,dim] -= v0
@@ -130,7 +134,7 @@ DEFAULT_HALO_NAMES = {
         "Halo266", "Halo324", "Halo358", "Halo391", "Halo437", "Halo465", "Halo494", "Halo574",
         "Halo274", "Halo326", "Halo360", "Halo394", "Halo441", "Halo471", "Halo502", "Halo595",
         "Halo277", "Halo335", "Halo361", "Halo400", "Halo445", "Halo472", "Halo517", "Halo600",
-        "Halo282", "Halo337", "Halo366", "Halo407", "Halo447", "Halo474", "Halo518", "Halo604"
+        "Halo282", "Halo337", "Halo366", "Halo407", "Halo447", "Halo474", "Halo518", "Halo604", "Halo372", "Halo425"
     ]),
     "MWest": sorted([
         "Halo004", "Halo170", "Halo282", "Halo407", "Halo523", "Halo666", "Halo756", "Halo908", "Halo983",
