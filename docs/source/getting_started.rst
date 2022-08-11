@@ -4,7 +4,7 @@ Getting Started
 Installation
 ------------
 
-``symlib`` can be installed with pip. It depends on the standard scientific python libraries, `numpy <https://numpy.org/install/>`__, `scipy <https://scipy.org/install/>`__, and `matplotlib <https://matplotlib.org/stable/users/installing/index.html>`__. It also depends on the cosmology library `colossus <https://bdiemer.bitbucket.io/colossus/installation.html>`__. You can find installation instructions for all four libraries on their respective web pages.
+symlib can be installed with pip. It depends on the standard scientific python libraries, `numpy <https://numpy.org/install/>`__, `scipy <https://scipy.org/install/>`__, and `matplotlib <https://matplotlib.org/stable/users/installing/index.html>`__. It also depends on the cosmology library `colossus <https://bdiemer.bitbucket.io/colossus/installation.html>`__. You can find installation instructions for all four libraries on their respective web pages.
 
 .. code-block:: console
 
@@ -17,12 +17,78 @@ Downloading Data
 
 Symphony data is organized into several suites of zoom-in simulations: the LMC, Milky Way, Group, L-Cluster, and Cluster suites. These suites respectively correspond to host halos with masses of :math:`10^{11}`, :math:`10^{12}`, :math:`10^{13}`, :math:`5\times 10^14`, and :math:`10^{15}` :math:`M_\odot`. The entire dataset is stored in a single base directory. Each suite has is its own sub-directory within the base, and each zoom-in simulation has a subdirectory within its suite. 
 
-You can download data from
+You can download data with symlib's library functions. Most users will want to use the :func:`symlib.download_files` function. The following lines show examples of how to use this function.
 
 .. note::
-   Finish writing once we know where data can be downloaded from.
+   TODO: The data-light ``"halos"`` tar files haven't been uploaded yet. Only ``"trees"`` files are available now.
 
-Currently only halo data is available; please contact the developers about access to particle snapshots.
+.. code-block:: python
+
+	import symlib
+
+	# The base directory where data will be downloaded to.
+	# All they suites and halos will be properly ordered
+	# within this, so each halo's location will end up being
+	# {data_dir}/{suite_name}/{halo_name}.
+	data_dir = "path/to/storage/location"
+
+	# The type of data you want to download. "halos" is
+	# the basic halo information associated with the
+	# central host, and "trees" is that plus the full
+	# merger tree of the simulation.
+	target = "halos"
+
+	# Download the first host halo in the Milky Way-mass suite.
+	symlib.download_files("SymphonyMilkyWay", 0,
+		data_dir, target=target)
+
+	# Download all the host halos in the Milky Way-mass suite.
+	symlib.download_files("SymphonyMilkyWay", None,
+		data_dir, target=target)
+
+	# Download all the host halos across all the suites.
+	symlib.download_files(None, None,
+		data_dir, target=target)
+
+	# Download a specific halo that you know the name of.
+	symlib.download_files("SymphonyMilkyWay", "Halo023",
+		data_dir, target=target)
+
+You can also get a list of suite names with :func:`symlib.suite_names()` and hosts counts for a given suite with :func:`symlib.n_hosts()` so you can use a fine-tuned for loop instead of ``None``.
+
+The ``"halos"`` dataset will cover almost all use cases, including users interested in the evolution of the host and its subhalos over time The ``"trees"`` dataset is much larger and is more complex to use. The total sizes of the data in different suites can be found below:
+
+.. list-table::
+	:header-rows: 1
+		
+	* - Suite Name
+	  - :math:`N_{\rm hosts}`
+	  - ``"halos"``
+	  - ``"trees"``
+	* - SymphonyLMC
+	  - 39
+	  - 0.16 GB
+	  - 18 GB
+	* - SymphonyMilkyWay
+	  - 45
+	  - 0.77 GB
+	  - 62 GB
+	* - SymphonyGroup
+	  - 49
+	  - 0.83 GB
+	  - 227 GB
+	* - SymphonyLCluster
+	  - 33
+	  - 0.18 GB
+	  - 21 GB
+	* - SymphonyCluster
+	  - 96
+	  - 1.1 GB
+	  - 160 GB
+
+If you are running tests on a machine where you don't have much storage space, the smallest host is Halo933 in SymphonyLMC, with a ``"halos"`` size of 2.3 MB and ``"trees"`` size of 227 MB.
+
+symlib also offers the functions :func:`symlib.download_packed_files()` and :func:`symlib.unpack_files()`. which might be helpful if you are running a long download request that gets interrupted midway through.
 
 Reading in Subhalo Data
 -----------------------
@@ -35,7 +101,12 @@ information. These can be looked up with :func:`symlib.simulation_parameters` by
 
 	import symlib
 
+	# sim_dir is the location of a single halo. We'll talk about
+	# auto-generating this later, but if you downloaded "Halo933"
+	# in the suite "SymphonyLMC" to the directory "data/", this
+	# would be "data/SymphonyLMC/Halo933"
 	sim_dir = "path/to/ExampleHalo"
+	
 	params = symlib.simulation_parameters(sim_dir)
 	print(params)
 
