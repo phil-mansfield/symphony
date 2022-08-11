@@ -15,7 +15,7 @@ from .star_tagging import Nadler2020RHalf, Jiang2019RHalf, FixedRHalf
 # Metallicity models
 from .star_tagging import Kirby2013Metallicity
 # M_star models
-from .star_tagging import UniverseMachineMStar
+from .star_tagging import UniverseMachineMStarFit
 # Ranking schemes
 from .star_tagging import RadialEnergyRanking
 # Galaxy-halo models
