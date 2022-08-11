@@ -362,7 +362,7 @@ class Jiang2019RHalf(RHalfModel):
         """
         return ["rvir", "cvir", "z"]
     
-class UniverseMachineMStar(MStarModel):
+class UniverseMachineMStarFit(MStarModel):
     def m_star(self, mpeak=None, z=None, no_scatter=False):
         """
          Required keyword arguments:

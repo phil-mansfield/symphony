@@ -169,8 +169,7 @@ parameter_table["ExampleSuite"] = parameter_table["MWest"]
 def suite_names():
     """ suite_names returns the names of all the simulation suites.
     """
-    return ["SymphonyLMC", "SymphonyMilkyWay", "SymphonyGroup",
-            "SymphonyLCluster", "SymphonyCluster", "MWest"]
+    return util.SUITE_NAMES
 
 def simulation_parameters(suite_name):
     """ parameter_table contains simulation-defining parameters. This includes a
