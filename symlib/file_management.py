@@ -26,10 +26,16 @@ def pack_files(suite, halo_name, base_out_dir, target="halos",
     if isinstance(halo_name, int):
         halo_name = util.DEFAULT_HALO_NAMES[suite][halo_name]
 
-    rel_dir = path.join(suite, halo_name)
-    rel_out = path.join(base_out_dir, suite, target)
-    os.system("mkdir -p %s" % rel_out)
-    os.system("tar --exclude='%s/*core*' --exclude='%s/particles' -cf %s/%s.tar.gz %s" % (rel_dir, rel_dir, rel_out, halo_name, rel_dir))
+    if target == "trees":
+        rel_dir = path.join(suite, halo_name)
+        rel_out = path.join(base_out_dir, suite, target)
+        os.system("mkdir -p %s" % rel_out)
+        os.system("tar --exclude='%s/halos/*core*' --exclude='%s/particles' -cf %s/%s.tar.gz %s" % (rel_dir, rel_dir, rel_out, halo_name, rel_dir))
+    elif target == "halos":
+        rel_dir = path.join(suite, halo_name)
+        rel_out = path.join(base_out_dir, suite, target)
+        os.system("mkdir -p %s" % rel_out)
+        os.system("tar --exclude='%s/halos/*core*' --exclude='%s/halos/tree_[0-9].dat' --exclude='%s/particles' -cf %s/%s.tar.gz %s" % (rel_dir, rel_dir, rel_dir, rel_out, halo_name, rel_dir))
 
 def download_packed_files(suite, halo_name, base_out_dir,
                           target="halos", logging=True):
@@ -70,8 +76,8 @@ def download_packed_files(suite, halo_name, base_out_dir,
     )
 
     if not path.exists(path.join(out_dir, "%s.tar" % halo_name)):
-        raise Error("unable to download halo %s from the suite %s" %
-                    (halo_name, suite))
+        raise FileNotFoundError("unable to download halo %s from the suite %s" %
+                                (halo_name, suite))
         
 def unpack_files(suite, halo_name, base_out_dir,
                  target="halos", logging=True):
@@ -102,5 +108,3 @@ def download_files(suite, halo_name, base_out_dir,
                    target="halos", logging=True):
     download_packed_files(suite, halo_name, base_out_dir, target, logging)
     unpack_files(suite, halo_name, base_out_dir, target, logging)
-
-    
