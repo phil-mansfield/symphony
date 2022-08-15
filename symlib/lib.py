@@ -133,6 +133,7 @@ the number of snapshots in the suite.
 parameter_table = {
     "SymphonyLMC": _chinchilla_cosmology.copy(),
     "SymphonyMilkyWay": _chinchilla_cosmology.copy(),
+    "SymphonyMilkyWayHR": _chinchilla_cosmology.copy(),
     "SymphonyGroup": _chinchilla_cosmology.copy(),
     "SymphonyLCluster": _banerjee_cosmology.copy(),
     "SymphonyCluster": _carmen_cosmology.copy(),
@@ -141,6 +142,7 @@ parameter_table = {
 
 parameter_table["SymphonyLMC"]["eps"] = 0.080
 parameter_table["SymphonyMilkyWay"]["eps"] = 0.170
+parameter_table["SymphonyMilkyWayHR"]["eps"] = 0.170/2
 parameter_table["SymphonyGroup"]["eps"] = 0.360
 parameter_table["SymphonyLCluster"]["eps"] = 1.200
 parameter_table["SymphonyCluster"]["eps"] = 3.250
@@ -148,6 +150,7 @@ parameter_table["MWest"]["eps"] = 0.170
 
 parameter_table["SymphonyLMC"]["mp"] = 3.52476e4
 parameter_table["SymphonyMilkyWay"]["mp"] = 2.81981e5
+parameter_table["SymphonyMilkyWayHR"]["mp"] = 2.81981e5/8
 parameter_table["SymphonyGroup"]["mp"] = 2.25585e6
 parameter_table["SymphonyLCluster"]["mp"] = 1.51441632e8
 parameter_table["SymphonyCluster"]["mp"] = 1.26201360e8
@@ -155,6 +158,7 @@ parameter_table["MWest"]["mp"] = 2.81981e5
 
 parameter_table["SymphonyLMC"]["n_snap"] = 236
 parameter_table["SymphonyMilkyWay"]["n_snap"] = 236
+parameter_table["SymphonyMilkyWayHR"]["n_snap"] = 236
 parameter_table["SymphonyGroup"]["n_snap"] = 236
 parameter_table["SymphonyLCluster"]["n_snap"] = 200
 parameter_table["SymphonyCluster"]["n_snap"] = 200
@@ -217,7 +221,7 @@ def scale_factors(dir_name):
     # TODO: individual halo-by-halo scale factors
     suite_name = halo_dir_to_suite_name(dir_name)
     if suite_name in ["SymphonyLMC", "SymphonyGroup",
-                      "SymphonyMilkyWay", "MWest"]:
+                      "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayHR"]:
         default = 10**np.linspace(np.log10(0.05), np.log10(1), 236)
     elif suite_name in ["SymphonyLCluster",  "SymphonyCluster"]:
         default = 10**np.linspace(np.log10(0.075), np.log10(1), 200)
