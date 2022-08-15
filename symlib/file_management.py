@@ -67,7 +67,7 @@ def download_packed_files(suite, halo_name, base_out_dir,
         table = download_tables.trees
     else:
         raise ValueError("Unknown download target, '%s'" % target)
-    
+
     gdown.download(
         table[suite][halo_name],
         path.join(out_dir, "%s.tar" % halo_name),
