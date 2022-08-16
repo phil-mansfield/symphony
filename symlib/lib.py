@@ -220,14 +220,22 @@ def scale_factors(dir_name):
 
     # TODO: individual halo-by-halo scale factors
     suite_name = halo_dir_to_suite_name(dir_name)
-    if suite_name in ["SymphonyLMC", "SymphonyGroup",
-                      "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayHR"]:
+    if (suite_name in ["SymphonyLMC", "SymphonyGroup",
+                      "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayHR"] or
+        dir_name in ["SymphonyLMC", "SymphonyGroup",
+                     "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayHR"]):
         default = 10**np.linspace(np.log10(0.05), np.log10(1), 236)
-    elif suite_name in ["SymphonyLCluster",  "SymphonyCluster"]:
+    elif (suite_name in ["SymphonyLCluster",  "SymphonyCluster"] or
+          dir_name in ["SymphonyLCluster",  "SymphonyCluster"]):
         default = 10**np.linspace(np.log10(0.075), np.log10(1), 200)
     else:
-        raise ValueError(("The halo in %s does not bleong to a " + 
+        raise ValueError(("The halo in %s does not belong to a " + 
                           "recognized suite.") % dir_name)
+
+    if dir_name in ["SymphonyLMC", "SymphonyGroup",
+                    "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayHR", 
+                    "SymphonyLCluster",  "SymphonyCluster"]:
+        return default
 
     file_name = path.join(dir_name, "halos", "snap_table.dat")
     if not path.exists(file_name):
