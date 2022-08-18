@@ -8,16 +8,17 @@ Collaboration Members
 .. note::
    What sort of information do we want? What ordering? I just used the author order on the Symphony paper for now.
 
-- Ethan Nadler (*Carnegie Observatories*)
-- Philip Mansfield (*Stanford*)
-- Yunchong Wang (*Stanford*)
-- Xiaolong Du (*Carnegie Observatories*)
 - Susmita Adhikari (*India Institute of Science and Research*)
 - Arka Banerjee (*India Institute of Science and Research*)
 - Andrew Benson (*Carnegie Observatories*)
 - Elise Darragh-Ford (*Stanford*)
+- Xiaolong Du (*Carnegie Observatories*)
+- Bryné Hadnott (*Stanford*)
+- Philip Mansfield (*Stanford*)
 - Yao-Yuan Mao (*University of Utah*)
+- Ethan Nadler (*Carnegie Observatories*)
 - Sebastian Wagner-Carena (*Stanford*)
+- Yunchong Wang (*Stanford*)
 - Risa Wechsler (*Stanford*)
 - Hao-Yi Wu (*Boise State Univeristy*)
 
