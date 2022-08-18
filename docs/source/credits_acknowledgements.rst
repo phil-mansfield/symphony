@@ -13,7 +13,7 @@ Collaboration Members
 - Bryné Hadnott (*Stanford*)
 - Philip Mansfield (*Stanford*)
 - Yao-Yuan Mao (*University of Utah*)
-- Ethan Nadler (*Carnegie Observatories*)
+- Ethan O. Nadler (*Carnegie Observatories & USC*)
 - Sebastian Wagner-Carena (*Stanford*)
 - Yunchong Wang (*Stanford*)
 - Risa Wechsler (*Stanford*)
@@ -22,4 +22,4 @@ Collaboration Members
 Acknowledgements
 ----------------
 
-This research made use of computational resources at SLAC National Accelerator Laboratory, a U.S. Department of Energy Office, and the Sherlock cluster at the Stanford Research Computing Center (SRCC); the authors are thankful for the support of the SLAC and SRCC computing teams. Computing resources used in this work were made available1816 by a generous grant from the Ahmanson Foundation,
+This research made use of computational resources at SLAC National Accelerator Laboratory, a U.S. Department of Energy Office, and the Sherlock cluster at the Stanford Research Computing Center (SRCC); the authors are thankful for the support of the SLAC and SRCC computing teams. Computing resources used in this work were made available1816 by a generous grant from the Ahmanson Foundation.

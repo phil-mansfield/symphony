@@ -25,6 +25,6 @@ These graduate-level `lecture notes <https://campuspress.yale.edu/vdbosch/>`__ f
 Simulation Background Reading
 -----------------------------
 
-There are a number of review papers which give an overview of general topics related to dakr matter simulations. All of these papers have different goals, different target audiences, and different sets of topics. We have found that `Khulen et al. (2012) <https://arxiv.org/pdf/1209.5745.pdf>`__
+There are a number of review papers which give an overview of general topics related to dakr matter simulations. All of these papers have different goals, different target audiences, and different sets of topics. We have found that `Kuhlen et al. (2012) <https://arxiv.org/pdf/1209.5745.pdf>`__ is a good introduction for starting students.
 
 Frank van den Bosch also has high-quality `lecture notes <http://www.astro.yale.edu/vdbosch/astro610_lecture20.pdf>`__ which will be useful to readers interested in understanding how simulations work and what their limitations are.
