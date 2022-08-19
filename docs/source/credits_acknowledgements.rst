@@ -11,15 +11,15 @@ Contributors
 - Elise Darragh-Ford (*Stanford & KIPAC*)
 - Xiaolong Du (*Carnegie Observatories*)
 - Bryné Hadnott (*Stanford & KIPAC*)
-- Philip Mansfield (*Stanford, KIPAC & SLAC*)
+- Philip Mansfield (*Stanford, KIPAC, & SLAC*)
 - Yao-Yuan Mao (*University of Utah & Rutgers*)
-- Ethan O. Nadler (*Carnegie Observatories & USC*)
+- Ethan O. Nadler (*Carnegie Observatories, & USC*)
 - Sebastian Wagner-Carena (*Stanford & KIPAC*)
-- Yunchong Wang (*Stanford, KIPAC & SLAC*)
-- Risa Wechsler (*Stanford, KIPAC & SLAC*)
+- Yunchong Wang (*Stanford, KIPAC, & SLAC*)
+- Risa Wechsler (*Stanford, KIPAC, & SLAC*)
 - Hao-Yi Wu (*Boise State Univeristy*)
 
 Acknowledgements
 ----------------
 
-This research made use of computational resources at SLAC National Accelerator Laboratory, a U.S. Department of Energy Office, and the Sherlock cluster at the Stanford Research Computing Center (SRCC); the authors are thankful for the support of the SLAC and SRCC computing teams. Computing resources used in this work were made available1816 by a generous grant from the Ahmanson Foundation.
+This research made use of computational resources at SLAC National Accelerator Laboratory, a U.S. Department of Energy Office, and the Sherlock cluster at the Stanford Research Computing Center (SRCC); the authors are thankful for the support of the SLAC and SRCC computing teams. Computing resources used in this work were made available by a generous grant from the Ahmanson Foundation.

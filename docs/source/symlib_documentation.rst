@@ -1,6 +1,10 @@
 Library Documentation
 =====================
 
+``symlib`` is Symphony's data analysis library. Symphony uses cutom file formats to reduce the size of files, to speed up common common tasks, and to make some common tasks easier. These library functions will allow you to work with these files. ``symlib`` also allows you to download Symphony data sets.
+
+This page is meant to be a full technical reference to this library. First-time users will probably find it easiest to start with the tutorial pages on :doc:`Data Access <data_access>` and :doc:`Data Analysis <getting_started>` rather than try to read through this pagr from start to finish.
+
 Units
 -----
 
