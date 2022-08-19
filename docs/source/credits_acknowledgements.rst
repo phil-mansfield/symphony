@@ -2,8 +2,8 @@ People & Credits
 ================
 
 
-Collaboration Members
----------------------
+Contributors
+------------
 
 - Susmita Adhikari (*India Institute of Science and Research*)
 - Arka Banerjee (*India Institute of Science and Research*)
