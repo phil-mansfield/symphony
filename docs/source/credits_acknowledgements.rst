@@ -11,12 +11,12 @@ Contributors
 - Elise Darragh-Ford (*Stanford*)
 - Xiaolong Du (*Carnegie Observatories*)
 - Bryné Hadnott (*Stanford*)
-- Philip Mansfield (*Stanford*)
-- Yao-Yuan Mao (*University of Utah*)
+- Philip Mansfield (*Stanford & SLAC National Accelerator Laboratory*)
+- Yao-Yuan Mao (*University of Utah & Rutgers*)
 - Ethan O. Nadler (*Carnegie Observatories & USC*)
 - Sebastian Wagner-Carena (*Stanford*)
-- Yunchong Wang (*Stanford*)
-- Risa Wechsler (*Stanford*)
+- Yunchong Wang (*Stanford & SLAC National Accelerator Laboratory*)
+- Risa Wechsler (*Stanford & SLAC National Accelerator Laboratory*)
 - Hao-Yi Wu (*Boise State Univeristy*)
 
 Acknowledgements
