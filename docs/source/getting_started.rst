@@ -45,7 +45,7 @@ Next, we read in the subhalos with the function :func:`symlib.read_subhalos`
 
 .. code-block::
 
-   halos, histories = symlib.read_subhalos("path/to/HaloExample")
+   halos, histories = symlib.read_subhalos(sim_dir)
 
 There are two return return values, ``halos`` and ``histories``. In your
 code, you'll probably want to abbreviate these as ``h`` and ``hist``, or something similar, following the library code.
@@ -58,7 +58,7 @@ largest subhalo, including disrupted subhalos, at snapshot 100. Subhalos are ord
 
 ``histories`` contains summary information about a halo's full history, including :math:`M_{\rm peak}` and when that subhalo fell into the host. Its length and ordering are the same as the first index of ``halos``. 
 
-``halos`` is a numpy structured array has type :data:`symlib.SUBHALO_DTYPE`, and ``histories`` is a structured array with type :data:`symlib.HISTORY_DTYPE`. Structured arrays are arrays that have different fields which can be accessed with strings. For example, ``halos[3,100]["mvir"]`` and ``halos["mvir"][3,100]`` both return the mass, :math:`M_{\rm vir}` of the third most massive halo. The non-string indices obey normal numpy indexing rules, so you can use slicing, boolean indexing, axis removal and whatever other tricks you use with normal numpy arrays.
+``halos`` is a numpy structured array has type :data:`symlib.SUBHALO_DTYPE`, and ``histories`` is a structured array with type :data:`symlib.HISTORY_DTYPE`. Structured arrays are arrays that have different fields which can be accessed with strings. For example, ``halos[3,100]["mvir"]`` and ``halos["mvir"][3,100]`` both return the mass, :math:`M_{\rm vir}` of the third most massive halo at snapshot 100. The non-string indices obey normal numpy indexing rules, so you can use slicing, boolean indexing, axis removal and whatever other tricks you use with normal numpy arrays.
 
 The full set of fields in ``halos`` is described in the :data:`symlib.SUBHALO_DTYPE` documentation. In this tutorial we will only use:
 
