@@ -70,8 +70,8 @@ The full set of fields in ``halos`` is described in the :data:`symlib.SUBHALO_DT
 
 Fields in ``histories`` will be explained as needed, but can be found in full in the :data:`symlib.HISTORY_DTYPE` documentation.
 
-Example Subhalo Analysis: Subhalo Postions
-------------------------------------------
+Example Subhalo Analysis: Plotting Postions
+-------------------------------------------
    
 Our first step with analyzing any simulation data should be to look at it
 qualitatively. We'll start by looking at the positions of the major subhalos
@@ -87,21 +87,21 @@ circles.
     fig, ax = plt.subplots()
     
     sim_dir = "path/to/ExampleHalo"
-    halos, histories = symlib.read_subhalos(sim_dir)
+    h, hist = symlib.read_subhalos(sim_dir)
     
-    host = halos[0,-1] # First halo, last snapshot.
+    host = h[0,-1] # First halo, last snapshot.
     symlib.plot_circle(ax, host["x"][0], host["x"][1],
                        host["rvir"], c="tab:red")
 		       
     for i in range(1, len(h)):
-        sub = halos[i,-1] # i-th halo, last snapshot.
+        sub = h[i,-1] # i-th halo, last snapshot.
         if not sub["ok"]: continue
         symlib.plot_circle(
             ax, sub["x"][0], sub["x"][1],
             sub["rvir"], c="tab:blue"
         )
     
-With a little bit of additional pyplot work, this gives us the following. The full script used to create this image, including the omitted pyplot code is shown in `examples/positions.py <https://github.com/phil-mansfield/symphony/blob/main/examples/positions.py>`__.
+With a little bit of additional pyplot work that we've ellided here, this gives us the following. The full script used to create this image, including the omitted pyplot code is shown in `examples/positions.py <https://github.com/phil-mansfield/symphony/blob/main/examples/positions.py>`__.
 
 .. image:: positions.png
    :width: 500
@@ -185,7 +185,7 @@ Constructing a mass function has a bit more code overhead than the earlier examp
     
     # Mass function bins and empty histogram.
     log_m_min, log_m_max, n_bin = 8, 12, 200
-    bins = np.logspace(log_m_min), np.logspace(log_m_max)
+    bins = np.logspace(log_m_min, log_m_max, n_bin+1)
     N_vir = np.zeros(n_bin)
 
     n_hosts = symlib.n_hosts(suite_name)
@@ -276,6 +276,7 @@ Omitting some standard preamble and most of the plotting code, the following cod
 
     # Read in tree data
     b = symlib.read_branches(sim_dir)
+    param = symlib.simulation_parameters(sim_dir)
     # Tree variables are always returned as a list, so if you
     # only specify one, unpack it as a length-1 tuple.
     mvir, = symlib.read_tree(sim_dir, ["mvir"])
@@ -309,7 +310,7 @@ Omitting some standard preamble and most of the plotting code, the following cod
     plt.plot(left_bins, N_host, c="tab:red", label=r"${\rm Host\ subhalos}$")
     plt.plot(left_bins, N_all, c="tab:blue", label=r"${\rm All}$")
 
-This results in the following plot
+With a bit more ellided plotting code, this results in the following plot
     
 .. image:: tree_mass_func.png
     :width: 500
