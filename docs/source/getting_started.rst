@@ -1,94 +1,17 @@
-Getting Started
-===============
+Data Analysis Tutorial
+======================
+
+Symphony data is stored in cutsom data formats and must be read with its analysis library, ``symlib``. This page contains tutorials and example code showing how to use this library. A complete, detailed reference for this library can be found :doc:`here <symlib_documentation>`.
 
 Installation
 ------------
 
-symlib can be installed with pip. It depends on the standard scientific python libraries, `numpy <https://numpy.org/install/>`__, `scipy <https://scipy.org/install/>`__, and `matplotlib <https://matplotlib.org/stable/users/installing/index.html>`__. It also depends on the cosmology library `colossus <https://bdiemer.bitbucket.io/colossus/installation.html>`__. You can find installation instructions for all four libraries on their respective web pages.
+As disucssed in the :doc:`Data Access <data_access>` page, ``symlib``  can be downloaded with the pip tool.
 
 .. code-block:: console
 
-	$ pip install symlib
+	$ pip install symlib -U
 
-Currently, only Python3 is supported.
-	
-Downloading Data
-----------------
-
-Symphony data is organized into several suites of zoom-in simulations: the LMC, Milky Way, Group, L-Cluster, and Cluster suites. These suites respectively correspond to host halos with masses of :math:`10^{11}`, :math:`10^{12}`, :math:`10^{13}`, :math:`5\times 10^14`, and :math:`10^{15}` :math:`M_\odot`. The entire dataset is stored in a single base directory. Each suite has is its own sub-directory within the base, and each zoom-in simulation has a subdirectory within its suite. 
-
-You can download data with symlib's library functions. Most users will want to use the :func:`symlib.download_files` function. The following lines show examples of how to use this function.
-
-.. note::
-   TODO: The data-light ``"halos"`` tar files haven't been uploaded yet. Only ``"trees"`` files are available now.
-
-.. code-block:: python
-
-	import symlib
-
-	# The base directory where data will be downloaded to.
-	# All they suites and halos will be properly ordered
-	# within this, so each halo's location will end up being
-	# {data_dir}/{suite_name}/{halo_name}.
-	data_dir = "path/to/storage/location"
-
-	# The type of data you want to download. "halos" is
-	# the basic halo information associated with the
-	# central host, and "trees" is that plus the full
-	# merger tree of the simulation.
-	target = "halos"
-
-	# Download the first host halo in the Milky Way-mass suite.
-	symlib.download_files("SymphonyMilkyWay", 0,
-		data_dir, target=target)
-
-	# Download all the host halos in the Milky Way-mass suite.
-	symlib.download_files("SymphonyMilkyWay", None,
-		data_dir, target=target)
-
-	# Download all the host halos across all the suites.
-	symlib.download_files(None, None,
-		data_dir, target=target)
-
-	# Download a specific halo that you know the name of.
-	symlib.download_files("SymphonyMilkyWay", "Halo023",
-		data_dir, target=target)
-
-You can also get a list of suite names with :func:`symlib.suite_names()` and hosts counts for a given suite with :func:`symlib.n_hosts()` so you can use a fine-tuned for loop instead of ``None``.
-
-The ``"halos"`` dataset will cover almost all use cases, including users interested in the evolution of the host and its subhalos over time The ``"trees"`` dataset is much larger and is more complex to use. The total sizes of the data in different suites can be found below:
-
-.. list-table::
-	:header-rows: 1
-		
-	* - Suite Name
-	  - :math:`N_{\rm hosts}`
-	  - ``"halos"``
-	  - ``"trees"``
-	* - SymphonyLMC
-	  - 39
-	  - 0.16 GB
-	  - 18 GB
-	* - SymphonyMilkyWay
-	  - 45
-	  - 0.77 GB
-	  - 62 GB
-	* - SymphonyGroup
-	  - 49
-	  - 0.83 GB
-	  - 227 GB
-	* - SymphonyLCluster
-	  - 33
-	  - 0.18 GB
-	  - 21 GB
-	* - SymphonyCluster
-	  - 96
-	  - 1.1 GB
-	  - 160 GB
-
-If you are running tests on a machine where you don't have much storage space, the smallest host is Halo933 in SymphonyLMC, with a ``"halos"`` size of 2.3 MB and ``"trees"`` size of 227 MB.
-
-symlib also offers the functions :func:`symlib.download_packed_files()` and :func:`symlib.unpack_files()`. which might be helpful if you are running a long download request that gets interrupted midway through.
 
 Reading in Subhalo Data
 -----------------------
@@ -122,7 +45,7 @@ Next, we read in the subhalos with the function :func:`symlib.read_subhalos`
 
 .. code-block::
 
-   halos, histories = symlib.read_subhalos("path/to/HaloExample")
+   halos, histories = symlib.read_subhalos(sim_dir)
 
 There are two return return values, ``halos`` and ``histories``. In your
 code, you'll probably want to abbreviate these as ``h`` and ``hist``, or something similar, following the library code.
@@ -135,7 +58,7 @@ largest subhalo, including disrupted subhalos, at snapshot 100. Subhalos are ord
 
 ``histories`` contains summary information about a halo's full history, including :math:`M_{\rm peak}` and when that subhalo fell into the host. Its length and ordering are the same as the first index of ``halos``. 
 
-``halos`` is a numpy structured array has type :data:`symlib.SUBHALO_DTYPE`, and ``histories`` is a structured array with type :data:`symlib.HISTORY_DTYPE`. Structured arrays are arrays that have different fields which can be accessed with strings. For example, ``halos[3,100]["mvir"]`` and ``halos["mvir"][3,100]`` both return the mass, :math:`M_{\rm vir}` of the third most massive halo. The non-string indices obey normal numpy indexing rules, so you can use slicing, boolean indexing, axis removal and whatever other tricks you use with normal numpy arrays.
+``halos`` is a numpy structured array has type :data:`symlib.SUBHALO_DTYPE`, and ``histories`` is a structured array with type :data:`symlib.HISTORY_DTYPE`. Structured arrays are arrays that have different fields which can be accessed with strings. For example, ``halos[3,100]["mvir"]`` and ``halos["mvir"][3,100]`` both return the mass, :math:`M_{\rm vir}` of the third most massive halo at snapshot 100. The non-string indices obey normal numpy indexing rules, so you can use slicing, boolean indexing, axis removal and whatever other tricks you use with normal numpy arrays.
 
 The full set of fields in ``halos`` is described in the :data:`symlib.SUBHALO_DTYPE` documentation. In this tutorial we will only use:
 
@@ -147,8 +70,8 @@ The full set of fields in ``halos`` is described in the :data:`symlib.SUBHALO_DT
 
 Fields in ``histories`` will be explained as needed, but can be found in full in the :data:`symlib.HISTORY_DTYPE` documentation.
 
-Example Subhalo Analysis: Subhalo Postions
-------------------------------------------
+Example Subhalo Analysis: Plotting Postions
+-------------------------------------------
    
 Our first step with analyzing any simulation data should be to look at it
 qualitatively. We'll start by looking at the positions of the major subhalos
@@ -164,21 +87,21 @@ circles.
     fig, ax = plt.subplots()
     
     sim_dir = "path/to/ExampleHalo"
-    halos, histories = symlib.read_subhalos(sim_dir)
+    h, hist = symlib.read_subhalos(sim_dir)
     
-    host = halos[0,-1] # First halo, last snapshot.
+    host = h[0,-1] # First halo, last snapshot.
     symlib.plot_circle(ax, host["x"][0], host["x"][1],
                        host["rvir"], c="tab:red")
 		       
     for i in range(1, len(h)):
-        sub = halos[i,-1] # i-th halo, last snapshot.
+        sub = h[i,-1] # i-th halo, last snapshot.
         if not sub["ok"]: continue
         symlib.plot_circle(
             ax, sub["x"][0], sub["x"][1],
             sub["rvir"], c="tab:blue"
         )
     
-With a little bit of additional pyplot work, this gives us the following. The full script used to create this image, including the omitted pyplot code is shown in `examples/positions.py <https://github.com/phil-mansfield/symphony/blob/main/examples/positions.py>`__.
+With a little bit of additional pyplot work that we've ellided here, this gives us the following. The full script used to create this image, including the omitted pyplot code is shown in `examples/positions.py <https://github.com/phil-mansfield/symphony/blob/main/examples/positions.py>`__.
 
 .. image:: positions.png
    :width: 500
@@ -262,7 +185,7 @@ Constructing a mass function has a bit more code overhead than the earlier examp
     
     # Mass function bins and empty histogram.
     log_m_min, log_m_max, n_bin = 8, 12, 200
-    bins = np.logspace(log_m_min), np.logspace(log_m_max)
+    bins = np.logspace(log_m_min, log_m_max, n_bin+1)
     N_vir = np.zeros(n_bin)
 
     n_hosts = symlib.n_hosts(suite_name)
@@ -353,6 +276,7 @@ Omitting some standard preamble and most of the plotting code, the following cod
 
     # Read in tree data
     b = symlib.read_branches(sim_dir)
+    param = symlib.simulation_parameters(sim_dir)
     # Tree variables are always returned as a list, so if you
     # only specify one, unpack it as a length-1 tuple.
     mvir, = symlib.read_tree(sim_dir, ["mvir"])
@@ -386,7 +310,7 @@ Omitting some standard preamble and most of the plotting code, the following cod
     plt.plot(left_bins, N_host, c="tab:red", label=r"${\rm Host\ subhalos}$")
     plt.plot(left_bins, N_all, c="tab:blue", label=r"${\rm All}$")
 
-This results in the following plot
+With a bit more ellided plotting code, this results in the following plot
     
 .. image:: tree_mass_func.png
     :width: 500
@@ -443,7 +367,8 @@ As before, some plotting code and standard setup code that reads in parameters a
     fig, ax = plt.subplots()
     ax.plot(host_scale, n_mergers, "tab:blue",
             label=r"$N_{\rm merger}$")
-    ax.plot(host_scale, n_artifacts, "tab
+    ax.plot(host_scale, n_mergers, "tab:blue",
+            label=r"$N_{\rm artifacts}$")
 		
 		
 		
