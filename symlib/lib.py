@@ -737,6 +737,10 @@ class ParticleInfo(object):
         _, self.hist_false = read_subhalos(
             base_dir, include_false_selections=True)
 
+def is_real_confirmed(part_info, h, i_sub):
+    first_snap = np.where(h[i_sub]["ok"])[0][0]
+    ok = read_particles(part_info, None, first_snap, "valid", owner=i_sub)
+    return np.sum(ok) > 0
 
 def read_particles(part_info, base_dir, snap, var_name,
                    owner=None, include_false_selections=False):
