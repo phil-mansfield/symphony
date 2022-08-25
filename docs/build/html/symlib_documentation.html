@@ -1,0 +1,567 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>Library Documentation &#8212; Symphony 0.0.6 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Background Reading" href="background_reading.html" />
+    <link rel="prev" title="Data Analysis Tutorial" href="getting_started.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="library-documentation">
+<h1>Library Documentation<a class="headerlink" href="#library-documentation" title="Permalink to this heading">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">symlib</span></code> is Symphony’s data analysis library. Symphony uses cutom file formats to reduce the size of files, to speed up common common tasks, and to make some common tasks easier. These library functions will allow you to work with these files. <code class="docutils literal notranslate"><span class="pre">symlib</span></code> also allows you to download Symphony data sets.</p>
+<p>This page is meant to be a full technical reference to this library. First-time users will probably find it easiest to start with the tutorial pages on <a class="reference internal" href="data_access.html"><span class="doc">Data Access</span></a> and <a class="reference internal" href="getting_started.html"><span class="doc">Data Analysis</span></a> rather than try to read through this pagr from start to finish.</p>
+<section id="units">
+<h2>Units<a class="headerlink" href="#units" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">symlib</span></code> functions generally expect variables to be in the following units:</p>
+<ul class="simple">
+<li><p>Masses: <span class="math notranslate nohighlight">\(M_\odot\)</span></p></li>
+<li><p>Distances/radii: physical <span class="math notranslate nohighlight">\({\rm kpc}\)</span></p></li>
+<li><p>Positions: physical <span class="math notranslate nohighlight">\({\rm kpc}\)</span>, centered on the host halo</p></li>
+<li><p>Velocities: physical <span class="math notranslate nohighlight">\({\rm km/s}\)</span>, centered on the host halo</p></li>
+</ul>
+<p>Much of the data that <code class="docutils literal notranslate"><span class="pre">symlib</span></code> reads in is a processed form of data from another code, which may use different conventions. To convert to <code class="docutils literal notranslate"><span class="pre">symlib</span></code>’s conventions, use the <code class="docutils literal notranslate"><span class="pre">set_units_*</span></code> family of functions: <a class="reference internal" href="#symlib.set_units_halos" title="symlib.set_units_halos"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.set_units_halos()</span></code></a>, <a class="reference internal" href="#symlib.set_units_parameters" title="symlib.set_units_parameters"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.set_units_parameters()</span></code></a>, <code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.set_units_branches()</span></code> as needed.</p>
+</section>
+<section id="datatypes">
+<h2>Datatypes<a class="headerlink" href="#datatypes" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">symlib</span></code> halo data is generally returned as a numpy <a class="reference external" href="https://numpy.org/doc/stable/user/basics.rec.html">structured array</a>, which allows for fields to be accessesed and subselected easily. See the <a class="reference internal" href="getting_started.html"><span class="doc">Getting Started</span></a> page for usage examples.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>TODO: I don’t like the formatting of the fields. The alignment is ugly. Any ideas for fixes?</p>
+<p>Also, the vertical spacing between different entries is super small and I think it looks ugly. But Sphinx doesn’t let you just add newlines in, so I don’t know how to fix that either.</p>
+</div>
+<dl class="py data">
+<dt class="sig sig-object py" id="symlib.SUBHALO_DTYPE">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">SUBHALO_DTYPE</span></span><a class="headerlink" href="#symlib.SUBHALO_DTYPE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Time-dependent subhalo information (e.g., position) from the Rockstar halo finder. You can get this information for all a host’s subhalos by calling <a class="reference internal" href="#symlib.read_subhalos" title="symlib.read_subhalos"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.read_subhalos()</span></code></a>.</p>
+<p><strong>DATA FIELDS:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;id&quot;</span></code> (<em>numpy.int32</em>) - A unique integer identifying each subhalo. Changes from snapshot to snapshot.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;mvir&quot;</span></code>  (<em>numpy.float32</em>) - The mass of the halo, <span class="math notranslate nohighlight">\(M_{\rm vir}\)</span>. When isolated, this an overdensity mass from the Bryan &amp; Norman (1998) definition of the virial overdensity. When deep in a host halo, this is the bound mass. The transition between these two definitions is ill-defined.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;rvir&quot;</span></code> (<em>numpy.float32</em>) - The overdensity radius of the halo, <span class="math notranslate nohighlight">\(R_{\rm vir}\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;vmax&quot;</span></code> (<em>numpy.float32</em>) - The maximum value of the halo’s circular rotation curve, <span class="math notranslate nohighlight">\(V_{\rm max} = {\rm max}\left\{V_{\rm rot}(r) = \sqrt{G M(&lt;r)/r}\right\}\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;rvmax&quot;</span></code> (<em>numpy.float32</em>) - The radius where this maximum rotation velocity occurs.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;cvir&quot;</span></code> (<em>numpy.float32</em>) - An estimate of how centrally concentrated the subhalo’s mass is, <span class="math notranslate nohighlight">\(c_{\rm vir}=R_s/R_{\rm vir}\)</span>. <span class="math notranslate nohighlight">\(R_s\)</span> is the transition radius between shallow inner density slopes (<span class="math notranslate nohighlight">\(d \ln(\rho)/d \ln(r)\)</span> &gt; -2) and steep outer slopes (i.e. <span class="math notranslate nohighlight">\(d \ln(\rho)/d \ln(r)\)</span> &lt; -2). <span class="math notranslate nohighlight">\(c_{\rm vir}\)</span> is estimated  by measuring <span class="math notranslate nohighlight">\(V_{\rm max}/V_{\rm rot}(R_{\rm vir})\)</span>, assuming an NFW profile, and solving for <span class="math notranslate nohighlight">\(R_s\)</span>. Because of this, the <em>value</em> of <span class="math notranslate nohighlight">\(c_{\rm vir}\)</span> is only meaningful for halos where the assumption of NFW profiles is reasonable (non-subhalos). However, the <em>relative ordering</em> of concentrations will be correct regardless.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;x&quot;</span></code> (<em>numpy.float32</em>) - <span class="math notranslate nohighlight">\(x\)</span>, the position of the subhalo.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;v&quot;</span></code> (<em>numpy.float32</em>) - <span class="math notranslate nohighlight">\(v\)</span>, The velocity of the subhalo.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ok&quot;</span></code> (<em>bool</em>) - True if the subhalo exists during the specified snapshot and False otherwise.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="symlib.HISTORY_DTYPE">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">HISTORY_DTYPE</span></span><a class="headerlink" href="#symlib.HISTORY_DTYPE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Time-independent subhalo information about the subhalo’s entire history in the simulation (e.g. when it first fell into the host halo). You can get it for all the host’s subhalos by calling <a class="reference internal" href="#symlib.read_subhalos" title="symlib.read_subhalos"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.read_subhalos()</span></code></a>.</p>
+<blockquote>
+<div><p><strong>DATA FIELDS</strong></p>
+</div></blockquote>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;mpeak&quot;</span></code> (<em>numpy.float32</em>) - <span class="math notranslate nohighlight">\(M_{\rm peak}\)</span>, the largest <span class="math notranslate nohighlight">\(M_{\rm vir}\)</span> that the subhalo ever had. This quantity is often useful for reasoning about subhalo disruption or as a component in models of galaxy mass.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;vpeak&quot;</span></code> (<em>numpy.float32</em>) - <span class="math notranslate nohighlight">\(V_{\rm peak}\)</span>, the largest <span class="math notranslate nohighlight">\(V_{\rm max}\)</span> that the subhalo ever had. This is useful in the same places that <span class="math notranslate nohighlight">\(M_{\rm peak}\)</span> is.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;merger_snap&quot;</span></code> (<em>numpy.int32</em>) - The snapshot where the subhalo first fell within the virial radius of the host halo.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;merger_ratio&quot;</span></code> (<em>numpy.float32</em>) - The ratio of masses at this infall snapshot.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;branch_idx&quot;</span></code> (<em>numpy.int32</em>) - The index of this halo’s branch in the full merger tree. This allows you to switch back and forther between the two data structures as needed.</p></li>
+<li><p><a class="reference internal" href="#symlib.HISTORY_DTYPE" title="symlib.HISTORY_DTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">symlib.HISTORY_DTYPE</span></code></a> also contains all the fields in <a class="reference internal" href="#symlib.BRANCH_DTYPE" title="symlib.BRANCH_DTYPE"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.BRANCH_DTYPE()</span></code></a>. Note, however, that subhalos where <code class="docutils literal notranslate"><span class="pre">is_disappear</span></code> is True or <code class="docutils literal notranslate"><span class="pre">is_real</span></code> is False have already been removed, so there is no need to make cuts on this.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">false_selection</span></code> (<em>bool</em>) - True if the branch has <span class="math notranslate nohighlight">\(M_{\rm peak} \geq 300\cdot m_p\)</span> after infall, but <span class="math notranslate nohighlight">\(M_{\rm peak} &lt; 300\codt m_p\)</span>.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="symlib.BRANCH_DTYPE">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">BRANCH_DTYPE</span></span><a class="headerlink" href="#symlib.BRANCH_DTYPE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Information about the main branch of a subhalo in the full consistent-trees merger tree. You probably will not need this unless you walk through the full merger tree, which is an advanced action. You can get it by calling <a class="reference internal" href="#symlib.read_branches" title="symlib.read_branches"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.read_branches()</span></code></a>.</p>
+<blockquote>
+<div><p><strong>DATA FIELDS</strong></p>
+</div></blockquote>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;start&quot;</span></code> (<em>numpy.int32</em>) - The index of the last halo along this main branch. It is labeled “start” because the tree is ordered from later times to earlier times. See the documentation on <a class="reference internal" href="#symlib.read_tree" title="symlib.read_tree"><code class="xref py py-func docutils literal notranslate"><span class="pre">read_tree()</span></code></a> for more details on tree structure.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;end&quot;</span></code> (<em>numpy.int32</em>) - The index after the first halo in the branch. This means that the full main branch can be accessed by using index slicing: <code class="docutils literal notranslate"><span class="pre">branch</span> <span class="pre">=</span> <span class="pre">tree[start:</span> <span class="pre">end]</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;is_real&quot;</span></code> (<em>bool</em>) - False if the first tracked halo of this branch is a subhalo and True otherwise. Branches where this is False are virtually always tree-linking errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;is_disappear&quot;</span></code> (<em>bool</em>) True if the last tracked halo of this branch disrupts without merging with any other halos and False otherwise. Branches where this is True are virtually always barely-resolved object fluctuating in-and-out of existence near the resolution barrier.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;is_main_sub&quot;</span></code> (<em>bool</em>) - True if any halo in the branch was ever a subhalo of the main host.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;preprocess&quot;</span></code> (<em>numpy.int32</em>) - A non-negative integer if the branch was ever the subhalo of a larger halo prior to becoming a subhalo of the host and -1 otherwise. If the first case is true, this variable is the index of the largest branch that this branch was a subhalo of. There’s some non-trivial bookkeeping required to deal with tree errors caused by major mergers, which will be described in a future paper. For now, suffice to say that it is a generalized version of Section 2.3.1 of Mansflied &amp; Kravtsov (2020).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;first_infall_snap&quot;</span></code> (<em>numpy.int32</em>) - If <code class="docutils literal notranslate"><span class="pre">&quot;preprocess&quot;</span></code> is non-negative, the snapshot when this branch first fell into a halo of the branch pointed to by <code class="docutils literal notranslate"><span class="pre">&quot;preprocess&quot;</span></code>.</p></li>
+</ul>
+</dd></dl>
+
+</section>
+<section id="merger-tree-variables">
+<h2>Merger Tree Variables<a class="headerlink" href="#merger-tree-variables" title="Permalink to this heading">¶</a></h2>
+<p>The following variables can be read in from merger trees with the <a class="reference internal" href="#symlib.read_tree" title="symlib.read_tree"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.read_tree()</span></code></a> function. These variables are taken directly from the consistent-trees output files and still retain its units and ID conventions.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;dfid&quot;</span></code> - The depth-first ID of the halo.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;id&quot;</span></code> - The ID of the halo.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;desc_id</span></code> - The ID (<code class="docutils literal notranslate"><span class="pre">id</span></code>, not <code class="docutils literal notranslate"><span class="pre">dfid</span></code>) of the descendant. -1 if the halo has no descendants.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;upid&quot;</span></code> - The UpID of a halo. This is -1 if the halo is not within a larger halo’s virial radius, otherwise it is the ID (<code class="docutils literal notranslate"><span class="pre">id</span></code>, not <code class="docutils literal notranslate"><span class="pre">dfid</span></code>) of that larger halo.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;phantom&quot;</span></code> - A flag indicating whether consistent-trees was able to track the object during this snapshot. 1 if so, and 0 otherwise. If 0, this halo’s properties were interpolated during this snapshot.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;snap&quot;</span></code> -  This halo’s snapshot.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;next_co_prog&quot;</span></code> - The depth-first ID (<code class="docutils literal notranslate"><span class="pre">dfid</span></code>, not <code class="docutils literal notranslate"><span class="pre">id</span></code>) of this halo’s co-progenitor, if it exists. If this halo doesn’t have a co-progenitor, this variable is -1. See <a class="reference internal" href="getting_started.html"><span class="doc">Getting Started</span></a> for a description of what this is.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;mvir&quot;</span></code> -  The mass of the halo, <span class="math notranslate nohighlight">\(M_{\rm vir}\)</span>. When isolated, this an overdensity mass from the Bryan &amp; Norman (1998) definition of the virial overdensity. When deep in a host halo, this is the bound mass. The transition between these two definitions is ill-defined.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;rs&quot;</span></code> - The NFW scale radius of the halo, <span class="math notranslate nohighlight">\(R_s\)</span>. Units are comoving <span class="math notranslate nohighlight">\(h^{-1}{\rm kpc}\)</span></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;vmax&quot;</span></code> -  The maximum value of the halo’s circular rotation curve, <span class="math notranslate nohighlight">\(V_{\rm max} = {\rm max}\left\{V_{\rm rot}(r) = \sqrt{G M(&lt;r)/r}\right\}\)</span>. Units are physical km/s.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;m200b&quot;</span></code> - The overdensity mass, <span class="math notranslate nohighlight">\(M_{\rm 200b}\)</span>, corresponding to <span class="math notranslate nohighlight">\(200\times \rho_m\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;m200c&quot;</span></code> - The overdensity mass, <span class="math notranslate nohighlight">\(M_{\rm 200b}\)</span>, corresponding to <span class="math notranslate nohighlight">\(200\times \rho_c\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;m500c&quot;</span></code> - The overdensity mass, <span class="math notranslate nohighlight">\(M_{\rm 200b}\)</span>, corresponding to <span class="math notranslate nohighlight">\(500\times \rho_c\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;xoff&quot;</span></code> - The distance between the center of mass and the densest part fo the halo. units are comoving <span class="math notranslate nohighlight">\(h^{-1}{\rm kpc}\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;spin_bullock&quot;</span></code> - Unitless paramater that tracks the specific anular momentum of the halo. <span class="math notranslate nohighlight">\(|\vec{J}|/(\sqrt{2}\,M_{\rm vir}\,V_{\rm vir}\,R_{\rm vir})\)</span></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;c_to_a&quot;</span></code> - The unitless minor-to-major axis ratio of the halo.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;b_to_a&quot;</span></code> - The unitless intermediate-to-major axis ratio of the halo.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;t_to_u&quot;</span></code> - The virial ratio, <span class="math notranslate nohighlight">\(T/|U|\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;r_vmax&quot;</span></code> - The radius, <span class="math notranslate nohighlight">\(R_{\rm vmax}\)</span>, at which <span class="math notranslate nohighlight">\(V_{\rm max}\)</span> occurs.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;x&quot;</span></code> - A 3-vector, <span class="math notranslate nohighlight">\(\vec{x}\)</span> giving the position of the halo in comivng <span class="math notranslate nohighlight">\(h^{-1}{\rm Mpc}\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;v&quot;</span></code> - A 3-vector, <span class="math notranslate nohighlight">\(\vec{v}\)</span>, giving the velocity of the halo in physical km/s.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;j&quot;</span></code> - A 3-vector, <span class="math notranslate nohighlight">\(\vec{J}\)</span>, giving the angular momentum of the halo in physical <span class="math notranslate nohighlight">\(h^{-2}M_\odot\cdot{\rm Mpc}\cdot{\rm km/s}\)</span></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> - A 3-vector, <span class="math notranslate nohighlight">\(\vec{A}\)</span>, pointing in the direction of the halo’s major axis with length equal to that major axis. Units are comoving <span class="math notranslate nohighlight">\(h^{-1}{\rm kpc}\)</span>.</p></li>
+</ul>
+</section>
+<section id="general-functions">
+<h2>General Functions<a class="headerlink" href="#general-functions" title="Permalink to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.n_hosts">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">n_hosts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">suite_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.n_hosts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of zoom-in simulations, each of which is associated with one “target” host halo, in a simulation suite (the Symphony suites are: LMC, Milky Way, Group, L-Cluster, and Cluster). Can be used with <a class="reference internal" href="#symlib.get_host_directory" title="symlib.get_host_directory"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.get_host_directory()</span></code></a> to loop over all target host halos in a suite.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>suite_name</strong> (<em>str</em>) – The name of the simulation suite.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.get_host_directory">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">get_host_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suite_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">halo_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.get_host_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the name of a simulation directory given the base directory that all the suites are stored in, the suite, and the halo name. The halo name can either be the literal halo name (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;Halo023&quot;</span></code>) or a number in the range <span class="math notranslate nohighlight">\([0,\,N_{\rm host})\)</span>. This can be combined with <a class="reference internal" href="#symlib.n_hosts" title="symlib.n_hosts"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.n_hosts()</span></code></a> to loop over all the hosts in a suite.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_dir</strong> (<em>str</em>) – Base directory containing all suites.</p></li>
+<li><p><strong>suite_name</strong> (<em>str</em>) – Name of the simulation suite.</p></li>
+<li><p><strong>halo_name</strong> (<em>str</em><em> or </em><em>int</em>) – Name or index of the target host halo.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str, the name of the host’s simulation directory.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.scale_factors">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">scale_factors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sim_dir</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.scale_factors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an array of the scale factors, <span class="math notranslate nohighlight">\(a(z)\)</span>, of each of snapshot. Sorted from earliest to latest.</p>
+<p>The scale factor arrays of two simulations in different suites may be different from one another. The scale factor arrays of two simulations in the same suite sometimes also slightly differ, depending on whether simulations needed to be restarted midway through.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sim_dir</strong> (<em>str</em>) – The directory of the target host halo.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">np.array</span></code> containing the scale factors of each snapshot in the simulation</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.simulation_parameters">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">simulation_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim_dir</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.simulation_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary containing parameters of the simulation suite. These parameters are returned as a dictionary which maps the string names of variables to their values.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;eps&quot;</span></code> - <span class="math notranslate nohighlight">\(\epsilon\)</span>, the effective radius of dark matter particles in comoving <span class="math notranslate nohighlight">\(h^{-1}{\rm kpc}\)</span> (i.e. the “Plummer-equivalent force softening scale”).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;mp&quot;</span></code> - <span class="math notranslate nohighlight">\(m_p\)</span>, the mass of dark matter particles in <span class="math notranslate nohighlight">\(h^{-1}M_\odot\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;n_snap&quot;</span></code> - <span class="math notranslate nohighlight">\(N_{\rm snap}\)</span>, the number of snapshots in the simulation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;h100&quot;</span></code> - <span class="math notranslate nohighlight">\(h_{100} = H_0 / (100\ {\rm km/s/Mpc})\)</span>, the scaled Hubble parameter.</p></li>
+</ul>
+<p>It also contains <a class="reference external" href="https://bdiemer.bitbucket.io/colossus/cosmology_cosmology.html">colossus</a>-compatible cosmology parameters. Note that these are not the same between all suites.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;flat&quot;</span></code> - True if the universe is flat and False otherwise.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;H0&quot;</span></code> - <span class="math notranslate nohighlight">\(H_0\)</span>, the Hubble constant in units of km/s/Mpc.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Om0&quot;</span></code> - <span class="math notranslate nohighlight">\(\Omega_{m,0}\)</span>, the total matter density relative to the citical density at <span class="math notranslate nohighlight">\(z=0\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Ob0&quot;</span></code> - <span class="math notranslate nohighlight">\(\Omega_{m,0}\)</span> baryon density relative to the critical density at <span class="math notranslate nohighlight">\(z=0\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;sigma8&quot;</span></code> - <span class="math notranslate nohighlight">\(\sigma_8\)</span> the amplitude of the power spectrum at <span class="math notranslate nohighlight">\(8\ h^{-1}{\rm Mpc}\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ns&quot;</span></code> - <span class="math notranslate nohighlight">\(n_s\)</span>, the spectral tilt of the power spectrum.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sim_dir</strong> – The directory of the target host halo. You may also just pass it the name of the simulation suite (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;SymphonyMilkyWay&quot;</span></code>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.set_units_parameters">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">set_units_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.set_units_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the particle mass (<span class="math notranslate nohighlight">\(m_p\)</span>, <code class="docutils literal notranslate"><span class="pre">&quot;mp&quot;</span></code>) and particle size (<span class="math notranslate nohighlight">\(\epsilon\)</span>, <code class="docutils literal notranslate"><span class="pre">&quot;eps&quot;</span></code>) to <code class="docutils literal notranslate"><span class="pre">symlibs</span></code>’s default units.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mp</strong> (<em>float</em>) – particle mass in <span class="math notranslate nohighlight">\(M_\odot\)</span></p></li>
+<li><p><strong>eps</strong> (<em>float</em>) – Plummer-equivalent force softening scale in physical <span class="math notranslate nohighlight">\({\rm kpc}\)</span>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.set_units_halos">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">set_units_halos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.set_units_halos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the units of a 2D <code class="docutils literal notranslate"><span class="pre">np.array</span></code> with type <a class="reference internal" href="#symlib.SUBHALO_DTYPE" title="symlib.SUBHALO_DTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">symlib.SUBHALO_DTYPE</span></code></a> to <code class="docutils literal notranslate"><span class="pre">symlib</span></code>’s default units. All masses will be in units of <span class="math notranslate nohighlight">\(M_\odot\)</span>, all positions and radii will be units of physical <span class="math notranslate nohighlight">\({\rm kpc}\)</span>. Positions will be centered on the first halo in the array at the given snapshot. Velocities will be in physical <span class="math notranslate nohighlight">\({\rm km/s}\)</span> and similarly centered on the velocity of the first halo at each snapshot.</p>
+<p>This function only needs to be called if <cite>comoving=True</cite> in <a class="reference internal" href="#symlib.read_subhalos" title="symlib.read_subhalos"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.read_subhalos()</span></code></a>. This is not true by default</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>h</strong> (<em>symlib.SUBHALO_DTYPE np.array</em>) – A 2D array of subhalos, with the first halo indexing over halos and the second over snapshots. (see <a class="reference internal" href="#symlib.read_subhalos" title="symlib.read_subhalos"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.read_subhalos()</span></code></a>).</p></li>
+<li><p><strong>scale</strong> (<em>np.array</em>) – An array of the scale factors of each snapshot (see <a class="reference internal" href="#symlib.scale_factors" title="symlib.scale_factors"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.scale_factors()</span></code></a>)</p></li>
+<li><p><strong>param</strong> (<em>dict</em>) – The simulation parameters (see <a class="reference internal" href="#symlib.simulation_parameters" title="symlib.simulation_parameters"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.simulation_parameters()</span></code></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.set_units_histories">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">set_units_histories</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.set_units_histories" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the units of an <code class="docutils literal notranslate"><span class="pre">np.array</span></code> with type <a class="reference internal" href="#symlib.HISTORY_DTYPE" title="symlib.HISTORY_DTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">symlib.HISTORY_DTYPE</span></code></a> to <code class="docutils literal notranslate"><span class="pre">symlib</span></code>’s default units. All masses will be in units of <span class="math notranslate nohighlight">\(M_\odot\)</span>, all positions and radii will be units of physical <span class="math notranslate nohighlight">\({\rm kpc}\)</span>. Positions will be centered on the first halo in the array at the given snapshot. Velocities will be in physical <span class="math notranslate nohighlight">\({\rm km/s}\)</span> and similarly centered on the velocity of the first halo at each snapshot.</p>
+<p>This function only needs to be called if <cite>comoving=True</cite> in <a class="reference internal" href="#symlib.read_subhalos" title="symlib.read_subhalos"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.read_subhalos()</span></code></a>. This is true by default.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>h</strong> (<em>symlib.HISTORY_DTYPE np.array</em>) – Array of subhalo histories (see <a class="reference internal" href="#symlib.read_subhalos" title="symlib.read_subhalos"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.read_subhalos()</span></code></a>).</p></li>
+<li><p><strong>scale</strong> (<em>np.array</em>) – An array of the scale factors of each snapshot (see <a class="reference internal" href="#symlib.scale_factors" title="symlib.scale_factors"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.scale_factors()</span></code></a>)</p></li>
+<li><p><strong>param</strong> (<em>dict</em>) – The simulation parameters (see <a class="reference internal" href="#symlib.simulation_parameters" title="symlib.simulation_parameters"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.simulation_parameters()</span></code></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="halo-functions">
+<h2>Halo Functions<a class="headerlink" href="#halo-functions" title="Permalink to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.read_subhalos">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">read_subhalos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sim_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comoving</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_false_selections</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.read_subhalos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the subhalo data for a single host halo. Two arrays are returned.</p>
+<p>The first return value is a 2D <a class="reference internal" href="#symlib.SUBHALO_DTYPE" title="symlib.SUBHALO_DTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">symlib.SUBHALO_DTYPE</span></code></a> array representing the time-dependent behavior of each subhalo (e.g. positions). The array first indexes over subhaloes in order of their peak <span class="math notranslate nohighlight">\(M_{\rm vir}\)</span> value and then indexes over snapshots from first to last. The host halo is at the first index. The second argument is a 1D <a class="reference internal" href="#symlib.SUBHALO_DTYPE" title="symlib.SUBHALO_DTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">symlib.SUBHALO_DTYPE</span></code></a> array which represents time-independent information about each subhalo (e.g. merger time). It has the same ordering as the first index of the <a class="reference internal" href="#symlib.SUBHALO_DTYPE" title="symlib.SUBHALO_DTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">symlib.SUBHALO_DTYPE</span></code></a> array.</p>
+<p>Subhalos are determined by the Rockstar halo finder and consistent-trees merger tree code. All objects that have ever been within <span class="math notranslate nohighlight">\(R_{\rm vir,host}\)</span> of the host halo are included, meaning that disrupted, merged, and “splashback” subhalos are included.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">comoving=False</span></code>, <code class="docutils literal notranslate"><span class="pre">symlib</span></code>’s default units are used. Positions and velocities are centered on the host halo. Otherwise, the output arrays use Rockstar’s unit conventions by default: all masses, positions, and distances have <span class="math notranslate nohighlight">\(h_{100}\)</span>-scalings: masses have units of <span class="math notranslate nohighlight">\(h^{-1}M_\odot\)</span>, positions comoving <span class="math notranslate nohighlight">\(h^{-1}{\rm Mpc}\)</span>, and radii comoving <span class="math notranslate nohighlight">\(h^{-1}{\rm kpc}\)</span>. In this case positions will be centered on the zero-point of the box.</p>
+<p>By default, subhalos which have <span class="math notranslate nohighlight">\(M_{\rm peak}\)</span> above the 300-particle cutoff, but were below the cutoff when they first became a subhalo are considered numerical artifacts and are _not_ included. They can be reintroduced to the catalog by setting <code class="docutils literal notranslate"><span class="pre">include_false_selections=True</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sim_dir</strong> (<em>str</em>) – The directory of the target host halo.</p></li>
+<li><p><strong>comoving=False</strong> (<em>bool</em>) – Controls whether the resturn values are in default Rockstar/consistent-trees units (<code class="docutils literal notranslate"><span class="pre">False</span></code>) or default symlib units (<code class="docutils literal notranslate"><span class="pre">True</span></code>).</p></li>
+<li><p><strong>include_false_selections=False</strong> (<em>bool</em>) – Controls whether subhalos which only have <span class="math notranslate nohighlight">\(M_{\rm peak}\)</span> above the catalog cutoff due toa consistent-trees error are included (<code class="docutils literal notranslate"><span class="pre">True</span></code>) or excluded (<code class="docutils literal notranslate"><span class="pre">False</span></code>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<code class="docutils literal notranslate"><span class="pre">h</span></code>, <code class="docutils literal notranslate"><span class="pre">hist</span></code>): <code class="docutils literal notranslate"><span class="pre">h</span></code> is a <a class="reference internal" href="#symlib.SUBHALO_DTYPE" title="symlib.SUBHALO_DTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">symlib.SUBHALO_DTYPE</span></code></a> <code class="docutils literal notranslate"><span class="pre">np.array</span></code> with shape (<span class="math notranslate nohighlight">\(N_{\rm subhalos}\)</span>, <span class="math notranslate nohighlight">\(N_{\rm snaps}\)</span>), <code class="docutils literal notranslate"><span class="pre">hist</span></code> is is a <a class="reference internal" href="#symlib.HISTORY_DTYPE" title="symlib.HISTORY_DTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">symlib.HISTORY_DTYPE</span></code></a> <code class="docutils literal notranslate"><span class="pre">np.array</span></code> with length <span class="math notranslate nohighlight">\(N_{\rm subhalos}\)</span>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.read_tree">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">read_tree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sim_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_names</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.read_tree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the time-dependent properties of every halo in the simulation, not just the subhalos of the target host in a “depth-first merger tree” format.</p>
+<p>The user supplies a list of variable names and a single, 1D array is returned for each variable. Each element of each array is a halo at a specific snapshot, and these arrays are ordered in a way that encodes which halos evolve and merge into which other halos. To decode this structure, you will need to use the results of <a class="reference internal" href="#symlib.read_branches" title="symlib.read_branches"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.read_branches()</span></code></a>, which breaks the tree into smaller structures, or “branches.”</p>
+<p>The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found on the <a class="reference internal" href="getting_started.html"><span class="doc">Getting Started</span></a> page.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sim_dir</strong> (<em>str</em>) – The directory of the target host halo.</p></li>
+<li><p><strong>var_names</strong> (<em>str list</em>) – The names of variables.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple of <code class="docutils literal notranslate"><span class="pre">np.array</span></code>, one for each element in <code class="docutils literal notranslate"><span class="pre">var_names</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.read_branches">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">read_branches</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sim_dir</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.read_branches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads information about the time-independent properties of every halo in the simulation, not just the subhalos of target host. Each element corresonds to a single branch in the tree (i.e. the evolution of a single halo over time) and gives information on the properties and location of the branch.</p>
+<p>The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found on the <a class="reference internal" href="getting_started.html"><span class="doc">Getting Started</span></a> page.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sim_dir</strong> (<em>str</em>) – The directory of the target host halo.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#symlib.BRANCH_DTYPE" title="symlib.BRANCH_DTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">symlib.BRANCH_DTYPE</span></code></a> <code class="docutils literal notranslate"><span class="pre">np.array</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.merger_lookup_table">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">merger_lookup_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dfid</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.merger_lookup_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a lookup table to aid with finding the branches of merging halos. The details of this table are not important and may be changed at any time to improve performance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>b</strong> (<a class="reference internal" href="#symlib.BRANCH_DTYPE" title="symlib.BRANCH_DTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">symlib.BRANCH_DTYPE</span></code></a> np.array) – </p></li>
+<li><p><strong>dfid</strong> (<em>int np.array</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.find_merger_branch">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">find_merger_branch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lookup_table</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">co_prog</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.find_merger_branch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Searches for the index of the branch corresponding of a given merging subhalo. The subhalo is identified by a “co-progenitor” ID. See the writeup in <a class="reference internal" href="getting_started.html"><span class="doc">Getting Started</span></a> for more discussion on what this means.</p>
+<p>In practice, most users will want to use <a class="reference internal" href="#symlib.find_all_merger_branches" title="symlib.find_all_merger_branches"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.find_all_merger_branches()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lookup_table</strong> (<em>int np.array</em>) – A look up table, as created by <a class="reference internal" href="#symlib.merger_lookup_table" title="symlib.merger_lookup_table"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.merger_lookup_table()</span></code></a>.</p></li>
+<li><p><strong>co_prog</strong> (<em>int</em>) – a single “co-progenitor depth-first ID” (<code class="docutils literal notranslate"><span class="pre">&quot;next_co_prog&quot;</span></code> in calls to <a class="reference internal" href="#symlib.read_tree" title="symlib.read_tree"><code class="xref py py-func docutils literal notranslate"><span class="pre">read_tree()</span></code></a>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.find_all_merger_branches">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">find_all_merger_branches</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lookup_table</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">co_prog</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.find_all_merger_branches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the indices of all the branches that merge with a given halo. (i.e. branches that exist in the current snapshot but disrupt in the next snapshot).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>b</strong> (<a class="reference internal" href="#symlib.BRANCH_DTYPE" title="symlib.BRANCH_DTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">symlib.BRANCH_DTYPE</span></code></a> np.array) – The branch information for the merger tree.</p></li>
+<li><p><strong>lookup_table</strong> (<em>int np.array</em>) – A look up table, as created by <a class="reference internal" href="#symlib.merger_lookup_table" title="symlib.merger_lookup_table"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.merger_lookup_table()</span></code></a>.</p></li>
+<li><p><strong>co_prog</strong> (<em>int np.array</em>) – A tree-ordered array of co-progenitor IDs (<code class="docutils literal notranslate"><span class="pre">&quot;next_co_prog&quot;</span></code> in calls to <a class="reference internal" href="#symlib.read_tree" title="symlib.read_tree"><code class="xref py py-func docutils literal notranslate"><span class="pre">read_tree()</span></code></a>).</p></li>
+<li><p><strong>i</strong> (<em>int</em>) – The index of the halo in the tree that you</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="utility-functions">
+<h2>Utility Functions<a class="headerlink" href="#utility-functions" title="Permalink to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.colossus_parameters">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">colossus_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.colossus_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a <code class="docutils literal notranslate"><span class="pre">symlib</span></code> parameter dictionary to a parameter dictionary that can be passed to a call to <a class="reference external" href="https://bdiemer.bitbucket.io/colossus/cosmology_cosmology.html#cosmology.cosmology.setCosmology">colossus.cosmology.cosmology.setCosmology</a>. This will allow you to calculate cosmological quantities (e.g. the mass-concentration relation) using the colossus library.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>param</strong> (<em>dict</em>) – A <code class="docutils literal notranslate"><span class="pre">symlib</span></code> parameter dictionary returned by <a class="reference internal" href="#symlib.simulation_parameters" title="symlib.simulation_parameters"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.simulation_parameters()</span></code></a>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>A <code class="docutils literal notranslate"><span class="pre">colossus</span></code> parameter dictionary.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.suite_names">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">suite_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#symlib.suite_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of all the valid suite names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.plot_circle">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">plot_circle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.plot_circle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the a circle to a given <a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.pyplot.Axes</a>. This is a convenience function that helps with example code in the tutorial.</p>
+<p>All keyword arguments accepted by <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html">matplotlib.pyplot.plot</a> are accepted as keywords arguments by this function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.pyplot.Axes</em>) – The axis to plot the circle on.</p></li>
+<li><p><strong>x</strong> (<em>float</em>) – The <span class="math notranslate nohighlight">\(x\)</span> coordinate of the circle.</p></li>
+<li><p><strong>y</strong> (<em>float</em>) – The <span class="math notranslate nohighlight">\(y\)</span> coordinate of the circle.</p></li>
+<li><p><strong>r</strong> (<em>float</em>) – The radius of the circle.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="file-management">
+<h2>File Management<a class="headerlink" href="#file-management" title="Permalink to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.download_files">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">download_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">suite</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">halo_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_out_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'halos'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logging</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.download_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Downloads data associated with a set of halos/suites. See <a class="reference internal" href="getting_started.html"><span class="doc">Getting Started</span></a> for usage examples.</p>
+<p>This download has two stages. First, all the data is downloaded in “packed” <code class="docutils literal notranslate"><span class="pre">tar</span></code> files. Once this finishes, all the <code class="docutils literal notranslate"><span class="pre">tar</span></code> files are expanded into data directories and deleted. This first step is handled with <a class="reference internal" href="#symlib.download_packed_files" title="symlib.download_packed_files"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.download_packed_files()</span></code></a> and the second with <code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.unpack_files()</span></code>. If you are running a large download job that stops halfway and don’t want to repeat work when you restart it, you can use these two functions do do it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>suite_name</strong> (<em>str</em><em> or </em><em>None</em>) – The suite to download a halo from. This may either be the full name of a symlib suite or None. If None, <a class="reference internal" href="#symlib.download_files" title="symlib.download_files"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.download_files()</span></code></a> will be applied to every simulation suite with the given value of <code class="docutils literal notranslate"><span class="pre">halo_name</span></code>.</p></li>
+<li><p><strong>halo_name</strong> (<em>str</em><em>, </em><em>int</em><em>, or </em><em>None</em>) – The halo to download. This can either be an int giving the index of the halo in the suite, a string giving the name of the halo, or None. If None, all the halos in the given suite[s] will be downloaded.</p></li>
+<li><p><strong>base_out_dir</strong> – The directory where data is stored.</p></li>
+<li><p><strong>target=&quot;halos&quot;</strong> – What type of data to download. Possible options are <code class="docutils literal notranslate"><span class="pre">&quot;halos&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;trees&quot;</span></code>.</p></li>
+<li><p><strong>logging=True</strong> – True if you would like output printed telling the user what stage in the download they are at and False if you would like to turn off as much printing as possible.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="symlib.download_packed_files">
+<span class="sig-prename descclassname"><span class="pre">symlib.</span></span><span class="sig-name descname"><span class="pre">download_packed_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">suite</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">halo_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_out_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'halos'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logging</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#symlib.download_packed_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Downloads “packed” <code class="docutils literal notranslate"><span class="pre">tar</span></code> files containing the requested data for a given set of halos/suites. This function represents half of the <a class="reference internal" href="#symlib.download_files" title="symlib.download_files"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.download_files()</span></code></a> command and may be useful to users whose download stops halfway through and would like to restart. Note that in such a case, the _last_ downloaded <code class="docutils literal notranslate"><span class="pre">tar</span></code> file is likely an incomplete download and is probably corrupted. It should be repeated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>suite_name</strong> (<em>str</em><em> or </em><em>None</em>) – The suite to download a halo from. This may either be the full name of a symlib suite or None. If None, <a class="reference internal" href="#symlib.download_packed_files" title="symlib.download_packed_files"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.download_packed_files()</span></code></a> will be applied to every simulation suite with the given value of <code class="docutils literal notranslate"><span class="pre">halo_name</span></code>.</p></li>
+<li><p><strong>halo_name</strong> (<em>str</em><em>, </em><em>int</em><em>, or </em><em>None</em>) – The halo to download. This can either be an int giving the index of the halo in the suite, a string giving the name of the halo, or None. If None, all the halos in the given suite[s] will be downloaded.</p></li>
+<li><p><strong>base_out_dir</strong> – The directory where data is stored.</p></li>
+<li><p><strong>target=&quot;halos&quot;</strong> – What type of data to download. Possible options are <code class="docutils literal notranslate"><span class="pre">&quot;halos&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;trees&quot;</span></code>.</p></li>
+<li><p><strong>logging=True</strong> – True if you would like output printed telling the user what stage in the download they are at and False if you would like to turn off as much printing as possible.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="unpack_files">
+<span class="sig-name descname"><span class="pre">unpack_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">suite</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">halo_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_out_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'halos'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logging</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#unpack_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Opens “packed” <code class="docutils literal notranslate"><span class="pre">tar</span></code> files containing the requested data for a given set of halos/suites. This function represents the second half of the <a class="reference internal" href="#symlib.download_files" title="symlib.download_files"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.download_files()</span></code></a> command and may be useful to users whose download stops halfway through and would like to restart. Note that in such a case, the _last_ downloaded <code class="docutils literal notranslate"><span class="pre">tar</span></code> file is likely an incomplete download and is probably corrupted. It should be repeated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>suite_name</strong> (<em>str</em><em> or </em><em>None</em>) – The suite to download a halo from. This may either be the full name of a symlib suite or None. If None, <code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.unpack_files()</span></code> will be applied to every simulation suite with the given value of <code class="docutils literal notranslate"><span class="pre">halo_name</span></code>.</p></li>
+<li><p><strong>halo_name</strong> (<em>str</em><em>, </em><em>int</em><em>, or </em><em>None</em>) – The halo to download. This can either be an int giving the index of the halo in the suite, a string giving the name of the halo, or None. If None, all the halos in the given suite[s] will be downloaded.</p></li>
+<li><p><strong>base_out_dir</strong> – The directory where data is stored.</p></li>
+<li><p><strong>target=&quot;halos&quot;</strong> – What type of data to download. Possible options are <code class="docutils literal notranslate"><span class="pre">&quot;halos&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;trees&quot;</span></code>.</p></li>
+<li><p><strong>logging=True</strong> – True if you would like output printed telling the user what stage in the download they are at and False if you would like to turn off as much printing as possible.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Symphony</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="simulations.html">Simulations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="credits_acknowledgements.html">People &amp; Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_access.html">Data Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Data Analysis Tutorial</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Library Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#units">Units</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#datatypes">Datatypes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#merger-tree-variables">Merger Tree Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#general-functions">General Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#halo-functions">Halo Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#utility-functions">Utility Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#file-management">File Management</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="background_reading.html">Background Reading</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="getting_started.html" title="previous chapter">Data Analysis Tutorial</a></li>
+      <li>Next: <a href="background_reading.html" title="next chapter">Background Reading</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Symphony, lead developer Phil Mansfield.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/symlib_documentation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Symphony'
-copyright = '2022, Symphony Collaboration, lead developer Phil Mansfield'
+copyright = '2022, Symphony, lead developer Phil Mansfield'
 author = 'Phil Mansfield'
 
 # The full version, including alpha/beta/rc tags
