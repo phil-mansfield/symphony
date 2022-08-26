@@ -109,9 +109,14 @@ DEFAULT_HALO_NAMES = {
         "Halo247", "Halo349", "Halo416", "Halo530", "Halo628", "Halo749", "Halo852", "Halo937", "Halo990"
     ]),
 
-    "SymphonyMilkyWayHR": sorted([
+    "SymphonyMilkyWayLR": sorted([
         "Halo023", "Halo247", "Halo268", "Halo530", "Halo829"
     ]),
+
+    "SymphonyMilkyWayHR": sorted([
+        "Halo023", "Halo247", "Halo268", "Halo530", "Halo829"
+    ]),    
+
     "SymphonyGroup": sorted([
         "Halo015", "Halo175", "Halo313", "Halo352", "Halo470", "Halo579", "Halo755", "Halo806", "Halo985",
         "Halo024", "Halo183", "Halo331", "Halo383", "Halo496", "Halo581", "Halo759", "Halo834",
@@ -147,7 +152,7 @@ DEFAULT_HALO_NAMES = {
     ]),
 }
 
-SUITE_NAMES = ["SymphonyLMC", "SymphonyMilkyWay", "SymphonyMilkyWayHR", "SymphonyGroup", "SymphonyLCluster", "SymphonyCluster", "MWest"]
+SUITE_NAMES = ["SymphonyLMC", "SymphonyMilkyWay", "SymphonyMilkyWayLR", "SymphonyMilkyWayHR", "SymphonyGroup", "SymphonyLCluster", "SymphonyCluster", "MWest"]
 
 def n_hosts(suite_name):
     """ n_halos returns the number of host halos in a given suite,
