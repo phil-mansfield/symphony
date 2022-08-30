@@ -22,11 +22,6 @@ Datatypes
 
 ``symlib`` halo data is generally returned as a numpy `structured array <https://numpy.org/doc/stable/user/basics.rec.html>`_, which allows for fields to be accessesed and subselected easily. See the :doc:`Getting Started <getting_started>` page for usage examples.
 
-.. note::
-   TODO: I don't like the formatting of the fields. The alignment is ugly. Any ideas for fixes?
-
-   Also, the vertical spacing between different entries is super small and I think it looks ugly. But Sphinx doesn't let you just add newlines in, so I don't know how to fix that either.
-
 .. data:: symlib.SUBHALO_DTYPE
 		   
     Time-dependent subhalo information (e.g., position) from the Rockstar halo finder. You can get this information for all a host's subhalos by calling :func:`symlib.read_subhalos`.
