@@ -17,5 +17,6 @@ Full Table of Contents
    credits_acknowledgements
    data_access
    getting_started
+   intro_to_merger_trees
    symlib_documentation
    background_reading
