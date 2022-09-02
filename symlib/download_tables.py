@@ -173,7 +173,7 @@ trees = {
         'Halo_047': 'https://drive.google.com/file/d/1P-oIpN4pXtXLEB5xi1fMEYZrl9l2PuKI/view?usp=sharing',
         'Halo_050': 'https://drive.google.com/file/d/18c1kwQm2YII-Am68uiVdruCwVQgJJSaT/view?usp=sharing'
     },
-    'SymphonyCLuster': {
+    'SymphonyCluster': {
         'Halo156': 'https://drive.google.com/file/d/11Q00P9Ltj1nc9fFwOnkHziszTVRXqI8j/view?usp=sharing',
         'Halo175': 'https://drive.google.com/file/d/1MMAzgxcA-tMXOmkewunsCBiuaW0Bdy6a/view?usp=sharing',
         'Halo200': 'https://drive.google.com/file/d/1l0ko80lLUkySCOJkD90LGscQmyIhmna0/view?usp=sharing',
