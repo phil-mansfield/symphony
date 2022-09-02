@@ -10,7 +10,7 @@ def main():
         "SymphonyMilkyWay",
         "SymphonyGroup",
         "SymphonyLCluster",
-        "SymphonyCLuster"
+        "SymphonyCluster"
     ]
 
     lines = []
