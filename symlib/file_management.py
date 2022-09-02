@@ -2,7 +2,6 @@ from . import util
 from . import lib
 from os import path
 import os
-import gdown
 import shutil
 import requests
 
