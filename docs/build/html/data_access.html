@@ -1,10 +1,10 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
     <title>Data Access &#8212; Symphony 0.0.6 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
@@ -12,6 +12,7 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -35,21 +36,15 @@
           <div class="body" role="main">
             
   <section id="data-access">
-<h1>Data Access<a class="headerlink" href="#data-access" title="Permalink to this headline">¶</a></h1>
+<h1>Data Access<a class="headerlink" href="#data-access" title="Permalink to this heading">¶</a></h1>
 <section id="available-data">
-<h2>Available data<a class="headerlink" href="#available-data" title="Permalink to this headline">¶</a></h2>
+<h2>Available data<a class="headerlink" href="#available-data" title="Permalink to this heading">¶</a></h2>
 <p>As discussed in the <a class="reference internal" href="simulations.html"><span class="doc">Simulations</span></a> page, Symphony is organized into several suites of zoom-in simulations that respectively correspond to host halos containing the following solar masses (<span class="math notranslate nohighlight">\(M_\odot\)</span>): the LMC (<span class="math notranslate nohighlight">\(10^{11}\)</span>), Milky Way (<span class="math notranslate nohighlight">\(10^{12}\)</span>), Group (<span class="math notranslate nohighlight">\(10^{13}\)</span>), L-Cluster (<span class="math notranslate nohighlight">\(4\times 10^{14}\)</span>), and Cluster (<span class="math notranslate nohighlight">\(10^{15}\)</span>) suites.</p>
 <p>For each halo in these suites, Symphony contains information on the evolution of halos and particles over time. Because of the size of these data sets, a limited number of them are currently available for download.</p>
 <p><strong>Halos:</strong> This dataset contains information on the subhalos of the simulated host halos, including the evolution of those subhalos over time. Disrupted subhalos and “splashback” subhalos are also included. The subhalos, their properties, and their evolution over time were calculated with a combination of Rockstar, consistent-trees, and custom routines designed to remove numerical artifacts. A custom format is used for these halos, as descibed in the <a class="reference internal" href="getting_started.html"><span class="doc">Data Access Tutorial</span></a> and the <a class="reference internal" href="symlib_documentation.html"><span class="doc">Data Access Reference</span></a>. <em>This dataset is light-weight enough to analyze on a personal computer, is relatively easy to use, and will be sufficient for the majority of halo-based research tasks.</em></p>
 <p><strong>Trees:</strong> This dataset contains the full “merger trees” for all the high-resolution objects in the box, not just the subhalos near the central host. The trees also have the full merger history of each object. These trees were generated with Rockstar and consistent-trees, but have been converted to a more efficient and easy-to-use format and heavily annotated with several custom routines, as described in the <a class="reference internal" href="getting_started.html"><span class="doc">Data Access Tutorial</span></a> and the <a class="reference internal" href="symlib_documentation.html"><span class="doc">Data Access Reference</span></a>. <em>This dataset is large enough that it will be difficult to analyze on a personal computer, and it will be unnecessary for most halo-based analysis tasks, even those that require looking at the evolution of objects over time.</em></p>
 <p>The table below shows the sizes of the different different datasets across the different simulation suites.</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 25%" />
-<col style="width: 25%" />
-<col style="width: 25%" />
-<col style="width: 25%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Suite Name</p></th>
 <th class="head"><p><span class="math notranslate nohighlight">\(N_{\rm hosts}\)</span></p></th>
@@ -87,16 +82,20 @@
 </table>
 </section>
 <section id="downloading-data">
-<h2>Downloading Data<a class="headerlink" href="#downloading-data" title="Permalink to this headline">¶</a></h2>
+<h2>Downloading Data<a class="headerlink" href="#downloading-data" title="Permalink to this heading">¶</a></h2>
 <p>You can download this data with Symphony’s data analysis library, <code class="docutils literal notranslate"><span class="pre">symlib</span></code>. A full reference for this library can be found <a class="reference internal" href="symlib_documentation.html"><span class="doc">here</span></a>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">symlib</span></code> can be installed with pip. It depends on the standard scientific python libraries, <a class="reference external" href="https://numpy.org/install/">numpy</a>, <a class="reference external" href="https://scipy.org/install/">scipy</a>, and <a class="reference external" href="https://matplotlib.org/stable/users/installing/index.html">matplotlib</a>. It also depends on the cosmology library <a class="reference external" href="https://bdiemer.bitbucket.io/colossus/installation.html">colossus</a>. <code class="docutils literal notranslate"><span class="pre">symlib</span></code> will automatically install these libraries if they are not already on your machine, but if you encounter issues, you can find installation instructions for all four libraries on their respective web pages.</p>
 <p>If you don’t have pip installed, follow the instructions <a class="reference external" href="https://pip.pypa.io/en/stable/installation/">here</a>. Then, from the command line, run the following command.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">pip install symlib -U</span>
 </pre></div>
 </div>
+<p>Next, obtain a username and password, by filling out <a class="reference external" href="https://docs.google.com/forms/d/e/1FAIpQLSdud6b4i51AP13glVibkzyLAtT9b2ctVx516_hvy5nm76uq1Q/viewform?usp=sf_link">this form</a>. A user name and password will be emailed to you.</p>
 <p>You can use the <a class="reference internal" href="symlib_documentation.html#symlib.download_files" title="symlib.download_files"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.download_files()</span></code></a> function to download whichever datasets you want to use. The entire dataset will be stored in a single base directory. Each suite has is its own sub-directory within the base, and each zoom-in simulation has a subdirectory within its suite.</p>
 <p>The following Python code shows examples of how to use this function.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">symlib</span>
+
+<span class="n">user</span> <span class="o">=</span> <span class="s2">&quot;my_user_name&quot;</span>
+<span class="n">password</span> <span class="o">=</span> <span class="s2">&quot;my_password&quot;</span>
 
 <span class="c1"># The base directory where data will be downloaded to.</span>
 <span class="c1"># All the suites and halos will be properly ordered</span>
@@ -112,22 +111,22 @@
 
 <span class="c1"># Exmaple 1</span>
 <span class="c1"># Download the first host halo in the Milky Way-mass suite.</span>
-<span class="n">symlib</span><span class="o">.</span><span class="n">download_files</span><span class="p">(</span><span class="s2">&quot;SymphonyMilkyWay&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+<span class="n">symlib</span><span class="o">.</span><span class="n">download_files</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="s2">&quot;SymphonyMilkyWay&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">data_dir</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
 
 <span class="c1"># Example 2</span>
 <span class="c1"># Download all the host halos in the Milky Way-mass suite.</span>
-<span class="n">symlib</span><span class="o">.</span><span class="n">download_files</span><span class="p">(</span><span class="s2">&quot;SymphonyMilkyWay&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
+<span class="n">symlib</span><span class="o">.</span><span class="n">download_files</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="s2">&quot;SymphonyMilkyWay&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">data_dir</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
 
 <span class="c1"># Example 3</span>
 <span class="c1"># Download all the host halos across all the suites.</span>
-<span class="n">symlib</span><span class="o">.</span><span class="n">download_files</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
+<span class="n">symlib</span><span class="o">.</span><span class="n">download_files</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">data_dir</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
 
 <span class="c1"># Example 4</span>
 <span class="c1"># Download a specific halo that you know the name of.</span>
-<span class="n">symlib</span><span class="o">.</span><span class="n">download_files</span><span class="p">(</span><span class="s2">&quot;SymphonyMilkyWay&quot;</span><span class="p">,</span> <span class="s2">&quot;Halo023&quot;</span><span class="p">,</span>
+<span class="n">symlib</span><span class="o">.</span><span class="n">download_files</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="s2">&quot;SymphonyMilkyWay&quot;</span><span class="p">,</span> <span class="s2">&quot;Halo023&quot;</span><span class="p">,</span>
         <span class="n">data_dir</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -186,7 +185,7 @@
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -203,7 +202,7 @@
       &copy;2022, Symphony, lead developer Phil Mansfield.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.2.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

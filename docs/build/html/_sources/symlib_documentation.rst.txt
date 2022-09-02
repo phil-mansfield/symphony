@@ -328,12 +328,14 @@ Utility Functions
 File Management
 ---------------
 
-.. function:: symlib.download_files(suite, halo_name, base_out_dir, target="halos", logging=True)
+.. function:: symlib.download_files(user, password, suite, halo_name, base_out_dir, target="halos", logging=True)
 
    Downloads data associated with a set of halos/suites. See :doc:`Getting Started <getting_started>` for usage examples.
 
    This download has two stages. First, all the data is downloaded in "packed" ``tar`` files. Once this finishes, all the ``tar`` files are expanded into data directories and deleted. This first step is handled with :func:`symlib.download_packed_files()` and the second with :func:`symlib.unpack_files()`. If you are running a large download job that stops halfway and don't want to repeat work when you restart it, you can use these two functions do do it.
-   
+
+   :param user: The username you would like to use to perform the download. See instructions on the :doc:`Data Access <data_access>` page for obtaining a username/password.
+   :param password: The password associated with your username. See instructions on the :doc:`Data Access <data_access>` page for obtaining a username/password.
    :param suite_name: The suite to download a halo from. This may either be the full name of a symlib suite or None. If None, :func:`symlib.download_files()` will be applied to every simulation suite with the given value of ``halo_name``.
    :type suite_name: str or None
    :param halo_name: The halo to download. This can either be an int giving the index of the halo in the suite, a string giving the name of the halo, or None. If None, all the halos in the given suite[s] will be downloaded.
@@ -342,10 +344,12 @@ File Management
    :param target="halos": What type of data to download. Possible options are ``"halos"`` and ``"trees"``.
    :param logging=True: True if you would like output printed telling the user what stage in the download they are at and False if you would like to turn off as much printing as possible. 
    
-.. function:: symlib.download_packed_files(suite, halo_name, base_out_dir, target="halos", logging=True)
+.. function:: symlib.download_packed_files(user, password, suite, halo_name, base_out_dir, target="halos", logging=True)
 	      
    Downloads "packed" ``tar`` files containing the requested data for a given set of halos/suites. This function represents half of the :func:`symlib.download_files()` command and may be useful to users whose download stops halfway through and would like to restart. Note that in such a case, the _last_ downloaded ``tar`` file is likely an incomplete download and is probably corrupted. It should be repeated.
 
+   :param user: The username you would like to use to perform the download. See instructions on the :doc:`Data Access <data_access>` page for obtaining a username/password.
+   :param password: The password associated with your username. See instructions on the :doc:`Data Access <data_access>` page for obtaining a username/password.
    :param suite_name: The suite to download a halo from. This may either be the full name of a symlib suite or None. If None, :func:`symlib.download_packed_files()` will be applied to every simulation suite with the given value of ``halo_name``.
    :type suite_name: str or None
    :param halo_name: The halo to download. This can either be an int giving the index of the halo in the suite, a string giving the name of the halo, or None. If None, all the halos in the given suite[s] will be downloaded.

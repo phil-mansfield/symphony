@@ -55,6 +55,8 @@ If you don't have pip installed, follow the instructions `here <https://pip.pypa
 
 	pip install symlib -U
 
+Next, obtain a username and password, by filling out `this form <https://docs.google.com/forms/d/e/1FAIpQLSdud6b4i51AP13glVibkzyLAtT9b2ctVx516_hvy5nm76uq1Q/viewform?usp=sf_link>`__. A user name and password will be emailed to you.
+	
 You can use the :func:`symlib.download_files` function to download whichever datasets you want to use. The entire dataset will be stored in a single base directory. Each suite has is its own sub-directory within the base, and each zoom-in simulation has a subdirectory within its suite. 
 
 The following Python code shows examples of how to use this function.
@@ -63,6 +65,9 @@ The following Python code shows examples of how to use this function.
 
 	import symlib
 
+	user = "my_user_name"
+	password = "my_password"
+	
 	# The base directory where data will be downloaded to.
 	# All the suites and halos will be properly ordered
 	# within this, so each halo's location will end up being
@@ -77,22 +82,22 @@ The following Python code shows examples of how to use this function.
 
 	# Exmaple 1
 	# Download the first host halo in the Milky Way-mass suite.
-	symlib.download_files("SymphonyMilkyWay", 0,
+	symlib.download_files(user, password, "SymphonyMilkyWay", 0,
 		data_dir, target=target)
 
 	# Example 2
 	# Download all the host halos in the Milky Way-mass suite.
-	symlib.download_files("SymphonyMilkyWay", None,
+	symlib.download_files(user, password, "SymphonyMilkyWay", None,
 		data_dir, target=target)
 
 	# Example 3
 	# Download all the host halos across all the suites.
-	symlib.download_files(None, None,
+	symlib.download_files(user, password, None, None,
 		data_dir, target=target)
 
 	# Example 4
 	# Download a specific halo that you know the name of.
-	symlib.download_files("SymphonyMilkyWay", "Halo023",
+	symlib.download_files(user, password, "SymphonyMilkyWay", "Halo023",
 		data_dir, target=target)
 
 You can also get a list of suite names with :func:`symlib.suite_names()` and host counts for a given suite with :func:`symlib.n_hosts()` so you can use a fine-tuned for loop instead of ``None``.
