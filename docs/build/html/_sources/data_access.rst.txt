@@ -4,13 +4,13 @@ Data Access
 Available data
 --------------
 
-As discussed in the :doc:`Simulations <simulations>` page, Symphony is organized into several suites of zoom-in simulations: the LMC, Milky Way, Group, L-Cluster, and Cluster suites. These suites respectively correspond to host halos with masses of :math:`10^{11}`, :math:`10^{12}`, :math:`10^{13}`, :math:`4\times 10^{14}`, and :math:`10^{15}` :math:`M_\odot`.
+As discussed in the :doc:`Simulations <simulations>` page, Symphony is organized into several suites of zoom-in simulations that respectively correspond to host halos containing the following solar masses (:math:`M_\odot`): the LMC (:math:`10^{11}`), Milky Way (:math:`10^{12}`), Group (:math:`10^{13}`), L-Cluster (:math:`4\times 10^{14}`), and Cluster (:math:`10^{15}`) suites.
 
-For each halo in these suites, Symphony contains information on the evolution of halos and particles over time. Because of the size of these data sets, only some of them are currently available for download.
+For each halo in these suites, Symphony contains information on the evolution of halos and particles over time. Because of the size of these data sets, a limited number of them are currently available for download.
 
-**Halos:** This dataset contains information on the subhalos of the simulated host halos, including the evolution of those subhalos over time. Disrupted subhalos and "splashback" subhalos are also included. The subhalos, their properties, and their evolution over time were calculated with a combination of Rockstar, consistent-trees, and custom routines designed to remove numerical artifacts. A custom format is used for these halos, as descibed in the :doc:`Data Access Tutorial <getting_started>` and the :doc:`Data Access Reference <symlib_documentation>`. *This dataset is light-weight enough to analyze on a personal computer, is relatively easy to use, and will be enough for the majority of halo-based research tasks.*
+**Halos:** This dataset contains information on the subhalos of the simulated host halos, including the evolution of those subhalos over time. Disrupted subhalos and "splashback" subhalos are also included. The subhalos, their properties, and their evolution over time were calculated with a combination of Rockstar, consistent-trees, and custom routines designed to remove numerical artifacts. A custom format is used for these halos, as descibed in the :doc:`Data Access Tutorial <getting_started>` and the :doc:`Data Access Reference <symlib_documentation>`. *This dataset is light-weight enough to analyze on a personal computer, is relatively easy to use, and will be sufficient for the majority of halo-based research tasks.*
 
-**Trees:** This dataset contains the full "merger trees" for all the high-resolution objects in the box, not just the subhalos near the central host. The trees also have the full merger history of each object. These trees were generated with Rockstar and consistent-trees, but have been converted to a more efficient and easy-to-use format and have been heavily annotated with several custom routines, as described in the :doc:`Data Access Tutorial <getting_started>` and the :doc:`Data Access Reference <symlib_documentation>`. *This dataset is large enough that it will be difficult to analyze on a personal computer, and it will be overkill for most halo-based analysis tasks, even those that require looking at the evolution of objects over time.*
+**Trees:** This dataset contains the full "merger trees" for all the high-resolution objects in the box, not just the subhalos near the central host. The trees also have the full merger history of each object. These trees were generated with Rockstar and consistent-trees, but have been converted to a more efficient and easy-to-use format and heavily annotated with several custom routines, as described in the :doc:`Data Access Tutorial <getting_started>` and the :doc:`Data Access Reference <symlib_documentation>`. *This dataset is large enough that it will be difficult to analyze on a personal computer, and it will be unnecessary for most halo-based analysis tasks, even those that require looking at the evolution of objects over time.*
 
 The table below shows the sizes of the different different datasets across the different simulation suites.
 
@@ -95,7 +95,7 @@ The following Python code shows examples of how to use this function.
 	symlib.download_files("SymphonyMilkyWay", "Halo023",
 		data_dir, target=target)
 
-You can also get a list of suite names with :func:`symlib.suite_names()` and hosts counts for a given suite with :func:`symlib.n_hosts()` so you can use a fine-tuned for loop instead of ``None``.
+You can also get a list of suite names with :func:`symlib.suite_names()` and host counts for a given suite with :func:`symlib.n_hosts()` so you can use a fine-tuned for loop instead of ``None``.
 
 If you are running tests on a machine where you don't have much storage space, the smallest host is Halo933 in SymphonyLMC, with a ``"halos"`` size of 2.3 MB and ``"trees"`` size of 227 MB.
 

@@ -22,11 +22,6 @@ Datatypes
 
 ``symlib`` halo data is generally returned as a numpy `structured array <https://numpy.org/doc/stable/user/basics.rec.html>`_, which allows for fields to be accessesed and subselected easily. See the :doc:`Getting Started <getting_started>` page for usage examples.
 
-.. note::
-   TODO: I don't like the formatting of the fields. The alignment is ugly. Any ideas for fixes?
-
-   Also, the vertical spacing between different entries is super small and I think it looks ugly. But Sphinx doesn't let you just add newlines in, so I don't know how to fix that either.
-
 .. data:: symlib.SUBHALO_DTYPE
 		   
     Time-dependent subhalo information (e.g., position) from the Rockstar halo finder. You can get this information for all a host's subhalos by calling :func:`symlib.read_subhalos`.
@@ -34,13 +29,21 @@ Datatypes
     **DATA FIELDS:**
 	
     * ``"id"`` (*numpy.int32*) - A unique integer identifying each subhalo. Changes from snapshot to snapshot.
+
     * ``"mvir"``  (*numpy.float32*) - The mass of the halo, :math:`M_{\rm vir}`. When isolated, this an overdensity mass from the Bryan & Norman (1998) definition of the virial overdensity. When deep in a host halo, this is the bound mass. The transition between these two definitions is ill-defined.
+
     * ``"rvir"`` (*numpy.float32*) - The overdensity radius of the halo, :math:`R_{\rm vir}`.
+
     * ``"vmax"`` (*numpy.float32*) - The maximum value of the halo's circular rotation curve, :math:`V_{\rm max} = {\rm max}\left\{V_{\rm rot}(r) = \sqrt{G M(<r)/r}\right\}`.
+
     * ``"rvmax"`` (*numpy.float32*) - The radius where this maximum rotation velocity occurs.
+
     * ``"cvir"`` (*numpy.float32*) - An estimate of how centrally concentrated the subhalo's mass is, :math:`c_{\rm vir}=R_s/R_{\rm vir}`. :math:`R_s` is the transition radius between shallow inner density slopes (:math:`d \ln(\rho)/d \ln(r)` > -2) and steep outer slopes (i.e. :math:`d \ln(\rho)/d \ln(r)` < -2). :math:`c_{\rm vir}` is estimated  by measuring :math:`V_{\rm max}/V_{\rm rot}(R_{\rm vir})`, assuming an NFW profile, and solving for :math:`R_s`. Because of this, the *value* of :math:`c_{\rm vir}` is only meaningful for halos where the assumption of NFW profiles is reasonable (non-subhalos). However, the *relative ordering* of concentrations will be correct regardless.
+
     * ``"x"`` (*numpy.float32*) - :math:`x`, the position of the subhalo.
+
     * ``"v"`` (*numpy.float32*) - :math:`v`, The velocity of the subhalo.
+
     * ``"ok"`` (*bool*) - True if the subhalo exists during the specified snapshot and False otherwise.
 		
 .. data:: symlib.HISTORY_DTYPE
@@ -50,11 +53,17 @@ Datatypes
 	**DATA FIELDS**
 	
     * ``"mpeak"`` (*numpy.float32*) - :math:`M_{\rm peak}`, the largest :math:`M_{\rm vir}` that the subhalo ever had. This quantity is often useful for reasoning about subhalo disruption or as a component in models of galaxy mass.
+
     * ``"vpeak"`` (*numpy.float32*) - :math:`V_{\rm peak}`, the largest :math:`V_{\rm max}` that the subhalo ever had. This is useful in the same places that :math:`M_{\rm peak}` is.
+
     * ``"merger_snap"`` (*numpy.int32*) - The snapshot where the subhalo first fell within the virial radius of the host halo.
+
     * ``"merger_ratio"`` (*numpy.float32*) - The ratio of masses at this infall snapshot.
+
     * ``"branch_idx"`` (*numpy.int32*) - The index of this halo's branch in the full merger tree. This allows you to switch back and forther between the two data structures as needed.
+
     * :data:`symlib.HISTORY_DTYPE` also contains all the fields in :func:`symlib.BRANCH_DTYPE`. Note, however, that subhalos where ``is_disappear`` is True or ``is_real`` is False have already been removed, so there is no need to make cuts on this.
+
     * ``false_selection`` (*bool*) - True if the branch has :math:`M_{\rm peak} \geq 300\cdot m_p` after infall, but :math:`M_{\rm peak} < 300\codt m_p`.
     
 .. data:: symlib.BRANCH_DTYPE
@@ -64,11 +73,17 @@ Datatypes
 	**DATA FIELDS**
 	
     * ``"start"`` (*numpy.int32*) - The index of the last halo along this main branch. It is labeled "start" because the tree is ordered from later times to earlier times. See the documentation on :func:`read_tree` for more details on tree structure.
+
     * ``"end"`` (*numpy.int32*) - The index after the first halo in the branch. This means that the full main branch can be accessed by using index slicing: ``branch = tree[start: end]``.
+
     * ``"is_real"`` (*bool*) - False if the first tracked halo of this branch is a subhalo and True otherwise. Branches where this is False are virtually always tree-linking errors.
+
     * ``"is_disappear"`` (*bool*) True if the last tracked halo of this branch disrupts without merging with any other halos and False otherwise. Branches where this is True are virtually always barely-resolved object fluctuating in-and-out of existence near the resolution barrier.
+
     * ``"is_main_sub"`` (*bool*) - True if any halo in the branch was ever a subhalo of the main host.
+
     * ``"preprocess"`` (*numpy.int32*) - A non-negative integer if the branch was ever the subhalo of a larger halo prior to becoming a subhalo of the host and -1 otherwise. If the first case is true, this variable is the index of the largest branch that this branch was a subhalo of. There's some non-trivial bookkeeping required to deal with tree errors caused by major mergers, which will be described in a future paper. For now, suffice to say that it is a generalized version of Section 2.3.1 of Mansflied & Kravtsov (2020).
+
     * ``"first_infall_snap"`` (*numpy.int32*) - If ``"preprocess"`` is non-negative, the snapshot when this branch first fell into a halo of the branch pointed to by ``"preprocess"``.
       
 Merger Tree Variables
@@ -77,27 +92,49 @@ Merger Tree Variables
 The following variables can be read in from merger trees with the :func:`symlib.read_tree` function. These variables are taken directly from the consistent-trees output files and still retain its units and ID conventions.
 
 * ``"dfid"`` - The depth-first ID of the halo.
+
 * ``"id"`` - The ID of the halo.
+
 * ``"desc_id`` - The ID (``id``, not ``dfid``) of the descendant. -1 if the halo has no descendants.
+
 * ``"upid"`` - The UpID of a halo. This is -1 if the halo is not within a larger halo's virial radius, otherwise it is the ID (``id``, not ``dfid``) of that larger halo.
+
 * ``"phantom"`` - A flag indicating whether consistent-trees was able to track the object during this snapshot. 1 if so, and 0 otherwise. If 0, this halo's properties were interpolated during this snapshot.
+
 * ``"snap"`` -  This halo's snapshot.
+
 * ``"next_co_prog"`` - The depth-first ID (``dfid``, not ``id``) of this halo's co-progenitor, if it exists. If this halo doesn't have a co-progenitor, this variable is -1. See :doc:`Getting Started <getting_started>` for a description of what this is.
+
 * ``"mvir"`` -  The mass of the halo, :math:`M_{\rm vir}`. When isolated, this an overdensity mass from the Bryan & Norman (1998) definition of the virial overdensity. When deep in a host halo, this is the bound mass. The transition between these two definitions is ill-defined.
+
 * ``"rs"`` - The NFW scale radius of the halo, :math:`R_s`. Units are comoving :math:`h^{-1}{\rm kpc}`
+
 * ``"vmax"`` -  The maximum value of the halo's circular rotation curve, :math:`V_{\rm max} = {\rm max}\left\{V_{\rm rot}(r) = \sqrt{G M(<r)/r}\right\}`. Units are physical km/s.
+
 * ``"m200b"`` - The overdensity mass, :math:`M_{\rm 200b}`, corresponding to :math:`200\times \rho_m`.
+
 * ``"m200c"`` - The overdensity mass, :math:`M_{\rm 200b}`, corresponding to :math:`200\times \rho_c`.
+
 * ``"m500c"`` - The overdensity mass, :math:`M_{\rm 200b}`, corresponding to :math:`500\times \rho_c`.
+
 * ``"xoff"`` - The distance between the center of mass and the densest part fo the halo. units are comoving :math:`h^{-1}{\rm kpc}`.
+
 * ``"spin_bullock"`` - Unitless paramater that tracks the specific anular momentum of the halo. :math:`|\vec{J}|/(\sqrt{2}\,M_{\rm vir}\,V_{\rm vir}\,R_{\rm vir})`
+
 * ``"c_to_a"`` - The unitless minor-to-major axis ratio of the halo.
+
 * ``"b_to_a"`` - The unitless intermediate-to-major axis ratio of the halo.
+
 * ``"t_to_u"`` - The virial ratio, :math:`T/|U|`.
+
 * ``"r_vmax"`` - The radius, :math:`R_{\rm vmax}`, at which :math:`V_{\rm max}` occurs.
+
 * ``"x"`` - A 3-vector, :math:`\vec{x}` giving the position of the halo in comivng :math:`h^{-1}{\rm Mpc}`.
+
 * ``"v"`` - A 3-vector, :math:`\vec{v}`, giving the velocity of the halo in physical km/s.
+
 * ``"j"`` - A 3-vector, :math:`\vec{J}`, giving the angular momentum of the halo in physical :math:`h^{-2}M_\odot\cdot{\rm Mpc}\cdot{\rm km/s}`
+
 * ``"a"`` - A 3-vector, :math:`\vec{A}`, pointing in the direction of the halo's major axis with length equal to that major axis. Units are comoving :math:`h^{-1}{\rm kpc}`.
 
   
@@ -135,17 +172,25 @@ General Functions
     Returns a dictionary containing parameters of the simulation suite. These parameters are returned as a dictionary which maps the string names of variables to their values.
 
     * ``"eps"`` - :math:`\epsilon`, the effective radius of dark matter particles in comoving :math:`h^{-1}{\rm kpc}` (i.e. the "Plummer-equivalent force softening scale").
+
     * ``"mp"`` - :math:`m_p`, the mass of dark matter particles in :math:`h^{-1}M_\odot`.
+
     * ``"n_snap"`` - :math:`N_{\rm snap}`, the number of snapshots in the simulation.
+
     * ``"h100"`` - :math:`h_{100} = H_0 / (100\ {\rm km/s/Mpc})`, the scaled Hubble parameter.
 
     It also contains `colossus <https://bdiemer.bitbucket.io/colossus/cosmology_cosmology.html>`_-compatible cosmology parameters. Note that these are not the same between all suites.
 	
     * ``"flat"`` - True if the universe is flat and False otherwise.
+
     * ``"H0"`` - :math:`H_0`, the Hubble constant in units of km/s/Mpc.
+
     * ``"Om0"`` - :math:`\Omega_{m,0}`, the total matter density relative to the citical density at :math:`z=0`.
+
     * ``"Ob0"`` - :math:`\Omega_{m,0}` baryon density relative to the critical density at :math:`z=0`.
+
     * ``"sigma8"`` - :math:`\sigma_8` the amplitude of the power spectrum at :math:`8\ h^{-1}{\rm Mpc}`.
+    
     * ``"ns"`` - :math:`n_s`, the spectral tilt of the power spectrum.
     
     :param sim_dir: The directory of the target host halo. You may also just pass it the name of the simulation suite (e.g. ``"SymphonyMilkyWay"``)
