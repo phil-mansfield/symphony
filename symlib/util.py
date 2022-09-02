@@ -171,7 +171,12 @@ def get_host_directory(base_dir, suite_name, halo_name):
     halos in a suite, you'll want to use this second option.
     """
     
+    if len(suite_name) > 2 and suite_name[-2:] == "LR":
+        suite_dir = suite_name[:-2]
+    else:
+        suite_dir = suite_name
+
     if isinstance(halo_name, int):
         halo_name = DEFAULT_HALO_NAMES[suite_name][halo_name]
 
-    return path.join(base_dir, suite_name, halo_name)
+    return path.join(base_dir, suite_dir, halo_name)
