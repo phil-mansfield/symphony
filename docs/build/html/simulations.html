@@ -1,10 +1,10 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
     <title>Simulations &#8212; Symphony 0.0.6 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
@@ -12,7 +12,6 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -36,21 +35,21 @@
           <div class="body" role="main">
             
   <section id="simulations">
-<h1>Simulations<a class="headerlink" href="#simulations" title="Permalink to this heading">¶</a></h1>
+<h1>Simulations<a class="headerlink" href="#simulations" title="Permalink to this headline">¶</a></h1>
 <section id="about-the-simulations">
-<h2>About the Simulations<a class="headerlink" href="#about-the-simulations" title="Permalink to this heading">¶</a></h2>
+<h2>About the Simulations<a class="headerlink" href="#about-the-simulations" title="Permalink to this headline">¶</a></h2>
 <p>Symphony is a compilation of 262 cosmological, cold dark matter-only zoom-in simulations spanning four decades of host halo mass, from <span class="math notranslate nohighlight">\(10^{11}\,M_\odot\)</span> to <span class="math notranslate nohighlight">\(10^{15}\,M_\odot\)</span>. In particular, Symphony includes zoom-in simulations of 39 Large Magellanic Cloud-mass host halos (<span class="math notranslate nohighlight">\(10^{11}\,M_\odot\)</span>), 45 Milky Way-mass host halos (<span class="math notranslate nohighlight">\(10^{12}\,M_\odot\)</span>), 49 strong lens-analog Group host halos (<span class="math notranslate nohighlight">\(10^{13}\,M_\odot\)</span>), 33 Low-mass Cluster host halos (<span class="math notranslate nohighlight">\(4\times 10^{14}\,M_\odot\)</span>), and 96 Cluster host halos (<span class="math notranslate nohighlight">\(10^{15}\,M_\odot\)</span>).</p>
 <p>Each simulation is run at high resolution relative to the corresponding host halo mass scale, such that hosts are typically composed of several million dark matter particles. Symphony’s large statistical host halo sample, spanning several orders of magnitude in host halo mass, combined with its high resolution, enables measurements of host halo and subhalo population properties over a wide dynamic range. Furthermore, a unified set of analysis tools was used to process these simulations, and the documentation provided in this library allows simulation data to be accessed with ease across the suites.</p>
 <p>The image below shows five host halos from each Symphony suite. Each row corresponds to a different suite, from the lowest-mass (LMC) hosts at the top to the highest-mass (Cluster) hosts at the bottom. Host halo concentration increases in quintiles from left to right, such that hosts with the more centrally concentrated dark matter distributions within each suite are shown towards the right. Visualizations were created using the phase-space tessellation method described in <a class="reference external" href="https://linkinghub.elsevier.com/retrieve/pii/S2213133716301536">Kaehler et al 2017</a>, <a class="reference external" href="https://library.imaging.org/ei/articles/30/1/art00005">2018</a>.</p>
 <a class="reference internal image-reference" href="_images/zoomin_grid.png"><img alt="_images/zoomin_grid.png" src="_images/zoomin_grid.png" style="width: 1000px;" /></a>
 </section>
 <section id="technical-details">
-<h2>Technical Details<a class="headerlink" href="#technical-details" title="Permalink to this heading">¶</a></h2>
+<h2>Technical Details<a class="headerlink" href="#technical-details" title="Permalink to this headline">¶</a></h2>
 <p>Please refer to E. O. Nadler et al. (2022, in preparation) for complete technical details regarding the five Symphony simulation suites, including the simulations’ numerical and cosmological parameters, convergence properties, host and subhalo population properties, and so on. The table below summarizes the relevant properties of each simulation suite. Note that the Milky Way, L-Cluster, and Cluster suites were originally presented in <a class="reference external" href="https://iopscience.iop.org/article/10.1088/0004-637X/810/1/21">Mao et al 2015</a>, <a class="reference external" href="https://iopscience.iop.org/article/10.3847/1538-4357/ac68e9">Bhattacharyya et al 2022</a>, and <a class="reference external" href="https://iopscience.iop.org/article/10.1088/0004-637X/763/2/70">Wu et al 2013a</a>, <a class="reference external" href="https://iopscience.iop.org/article/10.1088/0004-637X/767/1/23">2013b</a>, respectively. In addition to citing E. O. Nadler et al. (2022, in preparation), studies that use any of these suites should also cite these original papers.</p>
 <a class="reference internal image-reference" href="_images/symphony_table.png"><img alt="_images/symphony_table.png" src="_images/symphony_table.png" style="width: 1000px;" /></a>
 </section>
 <section id="publications">
-<h2>Publications<a class="headerlink" href="#publications" title="Permalink to this heading">¶</a></h2>
+<h2>Publications<a class="headerlink" href="#publications" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p><strong>SYMPHONY: Cosmological Zoom-in Simulation Suites over Four Decades of Host Halo Mass</strong> — <em>E. O. Nadler et al. (in preparation)</em> — This paper presents the Symphony compilation and studies the corresponding host and subhalo population properties, comparisons between Symphony simulations and semi-analytic structure formation predictions, galaxy–halo connection modeling using Symphony, and Symphony simulations’ convergence properties.</p></li>
 </ul>
@@ -107,7 +106,7 @@
     </form>
     </div>
 </div>
-<script>document.getElementById('searchbox').style.display = "block"</script>
+<script>$('#searchbox').show(0);</script>
 
 
 
@@ -124,7 +123,7 @@
       &copy;2022, Symphony, lead developer Phil Mansfield.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.2.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

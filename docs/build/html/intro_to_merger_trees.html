@@ -1,10 +1,10 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
     <title>Introduction to Merger Trees &#8212; Symphony 0.0.6 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
@@ -12,7 +12,6 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -36,9 +35,9 @@
           <div class="body" role="main">
             
   <section id="introduction-to-merger-trees">
-<h1>Introduction to Merger Trees<a class="headerlink" href="#introduction-to-merger-trees" title="Permalink to this heading">¶</a></h1>
+<h1>Introduction to Merger Trees<a class="headerlink" href="#introduction-to-merger-trees" title="Permalink to this headline">¶</a></h1>
 <section id="what-are-merger-trees">
-<h2>What Are Merger Trees?<a class="headerlink" href="#what-are-merger-trees" title="Permalink to this heading">¶</a></h2>
+<h2>What Are Merger Trees?<a class="headerlink" href="#what-are-merger-trees" title="Permalink to this headline">¶</a></h2>
 <p>For some analysis, the set of subhaloes described above won’t be enough. In some cases you might want to know about the extended history of subhalos, including objects that merged with those subhalos before they fell into the host. You would need to use a merger tree.</p>
 <p>A merger tree is an array that contains all the halos and subhalos in a simulation across all times. It also has additional structure and information which allows one to figure out which halos at an earlier snapshot evolve into which halos at a later snapshot. This includes “mergers,” events that occur when subhalos disrupt and contribute most of their mass to a larger host. This is a bit of a different definition than what we qualitatively think of as a merger: tree-mergers can happen many orbits after a subhalo falls into a host.</p>
 <p>The merger trees in Symphony (generated with the merger tree code <a class="reference external" href="https://bitbucket.org/pbehroozi/consistent-trees">consistent-trees</a>) are 1D arrays. These arrays are made of of separate sequences called “branches.” A branch contains a single halo as it evolves over time. In Symphony’s trees, halos in a branch are stored together, starting with the the halo’s <em>last</em> and ending with the <em>first</em>. Every snapshot between the first and the last is included. Below is an example of the merger tree in a simulation with four snapshots, which has one halo that survived through all of these snapshots. The numbers in each circle show the index of that halo’s data in the array.</p>
@@ -54,7 +53,7 @@
 <p>Mergr tree analysis is an advanced technique and may not be necessary for many users. If one is only interested in resolved substructure of the host halo, virtually everything can be done with the subhalo arrays above. The tree essentially only allows one to analyze subresolution subhalos and objects far away from the host halo. Both tasks must be done with caution.</p>
 </section>
 <section id="using-merger-trees-with-symlib">
-<h2>Using Merger Trees with Symlib<a class="headerlink" href="#using-merger-trees-with-symlib" title="Permalink to this heading">¶</a></h2>
+<h2>Using Merger Trees with Symlib<a class="headerlink" href="#using-merger-trees-with-symlib" title="Permalink to this headline">¶</a></h2>
 <p>Full merger trees are more computationally intense than subhalo catalogs, meaning that they are a little more complicated to use than the host’s subhalos. Instead of using structured arrays, individual variables are read from disk as 1D arrays that have the tree’s ordering. This allows you to only load variables you need. Additionally, snapshots where a halo does not exist are not included in the tree. This makes indexing more complicated, but saves memory.</p>
 <p>One last caveat is that tree variables are stored in consistent-trees’s native units. These are inhomogenous and are listed in the full <code class="docutils literal notranslate"><span class="pre">symlib</span></code> documentation page.</p>
 <p>As a first example, we’ll do some analysis that doesn’t care about the connections between different branches. We’ll calculate <span class="math notranslate nohighlight">\(M_{\rm peak}\)</span> (the maximum <span class="math notranslate nohighlight">\(M_{\rm vir}\)</span> that the halo ever had). Because tree reading is a more advanced and less useful procedure than reading the host’s subhalo information, this will be done purely by example. The full symlib documentation contains more detailed information on tree-reading and tree-manipulating functions.</p>
@@ -210,7 +209,7 @@
     </form>
     </div>
 </div>
-<script>document.getElementById('searchbox').style.display = "block"</script>
+<script>$('#searchbox').show(0);</script>
 
 
 
@@ -227,7 +226,7 @@
       &copy;2022, Symphony, lead developer Phil Mansfield.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.2.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

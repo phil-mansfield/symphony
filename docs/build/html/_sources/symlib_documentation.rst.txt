@@ -1,9 +1,9 @@
 Library Documentation
 =====================
 
-``symlib`` is Symphony's data analysis library. Symphony uses cutom file formats to reduce the size of files, to speed up common common tasks, and to make some common tasks easier. These library functions will allow you to work with these files. ``symlib`` also allows you to download Symphony data sets.
+``symlib`` is Symphony's data analysis library. Symphony uses custom file formats to reduce the size of files, to speed up common common tasks, and to make some common tasks easier. These library functions will allow you to work with these files. ``symlib`` also allows you to download Symphony data sets.
 
-This page is meant to be a full technical reference to this library. First-time users will probably find it easiest to start with the tutorial pages on :doc:`Data Access <data_access>` and :doc:`Data Analysis <getting_started>` rather than try to read through this pagr from start to finish.
+This page is meant to be a full technical reference to this library. First-time users will probably find it easiest to start with the tutorial pages on :doc:`Data Access <data_access>` and :doc:`Data Analysis Tutorial <getting_started>` rather than try to read through this page from start to finish.
 
 Units
 -----
@@ -20,7 +20,7 @@ Much of the data that ``symlib`` reads in is a processed form of data from anoth
 Datatypes
 ---------
 
-``symlib`` halo data is generally returned as a numpy `structured array <https://numpy.org/doc/stable/user/basics.rec.html>`_, which allows for fields to be accessesed and subselected easily. See the :doc:`Getting Started <getting_started>` page for usage examples.
+``symlib`` halo data is generally returned as a numpy `structured array <https://numpy.org/doc/stable/user/basics.rec.html>`_, which allows for fields to be accessesed and subselected easily. See the :doc:`Data Analysis Tutorial <getting_started>` page for usage examples.
 
 .. data:: symlib.SUBHALO_DTYPE
 		   
@@ -30,7 +30,7 @@ Datatypes
 	
     * ``"id"`` (*numpy.int32*) - A unique integer identifying each subhalo. Changes from snapshot to snapshot.
 
-    * ``"mvir"``  (*numpy.float32*) - The mass of the halo, :math:`M_{\rm vir}`. When isolated, this an overdensity mass from the Bryan & Norman (1998) definition of the virial overdensity. When deep in a host halo, this is the bound mass. The transition between these two definitions is ill-defined.
+    * ``"mvir"``  (*numpy.float32*) - The mass of the halo, :math:`M_{\rm vir}`. When isolated, this is an overdensity mass from the Bryan & Norman (1998) definition of the virial overdensity. When deep in a host halo, this is the bound mass. The transition between these two definitions is ill-defined.
 
     * ``"rvir"`` (*numpy.float32*) - The overdensity radius of the halo, :math:`R_{\rm vir}`.
 
@@ -46,6 +46,7 @@ Datatypes
 
     * ``"ok"`` (*bool*) - True if the subhalo exists during the specified snapshot and False otherwise.
 		
+
 .. data:: symlib.HISTORY_DTYPE
 
     Time-independent subhalo information about the subhalo's entire history in the simulation (e.g. when it first fell into the host halo). You can get it for all the host's subhalos by calling :func:`symlib.read_subhalos`.
@@ -64,8 +65,9 @@ Datatypes
 
     * :data:`symlib.HISTORY_DTYPE` also contains all the fields in :func:`symlib.BRANCH_DTYPE`. Note, however, that subhalos where ``is_disappear`` is True or ``is_real`` is False have already been removed, so there is no need to make cuts on this.
 
-    * ``false_selection`` (*bool*) - True if the branch has :math:`M_{\rm peak} \geq 300\cdot m_p` after infall, but :math:`M_{\rm peak} < 300\codt m_p`.
+    * ``false_selection`` (*bool*) - True if the branch has :math:`M_{\rm peak} \geq 300\cdot m_p` after infall, but :math:`M_{\rm peak} < 300\cdot m_p`.
     
+
 .. data:: symlib.BRANCH_DTYPE
 
     Information about the main branch of a subhalo in the full consistent-trees merger tree. You probably will not need this unless you walk through the full merger tree, which is an advanced action. You can get it by calling :func:`symlib.read_branches`.
@@ -86,6 +88,7 @@ Datatypes
 
     * ``"first_infall_snap"`` (*numpy.int32*) - If ``"preprocess"`` is non-negative, the snapshot when this branch first fell into a halo of the branch pointed to by ``"preprocess"``.
       
+
 Merger Tree Variables
 ---------------------
 
@@ -103,11 +106,11 @@ The following variables can be read in from merger trees with the :func:`symlib.
 
 * ``"snap"`` -  This halo's snapshot.
 
-* ``"next_co_prog"`` - The depth-first ID (``dfid``, not ``id``) of this halo's co-progenitor, if it exists. If this halo doesn't have a co-progenitor, this variable is -1. See :doc:`Getting Started <getting_started>` for a description of what this is.
+* ``"next_co_prog"`` - The depth-first ID (``dfid``, not ``id``) of this halo's co-progenitor, if it exists. If this halo doesn't have a co-progenitor, this variable is -1. See :doc:`Intro to Merger Trees <intro_to_merger_trees>` for a description of what this is.
 
 * ``"mvir"`` -  The mass of the halo, :math:`M_{\rm vir}`. When isolated, this an overdensity mass from the Bryan & Norman (1998) definition of the virial overdensity. When deep in a host halo, this is the bound mass. The transition between these two definitions is ill-defined.
 
-* ``"rs"`` - The NFW scale radius of the halo, :math:`R_s`. Units are comoving :math:`h^{-1}{\rm kpc}`
+* ``"rs"`` - The NFW scale radius of the halo, :math:`R_s`. Units are comoving :math:`h^{-1}{\rm kpc}`.
 
 * ``"vmax"`` -  The maximum value of the halo's circular rotation curve, :math:`V_{\rm max} = {\rm max}\left\{V_{\rm rot}(r) = \sqrt{G M(<r)/r}\right\}`. Units are physical km/s.
 
@@ -119,7 +122,7 @@ The following variables can be read in from merger trees with the :func:`symlib.
 
 * ``"xoff"`` - The distance between the center of mass and the densest part fo the halo. units are comoving :math:`h^{-1}{\rm kpc}`.
 
-* ``"spin_bullock"`` - Unitless paramater that tracks the specific anular momentum of the halo. :math:`|\vec{J}|/(\sqrt{2}\,M_{\rm vir}\,V_{\rm vir}\,R_{\rm vir})`
+* ``"spin_bullock"`` - Unitless paramater that tracks the specific anular momentum of the halo. :math:`|\vec{J}|/(\sqrt{2}\,M_{\rm vir}\,V_{\rm vir}\,R_{\rm vir})`.
 
 * ``"c_to_a"`` - The unitless minor-to-major axis ratio of the halo.
 
@@ -133,7 +136,7 @@ The following variables can be read in from merger trees with the :func:`symlib.
 
 * ``"v"`` - A 3-vector, :math:`\vec{v}`, giving the velocity of the halo in physical km/s.
 
-* ``"j"`` - A 3-vector, :math:`\vec{J}`, giving the angular momentum of the halo in physical :math:`h^{-2}M_\odot\cdot{\rm Mpc}\cdot{\rm km/s}`
+* ``"j"`` - A 3-vector, :math:`\vec{J}`, giving the angular momentum of the halo in physical :math:`h^{-2}M_\odot\cdot{\rm Mpc}\cdot{\rm km/s}`.
 
 * ``"a"`` - A 3-vector, :math:`\vec{A}`, pointing in the direction of the halo's major axis with length equal to that major axis. Units are comoving :math:`h^{-1}{\rm kpc}`.
 
@@ -148,6 +151,7 @@ General Functions
     :param str suite_name: The name of the simulation suite.
     :rtype: int
 
+
 .. function:: symlib.get_host_directory(base_dir, suite_name, halo_name)
 
     Returns the name of a simulation directory given the base directory that all the suites are stored in, the suite, and the halo name. The halo name can either be the literal halo name (e.g., ``"Halo023"``) or a number in the range :math:`[0,\,N_{\rm host})`. This can be combined with :func:`symlib.n_hosts` to loop over all the hosts in a suite.
@@ -158,6 +162,7 @@ General Functions
     :type halo_name: str or int
     :rtype: str, the name of the host's simulation directory.
     
+
 .. function:: symlib.scale_factors(sim_dir)
 
     Returns an array of the scale factors, :math:`a(z)`, of each of snapshot. Sorted from earliest to latest.
@@ -165,7 +170,8 @@ General Functions
     The scale factor arrays of two simulations in different suites may be different from one another. The scale factor arrays of two simulations in the same suite sometimes also slightly differ, depending on whether simulations needed to be restarted midway through.
 
     :param str sim_dir: The directory of the target host halo.
-    :rtype: ``np.array`` containing the scale factors of each snapshot in the simulation
+    :rtype: ``np.array`` containing the scale factors of each snapshot in the simulation.
+
 
 .. function:: symlib.simulation_parameters(dim_dir)
 
@@ -215,6 +221,7 @@ General Functions
    :param np.array scale: An array of the scale factors of each snapshot (see :func:`symlib.scale_factors`)
    :param dict param: The simulation parameters (see :func:`symlib.simulation_parameters`)
 
+
 .. function:: symlib.set_units_histories(hist, scale, param)
 	      
    Converts the units of an ``np.array`` with type :data:`symlib.HISTORY_DTYPE` to ``symlib``'s default units. All masses will be in units of :math:`M_\odot`, all positions and radii will be units of physical :math:`{\rm kpc}`. Positions will be centered on the first halo in the array at the given snapshot. Velocities will be in physical :math:`{\rm km/s}` and similarly centered on the velocity of the first halo at each snapshot.
@@ -224,6 +231,7 @@ General Functions
    :param symlib.HISTORY_DTYPE np.array h: Array of subhalo histories (see :func:`symlib.read_subhalos`).
    :param np.array scale: An array of the scale factors of each snapshot (see :func:`symlib.scale_factors`)
    :param dict param: The simulation parameters (see :func:`symlib.simulation_parameters`)
+
 
 Halo Functions
 --------------
@@ -244,6 +252,7 @@ Halo Functions
     :param bool comoving=False: Controls whether the resturn values are in default Rockstar/consistent-trees units (``False``) or default symlib units (``True``).
     :param bool include_false_selections=False: Controls whether subhalos which only have :math:`M_{\rm peak}` above the catalog cutoff due toa consistent-trees error are included (``True``) or excluded (``False``).
     :rtype: (``h``, ``hist``): ``h`` is a :data:`symlib.SUBHALO_DTYPE` ``np.array`` with shape (:math:`N_{\rm subhalos}`, :math:`N_{\rm snaps}`), ``hist`` is is a :data:`symlib.HISTORY_DTYPE` ``np.array`` with length :math:`N_{\rm subhalos}`.
+
 	
 .. function:: symlib.read_tree(sim_dir, var_names)
 
@@ -251,20 +260,22 @@ Halo Functions
 
    The user supplies a list of variable names and a single, 1D array is returned for each variable. Each element of each array is a halo at a specific snapshot, and these arrays are ordered in a way that encodes which halos evolve and merge into which other halos. To decode this structure, you will need to use the results of :func:`symlib.read_branches`, which breaks the tree into smaller structures, or "branches."
 
-   The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found on the :doc:`Getting Started <getting_started>` page.
+   The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found on the :doc:`Intro to Merger Trees <intro_to_merger_trees>` page.
 	      
    :param str sim_dir: The directory of the target host halo.
    :param str list var_names: The names of variables.
    :rtype: tuple of ``np.array``, one for each element in ``var_names``.
+
 	      
 .. function:: symlib.read_branches(sim_dir)
 	      	      
    Reads information about the time-independent properties of every halo in the simulation, not just the subhalos of target host. Each element corresonds to a single branch in the tree (i.e. the evolution of a single halo over time) and gives information on the properties and location of the branch.
 
-   The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found on the :doc:`Getting Started <getting_started>` page.
+   The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found on the :doc:`Intro to Merger Trees <intro_to_merger_trees>` page.
    
    :param str sim_dir: The directory of the target host halo.
    :rtype: :data:`symlib.BRANCH_DTYPE` ``np.array`` 
+
 
 .. function:: symlib.merger_lookup_table(b, dfid)
 
@@ -274,16 +285,18 @@ Halo Functions
    :type b: :data:`symlib.BRANCH_DTYPE` np.array
    :param int np.array dfid:
    :rtype: int np.array
+
    
 .. function:: symlib.find_merger_branch(lookup_table, co_prog)
 
-   Searches for the index of the branch corresponding of a given merging subhalo. The subhalo is identified by a "co-progenitor" ID. See the writeup in :doc:`Getting Started <getting_started>` for more discussion on what this means.
+   Searches for the index of the branch corresponding of a given merging subhalo. The subhalo is identified by a "co-progenitor" ID. See the writeup in :doc:`Intro to Merger Trees <intro_to_merger_trees>` for more discussion on what this means.
 
    In practice, most users will want to use :func:`symlib.find_all_merger_branches`.
 
    :param int np.array lookup_table: A look up table, as created by :func:`symlib.merger_lookup_table`.
    :param int co_prog: a single "co-progenitor depth-first ID" (``"next_co_prog"`` in calls to :func:`read_tree`).
    :rtype: int
+
 		       
 .. function:: symlib.find_all_merger_branches(b, lookup_table, co_prog, i)
 
@@ -293,7 +306,7 @@ Halo Functions
    :type b: :data:`symlib.BRANCH_DTYPE` np.array
    :param int np.array lookup_table: A look up table, as created by :func:`symlib.merger_lookup_table`.
    :param int np.array co_prog: A tree-ordered array of co-progenitor IDs (``"next_co_prog"`` in calls to :func:`read_tree`).
-   :param int i: The index of the halo in the tree that you 
+   :param int i: The index of the halo in the tree that you are interested in. 
    :rtype: int np.array
 
 
@@ -313,6 +326,7 @@ Utility Functions
    Returns a list of all the valid suite names.
 
    :rtype: string list 
+
 	      
 .. function:: symlib.plot_circle(ax, x, y, r, **kwargs)
 
@@ -325,12 +339,13 @@ Utility Functions
    :param float y: The :math:`y` coordinate of the circle.
    :param float r: The radius of the circle.
 
+
 File Management
 ---------------
 
 .. function:: symlib.download_files(user, password, suite, halo_name, base_out_dir, target="halos", logging=True)
 
-   Downloads data associated with a set of halos/suites. See :doc:`Getting Started <getting_started>` for usage examples.
+   Downloads data associated with a set of halos/suites. See :doc:`Data Access <data_access>` for usage examples.
 
    This download has two stages. First, all the data is downloaded in "packed" ``tar`` files. Once this finishes, all the ``tar`` files are expanded into data directories and deleted. This first step is handled with :func:`symlib.download_packed_files()` and the second with :func:`symlib.unpack_files()`. If you are running a large download job that stops halfway and don't want to repeat work when you restart it, you can use these two functions do do it.
 
@@ -343,6 +358,7 @@ File Management
    :param base_out_dir: The directory where data is stored.
    :param target="halos": What type of data to download. Possible options are ``"halos"`` and ``"trees"``.
    :param logging=True: True if you would like output printed telling the user what stage in the download they are at and False if you would like to turn off as much printing as possible. 
+
    
 .. function:: symlib.download_packed_files(user, password, suite, halo_name, base_out_dir, target="halos", logging=True)
 	      
