@@ -215,128 +215,6 @@ needed to skip over some subhalos which disrupted before the final snapshot.</p>
 <p><strong>Practice:</strong></p>
 <p>Try adding a curve for the mass function of surviving “splashback” subhalos to this plot.</p>
 </section>
-<section id="introduction-to-merger-trees">
-<h2>Introduction to Merger Trees<a class="headerlink" href="#introduction-to-merger-trees" title="Permalink to this headline">¶</a></h2>
-<p>For some analysis, the set of subhaloes described above won’t be enough. In some cases you might want to know about the extended history of subhalos, including objects that merged with those subhalos before they fell into the host. You would need to use a merger tree.</p>
-<p>A merger tree is an array that contains all the halos and subhalos in a simulation across all times. It also has additional structure and information which allows one to figure out which halos at an earlier snapshot evolve into which halos at a later snapshot. This includes “mergers,” events that occur when subhalos disrupt and contribute most of their mass to a larger host. This is a bit of a different definition than what we qualitatively think of as a merger: tree-mergers can happen many orbits after a subhalo falls into a host.</p>
-<p>The merger trees in Symphony (generated with the merger tree code <a class="reference external" href="https://bitbucket.org/pbehroozi/consistent-trees">consistent-trees</a>) are 1D arrays. These arrays are made of of separate sequences called “branches.” A branch contains a single halo as it evolves over time. In Symphony’s trees, halos in a branch are stored together, starting with the the halo’s <em>last</em> and ending with the <em>first</em>. Every snapshot between the first and the last is included. Below is an example of the merger tree in a simulation with four snapshots, which has one halo that survived through all of these snapshots. The numbers in each circle show the index of that halo’s data in the array.</p>
-<a class="reference internal image-reference" href="_images/tree_1.png"><img alt="_images/tree_1.png" src="_images/tree_1.png" style="height: 400px;" /></a>
-<p>Real simulations will have many halos, and these halos might not exist at all snapshots. When one halo’s branch ends, the next halo’s branch will begin at the next element. The image below shows an example of what a simulation with several halos might look like.</p>
-<a class="reference internal image-reference" href="_images/tree_2.png"><img alt="_images/tree_2.png" src="_images/tree_2.png" style="height: 400px;" /></a>
-<p>The tree also contains information on what happens to a halo after it disrupts. Some halos that disappear do so because they were orbiting a larger halo and were shredded apart. In these cases, the merger tree marks the event as a merger. The arrows below show an example set of mergers.</p>
-<a class="reference internal image-reference" href="_images/tree_3.png"><img alt="_images/tree_3.png" src="_images/tree_3.png" style="height: 400px;" /></a>
-<p>Note that more than one merger can occur within a halo in a single snapshot. This image also illustrates the ordering of branches within the tree (“depth-first ordering”).</p>
-<p>Merger information is stored in the tree the snapshot before the merger occurs. Each halo keeps track of its “co-progenitor”, the last halo in the next branch that merges in that snapshot. It’s easiest to understand visually:</p>
-<a class="reference internal image-reference" href="_images/tree_4.png"><img alt="_images/tree_4.png" src="_images/tree_4.png" style="height: 400px;" /></a>
-<p>In practice, this means that finding all the mergers for a host halo invovles hopping around from halo to halo.</p>
-<p>Mergr tree analysis is an advanced technique and may not be necessary for many users. If one is only interested in resolved substructure of the host halo, virtually everything can be done with the subhalo arrays above. The tree essentially only allows one to analyze subresolution subhalos and objects far away from the host halo. Both tasks must be done with caution.</p>
-</section>
-<section id="using-merger-trees-with-symlib">
-<h2>Using Merger Trees with Symlib<a class="headerlink" href="#using-merger-trees-with-symlib" title="Permalink to this headline">¶</a></h2>
-<p>Full merger trees are more computationally intense than subhalo catalogs, meaning that they are a little more complicated to use than the host’s subhalos. Instead of using structured arrays, individual variables are read from disk as 1D arrays that have the tree’s ordering. This allows you to only load variables you need. Additionally, snapshots where a halo does not exist are not included in the tree. This makes indexing more complicated, but saves memory.</p>
-<p>One last caveat is that tree variables are stored in consistent-trees’s native units. These are inhomogenous and are listed in the full <code class="docutils literal notranslate"><span class="pre">symlib</span></code> documentation page.</p>
-<p>As a first example, we’ll do some analysis that doesn’t care about the connections between different branches. We’ll calculate <span class="math notranslate nohighlight">\(M_{\rm peak}\)</span> (the maximum <span class="math notranslate nohighlight">\(M_{\rm vir}\)</span> that the halo ever had). Because tree reading is a more advanced and less useful procedure than reading the host’s subhalo information, this will be done purely by example. The full symlib documentation contains more detailed information on tree-reading and tree-manipulating functions.</p>
-<p>Omitting some standard preamble and most of the plotting code, the following code block will:</p>
-<ul class="simple">
-<li><p>Read mass data in from the tree</p></li>
-<li><p>Loop over branches and calculate <span class="math notranslate nohighlight">\(M_{\rm peak}\)</span></p></li>
-<li><p>Split those branches into “real” branches and branches that are probably artifacts.</p></li>
-<li><p>Create mass functions for those groups</p></li>
-</ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Read in tree data</span>
-<span class="n">b</span> <span class="o">=</span> <span class="n">symlib</span><span class="o">.</span><span class="n">read_branches</span><span class="p">(</span><span class="n">sim_dir</span><span class="p">)</span>
-<span class="n">param</span> <span class="o">=</span> <span class="n">symlib</span><span class="o">.</span><span class="n">simulation_parameters</span><span class="p">(</span><span class="n">sim_dir</span><span class="p">)</span>
-<span class="c1"># Tree variables are always returned as a list, so if you</span>
-<span class="c1"># only specify one, unpack it as a length-1 tuple.</span>
-<span class="n">mvir</span><span class="p">,</span> <span class="o">=</span> <span class="n">symlib</span><span class="o">.</span><span class="n">read_tree</span><span class="p">(</span><span class="n">sim_dir</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;mvir&quot;</span><span class="p">])</span>
-<span class="c1"># Convert units</span>
-<span class="n">mvir</span><span class="p">,</span> <span class="n">mp</span> <span class="o">=</span> <span class="n">mvir</span><span class="o">/</span><span class="n">param</span><span class="p">[</span><span class="s2">&quot;h100&quot;</span><span class="p">],</span> <span class="n">param</span><span class="p">[</span><span class="s2">&quot;mp&quot;</span><span class="p">]</span><span class="o">/</span><span class="n">param</span><span class="p">[</span><span class="s2">&quot;h100&quot;</span><span class="p">]</span>
-
-<span class="c1"># Flag halo branches which are probably not artifacts.</span>
-<span class="n">ok</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="s2">&quot;is_real&quot;</span><span class="p">]</span> <span class="o">&amp;</span> <span class="p">(</span><span class="o">~</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;is_disappear&quot;</span><span class="p">])</span>
-
-<span class="n">mpeak</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
-
-<span class="c1"># Loop over all branches and calculate M_peak.</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mpeak</span><span class="p">)):</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">ok</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span> <span class="k">continue</span>
-    <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;start&quot;</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;end&quot;</span><span class="p">]</span>
-    <span class="n">mpeak</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">mvir</span><span class="p">[</span><span class="n">start</span><span class="p">:</span> <span class="n">end</span><span class="p">])</span>
-
-<span class="c1"># Find host subhalos</span>
-<span class="n">mpeak_host</span> <span class="o">=</span> <span class="n">mpeak</span><span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;is_main_sub&quot;</span><span class="p">]]</span>
-
-<span class="c1"># Calculate the mass function of both groups of halos</span>
-<span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">param</span><span class="p">[</span><span class="s2">&quot;mp&quot;</span><span class="p">]</span><span class="o">/</span><span class="n">param</span><span class="p">[</span><span class="s2">&quot;h100&quot;</span><span class="p">]),</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
-<span class="n">n_host</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">mpeak_host</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">)</span>
-<span class="n">n_all</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">mpeak</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">)</span>
-<span class="n">N_host</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">n_host</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">N_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">n_all</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-
-<span class="c1"># Plot</span>
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
-<span class="n">left_bins</span> <span class="o">=</span> <span class="n">bins</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">left_bins</span><span class="p">,</span> <span class="n">N_host</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;tab:red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;${\rm Host\ subhalos}$&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">left_bins</span><span class="p">,</span> <span class="n">N_all</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;tab:blue&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;${\rm All}$&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>With a bit more ellided plotting code, this results in the following plot</p>
-<a class="reference internal image-reference" href="_images/tree_mass_func.png"><img alt="_images/tree_mass_func.png" src="_images/tree_mass_func.png" style="width: 500px;" /></a>
-<p>The dashed vertical line has been added to show a rough resolution limit, 300 particles. As this plot shows, most of the contents of the tree file are outside the target host halo and most of the corresponding objects are poorly resolved. The objects returned by <a class="reference internal" href="symlib_documentation.html#symlib.read_subhalos" title="symlib.read_subhalos"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.read_subhalos()</span></code></a> only consist of the red curve down to the black dashed line.</p>
-<p>As a second example, we will navigate through the merger tree to find the number of mergers in each snapshot. These will be split into real mergers and artifacts. The latter includes a few criteria, but mostly it’s objects whose first snapshots occured already inside the host halo. The time resolution of these simulations is high enough that any instances where this happens are either statistical noise or a halo which the merger tree had previously lost track of (i.e. a halo that merges twice). These objects have already been removed in the standard subhalo arrays.</p>
-<p>This code will do the following:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p>Read in tree data, including snapshot and connectivity information.</p></li>
-<li><p>Create a merger lookup table</p></li>
-<li><p>Loop through the host’s branch and use the lookup table to find the mergers in each snapshot.</p></li>
-<li><p>Classify those mergers based on whether or not they are artifacts.</p></li>
-<li><p>Convert snapshot information into cosmological times.</p></li>
-</ul>
-</div></blockquote>
-<p>As before, some plotting code and standard setup code that reads in parameters and subhalo information has been omitted.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sim_dir</span> <span class="o">=</span> <span class="s2">&quot;path/to/ExampleHalo&quot;</span>
-<span class="n">h</span><span class="p">,</span> <span class="n">hist</span> <span class="o">=</span> <span class="n">symlib</span><span class="o">.</span><span class="n">read_subhalos</span><span class="p">(</span><span class="n">sim_dir</span><span class="p">)</span>
-
-<span class="c1"># Read in tree data</span>
-<span class="n">b</span> <span class="o">=</span> <span class="n">symlib</span><span class="o">.</span><span class="n">read_branches</span><span class="p">(</span><span class="n">sim_dir</span><span class="p">)</span>
-<span class="n">dfid</span><span class="p">,</span> <span class="n">next_co_prog</span><span class="p">,</span> <span class="n">snap</span> <span class="o">=</span> <span class="n">symlib</span><span class="o">.</span><span class="n">read_tree</span><span class="p">(</span>
-    <span class="n">sim_dir</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;dfid&quot;</span><span class="p">,</span> <span class="s2">&quot;next_co_prog&quot;</span><span class="p">,</span> <span class="s2">&quot;snap&quot;</span><span class="p">]</span>
-<span class="p">)</span>
-
-<span class="n">host_branch</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="n">hist</span><span class="p">[</span><span class="s2">&quot;branch_idx&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span>
-<span class="n">host_start</span> <span class="o">=</span> <span class="n">host_branch</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">]</span>
-<span class="n">host_end</span> <span class="o">=</span> <span class="n">host_branch</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">]</span>
-
-<span class="c1"># Flag halo branches which are probably not artifacts.</span>
-<span class="n">ok</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="s2">&quot;is_real&quot;</span><span class="p">]</span> <span class="o">&amp;</span> <span class="p">(</span><span class="o">~</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;is_disappear&quot;</span><span class="p">])</span>
-
-<span class="c1"># Counting the number of mergers. Requires a lookup</span>
-<span class="c1"># table, which we construct from the branch</span>
-<span class="c1"># information and the depth-first IDs (&quot;dfid&quot;)</span>
-<span class="n">table</span> <span class="o">=</span> <span class="n">symlib</span><span class="o">.</span><span class="n">merger_lookup_table</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">dfid</span><span class="p">)</span>
-<span class="n">n_mergers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">host_end</span> <span class="o">-</span> <span class="n">host_start</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
-<span class="n">n_artifacts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">host_end</span> <span class="o">-</span> <span class="n">host_start</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">host_start</span><span class="p">,</span> <span class="n">host_end</span><span class="p">):</span>
-    <span class="n">branch_idx</span> <span class="o">=</span> <span class="n">symlib</span><span class="o">.</span><span class="n">find_all_merger_branches</span><span class="p">(</span>
-        <span class="n">b</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">next_co_prog</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
-    <span class="n">n_mergers</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">host_start</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ok</span><span class="p">[</span><span class="n">branch_idx</span><span class="p">])</span>
-    <span class="n">n_artifacts</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">host_start</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">~</span><span class="n">ok</span><span class="p">[</span><span class="n">branch_idx</span><span class="p">])</span>
-
-<span class="c1"># Getting the scale factor of each snapshot.</span>
-<span class="n">host_snap</span> <span class="o">=</span> <span class="n">snap</span><span class="p">[</span><span class="n">host_start</span><span class="p">:</span> <span class="n">host_end</span><span class="p">]</span>
-<span class="n">host_scale</span> <span class="o">=</span> <span class="n">scale</span><span class="p">[</span><span class="n">host_snap</span><span class="p">]</span>
-
-<span class="c1"># Plot</span>
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">host_scale</span><span class="p">,</span> <span class="n">n_mergers</span><span class="p">,</span> <span class="s2">&quot;tab:blue&quot;</span><span class="p">,</span>
-        <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;$N_{\rm merger}$&quot;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">host_scale</span><span class="p">,</span> <span class="n">n_mergers</span><span class="p">,</span> <span class="s2">&quot;tab:blue&quot;</span><span class="p">,</span>
-        <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;$N_{\rm artifacts}$&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-<a class="reference internal image-reference" href="_images/tree_mergers.png"><img alt="_images/tree_mergers.png" src="_images/tree_mergers.png" style="width: 500px;" /></a>
-</section>
 </section>
 
 
@@ -366,8 +244,6 @@ needed to skip over some subhalos which disrupted before the final snapshot.</p>
 <li class="toctree-l2"><a class="reference internal" href="#example-subhalo-analysis-plotting-postions">Example Subhalo Analysis: Plotting Postions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#example-analysis-mass-growth">Example Analysis: Mass Growth</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#example-analysis-the-subhalo-mass-functions">Example Analysis: The Subhalo Mass Functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#introduction-to-merger-trees">Introduction to Merger Trees</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#using-merger-trees-with-symlib">Using Merger Trees with Symlib</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="intro_to_merger_trees.html">Introduction to Merger Trees</a></li>
