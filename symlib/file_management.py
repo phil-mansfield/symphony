@@ -2,12 +2,13 @@ from . import util
 from . import lib
 from os import path
 import os
-import gdown
 import shutil
 import requests
+import time
 
 DOWNLOAD_TARGETS = ["halos", "trees"]
 BASE_URL_FORMAT = "https://%s:%s@s3df.slac.stanford.edu/groups/kipac/symphony/static/"
+RETRY_WAIT_TIME = 5
 
 def pack_files(suite, halo_name, base_out_dir, target="halos",
                logging=True):
@@ -43,7 +44,8 @@ def pack_files(suite, halo_name, base_out_dir, target="halos",
 
         
 def download_packed_files(user, password, suite, halo_name, base_out_dir,
-                          target="halos", logging=True):        
+                          target="halos", logging=True, retries=5):
+    orig_halo_name = halo_name
     if logging:
         print("Downloading halo %s in suite %s to %s" % (
             str(halo_name), suite, base_out_dir))
@@ -52,13 +54,13 @@ def download_packed_files(user, password, suite, halo_name, base_out_dir,
         for suite in ["SymphonyLMC", "SymphonyMilkyWay", "SymphonyGroup",
                       "SymphonyLCluster", "SymphonyCluster"]:
             download_packed_files(user, password, suite, halo_name, base_out_dir,
-                                  target=target)
+                                  target=target, logging=logging, retries=retries)
         return
         
     if halo_name is None:
         for i in range(util.n_hosts(suite)):
             download_packed_files(user, password, suite, i, base_out_dir,
-                                  target=target)
+                                  target=target, logging=logging, retries=retries)
         return
 
     if target not in DOWNLOAD_TARGETS:
@@ -96,8 +98,26 @@ def download_packed_files(user, password, suite, halo_name, base_out_dir,
     with open(out_file, "rb") as f:
         text = f.read(6)
         if text == b"<html>":
+            f.seek(0, 0)
+            text = f.read()
             os.remove(out_file)
-            raise ValueError("Unrecognized user and password combination.")
+
+            if text == b"<html>\r\n<head><title>401 Authorization Required</title></head>\r\n<body>\r\n<center><h1>401 Authorization Required</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n":
+                raise ValueError("Unrecognized user and password combination.")
+            elif text == b"<html>\r\n<head><title>502 Bad Gateway</title></head>\r\n<body>\r\n<center><h1>502 Bad Gateway</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n":
+                if retries == 0:
+                    raise ValueError("Recieved network error after exhausing maximum number of retries for halo %s. You could try increasing the retries variable, but the server is probably overloaded right now. Please try again later" % orig_halo_name)
+                else:
+                    if logging:
+                        print("Internal server error encountered while downloading halo %s: trying to download again after a short wait (tries left: %d)" % (orig_halo_name, retries))
+                    time.sleep(RETRY_WAIT_TIME)
+                    download_packed_files(
+                        user, password, suite, halo_name, base_out_dir,
+                        target=target, logging=logging, retries=retries-1)
+            else:
+                raise ValueError("Server sent back the following error on halo %s:\n%s" %
+                                 (orig_halo_name, text))
+        
             
 def unpack_files(suite, halo_name, base_out_dir,
                  target="halos", logging=True):
@@ -128,7 +148,7 @@ def unpack_files(suite, halo_name, base_out_dir,
     
     
 def download_files(user, password, suite, halo_name, base_out_dir,
-                   target="halos", logging=True):
+                   target="halos", logging=True, retries=5):
     download_packed_files(user, password, suite, halo_name,
-                          base_out_dir, target, logging)
+                          base_out_dir, target, logging, retries=retries)
     unpack_files(suite, halo_name, base_out_dir, target, logging)
