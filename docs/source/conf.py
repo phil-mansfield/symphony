@@ -49,9 +49,8 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-import sphinx_readable_theme
-html_theme = 'readable'
-html_theme_path = [sphinx_readable_theme.get_html_theme_path()]
+import furo
+html_theme = 'furo'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
