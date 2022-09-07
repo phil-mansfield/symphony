@@ -1,64 +1,212 @@
+<!doctype html>
+<html class="no-js">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Introduction to Merger Trees" href="intro_to_merger_trees.html" /><link rel="prev" title="Data Access" href="data_access.html" />
 
-<!DOCTYPE html>
+    <meta name="generator" content="sphinx-4.2.0, furo 2022.06.21"/>
+        <title>Data Analysis Tutorial - Symphony 0.0.6 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    
+    
 
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Data Analysis Tutorial &#8212; Symphony 0.0.6 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/readable.css" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Introduction to Merger Trees" href="intro_to_merger_trees.html" />
-    <link rel="prev" title="Data Access" href="data_access.html" />
-   
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
 
-  </head><body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">Symphony 0.0.6 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
   
+  <span class="sidebar-brand-text">Symphony 0.0.6 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder=Search name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="simulations.html">Simulations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="credits_acknowledgements.html">People &amp; Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_access.html">Data Access</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Data Analysis Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro_to_merger_trees.html">Introduction to Merger Trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="symlib_documentation.html">Library Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="background_reading.html">Background Reading</a></li>
+</ul>
 
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="intro_to_merger_trees.html" title="Introduction to Merger Trees"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="data_access.html" title="Data Access"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Symphony 0.0.6 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">Data Analysis Tutorial</a></li> 
-      </ul>
-    </div>  
+</div>
+</div>
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
-            
-  <section id="data-analysis-tutorial">
-<h1>Data Analysis Tutorial<a class="headerlink" href="#data-analysis-tutorial" title="Permalink to this headline">¶</a></h1>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="data-analysis-tutorial">
+<h1>Data Analysis Tutorial<a class="headerlink" href="#data-analysis-tutorial" title="Permalink to this headline">#</a></h1>
 <p>Symphony data is stored in cutsom data formats and must be read with its analysis library, <code class="docutils literal notranslate"><span class="pre">symlib</span></code>. This page contains tutorials and example code showing how to use this library. A complete, detailed reference for this library can be found <a class="reference internal" href="symlib_documentation.html"><span class="doc">here</span></a>.</p>
 <section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">#</a></h2>
 <p>As disucssed in the <a class="reference internal" href="data_access.html"><span class="doc">Data Access</span></a> page, <code class="docutils literal notranslate"><span class="pre">symlib</span></code>  can be downloaded with the pip tool.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>pip install symlib -U
 </pre></div>
 </div>
 </section>
 <section id="reading-in-subhalo-data">
-<h2>Reading in Subhalo Data<a class="headerlink" href="#reading-in-subhalo-data" title="Permalink to this headline">¶</a></h2>
+<h2>Reading in Subhalo Data<a class="headerlink" href="#reading-in-subhalo-data" title="Permalink to this headline">#</a></h2>
 <p>The first step to working with simulation data is loading the simulation
 parameters. This is a dictionary containing cosmological and numerical
 information. These can be looked up with <a class="reference internal" href="symlib_documentation.html#symlib.simulation_parameters" title="symlib.simulation_parameters"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.simulation_parameters()</span></code></a> by giving the directory of the halo as an argument.</p>
@@ -104,7 +252,7 @@ largest subhalo, including disrupted subhalos, at snapshot 100. Subhalos are ord
 <p>Fields in <code class="docutils literal notranslate"><span class="pre">histories</span></code> will be explained as needed, but can be found in full in the <a class="reference internal" href="symlib_documentation.html#symlib.HISTORY_DTYPE" title="symlib.HISTORY_DTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">symlib.HISTORY_DTYPE</span></code></a> documentation.</p>
 </section>
 <section id="example-subhalo-analysis-plotting-postions">
-<h2>Example Subhalo Analysis: Plotting Postions<a class="headerlink" href="#example-subhalo-analysis-plotting-postions" title="Permalink to this headline">¶</a></h2>
+<h2>Example Subhalo Analysis: Plotting Postions<a class="headerlink" href="#example-subhalo-analysis-plotting-postions" title="Permalink to this headline">#</a></h2>
 <p>Our first step with analyzing any simulation data should be to look at it
 qualitatively. We’ll start by looking at the positions of the major subhalos
 around our central halo at the last snapshot of the simulation. We will plot the central halo in one color and the subhalos in another. We’ll also need to skip all the subhalos that were destroyed before the end of the simulation.</p>
@@ -147,7 +295,7 @@ needed to skip over some subhalos which disrupted before the final snapshot.</p>
 <p>In the <code class="docutils literal notranslate"><span class="pre">histories</span></code> array, there is a field called <code class="docutils literal notranslate"><span class="pre">merger_snap</span></code> that gives the snapshot when a subhalo first fell into the host. Try coloring subhalos that fell in from the left side of the halo (<span class="math notranslate nohighlight">\(x_{\rm infall} &lt; 0\)</span>) differently from ones that fell in from the right.</p>
 </section>
 <section id="example-analysis-mass-growth">
-<h2>Example Analysis: Mass Growth<a class="headerlink" href="#example-analysis-mass-growth" title="Permalink to this headline">¶</a></h2>
+<h2>Example Analysis: Mass Growth<a class="headerlink" href="#example-analysis-mass-growth" title="Permalink to this headline">#</a></h2>
 <p>Now, we’ll try analysis that’s a bit more quantitative. We’ll look at the growth of subhalos over time. To do this, we’ll need to get the scale factors, <span class="math notranslate nohighlight">\(a(z)\)</span>, for each snapshot with <a class="reference internal" href="symlib_documentation.html#symlib.scale_factors" title="symlib.scale_factors"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.scale_factors()</span></code></a>. We’ll also use one of the fields in <code class="docutils literal notranslate"><span class="pre">histories</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;merger_snap&quot;</span></code> which is the snapshot when the subhalo first fell into the host. We’ll use it to plot times before infall as dashed lines and times afterwards as solid lines.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sim_dir</span> <span class="o">=</span> <span class="s2">&quot;path/to/ExampleHalo&quot;</span>
 
@@ -185,7 +333,7 @@ needed to skip over some subhalos which disrupted before the final snapshot.</p>
 <p>You might have noticed that subhalos start losing mass before they actually start falling into the host (look at the green curve in particular). Using logic similar to the above plot, try figuring out how far away subhalos are on average from a host when they reach their peak mass.</p>
 </section>
 <section id="example-analysis-the-subhalo-mass-functions">
-<h2>Example Analysis: The Subhalo Mass Functions<a class="headerlink" href="#example-analysis-the-subhalo-mass-functions" title="Permalink to this headline">¶</a></h2>
+<h2>Example Analysis: The Subhalo Mass Functions<a class="headerlink" href="#example-analysis-the-subhalo-mass-functions" title="Permalink to this headline">#</a></h2>
 <p>Lastly, let’s try some more rigorous statistical analysis. We’re going to measure the subhalo mass function of the entire Milky Way suite. We’ll look at <span class="math notranslate nohighlight">\(N(&gt;M_{\rm peak})\)</span>, the average number of subhalos per host halo whose maximum mass was larger than <span class="math notranslate nohighlight">\(M_{\rm peak}\)</span>. To do this, we’ll need to access the <code class="docutils literal notranslate"><span class="pre">&quot;mpeak&quot;</span></code> field of the <code class="docutils literal notranslate"><span class="pre">histories</span></code> array.</p>
 <p>More importantly, to get good statistics we’ll need to loop over all the host halos in the Milky Way suite, <code class="docutils literal notranslate"><span class="pre">SymphonyMilkyWay</span></code>. One way to do this would be to manually store the names of all the halo directories, but instead we’ll use library functions to do it. First, we’ll count the number of halos in the Milky Way-mass suite with <a class="reference internal" href="symlib_documentation.html#symlib.n_hosts" title="symlib.n_hosts"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.n_hosts()</span></code></a>. Then, we can get directory names <a class="reference internal" href="symlib_documentation.html#symlib.get_host_directory" title="symlib.get_host_directory"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.get_host_directory()</span></code></a>, which takes the base directory, suite name, and the index of the halo you want to read. Together this lets you loop over halo directories.</p>
 <p>Constructing a mass function has a bit more code overhead than the earlier examples: the important part is how the loop over files works.</p>
@@ -230,15 +378,63 @@ needed to skip over some subhalos which disrupted before the final snapshot.</p>
 </section>
 </section>
 
-
-            <div class="clearer"></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="intro_to_merger_trees.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Introduction to Merger Trees</div>
+              </div>
+              <svg><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="data_access.html">
+              <svg><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Data Access</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2022, Symphony, lead developer Phil Mansfield
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            <div class="icons">
+              
+            </div>
           </div>
         </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            Contents
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
 <li><a class="reference internal" href="#">Data Analysis Tutorial</a><ul>
 <li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#reading-in-subhalo-data">Reading in Subhalo Data</a></li>
@@ -248,38 +444,19 @@ needed to skip over some subhalos which disrupted before the final snapshot.</p>
 </ul>
 </li>
 </ul>
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation index</a><ul>
-      <li>Previous: <a href="data_access.html" title="previous chapter">Data Access</a></li>
-      <li>Next: <a href="intro_to_merger_trees.html" title="next chapter">Introduction to Merger Trees</a></li>
-  </ul></li>
-</ul>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/getting_started.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-      <input type="submit" value="Go" />
-    </form>
-    </div>
-</div>
-<script>$('#searchbox').show(0);</script>
+
+          </div>
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
-  <div class="footer">
-    &copy; Copyright 2022, Symphony, lead developer Phil Mansfield.
-    Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.
+      
+      
+    </aside>
   </div>
-  
-  </body>
+</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/scripts/furo.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    </body>
 </html>
