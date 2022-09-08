@@ -5,6 +5,8 @@ Library Documentation
 
 This page is meant to be a full technical reference to this library. First-time users will probably find it easiest to start with the tutorial pages on :doc:`Data Access <data_access>` and :doc:`Data Analysis Tutorial <getting_started>` rather than try to read through this page from start to finish.
 
+.. _units_ref:
+
 Units
 -----
 
@@ -12,8 +14,8 @@ Units
 
 - Masses: :math:`M_\odot`
 - Distances/radii: physical :math:`{\rm kpc}`
-- Positions: physical :math:`{\rm kpc}`, centered on the host halo
-- Velocities: physical :math:`{\rm km/s}`, centered on the host halo
+- Positions: physical :math:`{\rm kpc}`, centered on the host halo when appropriate
+- Velocities: physical :math:`{\rm km/s}`, centered on the host halo when appropriate
 
 Much of the data that ``symlib`` reads in is a processed form of data from another code, which may use different conventions. To convert to ``symlib``'s conventions, use the ``set_units_*`` family of functions: :func:`symlib.set_units_halos`, :func:`symlib.set_units_parameters`, :func:`symlib.set_units_branches` as needed.
 			 
@@ -89,6 +91,8 @@ Datatypes
     * ``"first_infall_snap"`` (*numpy.int32*) - If ``"preprocess"`` is non-negative, the snapshot when this branch first fell into a halo of the branch pointed to by ``"preprocess"``.
       
 
+.. _merger_tree_variables:
+      
 Merger Tree Variables
 ---------------------
 

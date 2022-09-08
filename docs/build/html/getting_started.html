@@ -1,12 +1,12 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" lang="en">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Introduction to Merger Trees" href="intro_to_merger_trees.html" /><link rel="prev" title="Data Access" href="data_access.html" />
 
-    <meta name="generator" content="sphinx-4.2.0, furo 2022.06.21"/>
-        <title>Data Analysis Tutorial - Symphony 0.0.6 documentation</title>
+    <meta name="generator" content="sphinx-5.1.1, furo 2022.06.21"/>
+        <title>Data Analysis Tutorial - Symphony 1.1.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
@@ -123,7 +123,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">Symphony 0.0.6 documentation</div></a>
+      <a href="index.html"><div class="brand">Symphony 1.1.2 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -146,7 +146,7 @@
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
   
-  <span class="sidebar-brand-text">Symphony 0.0.6 documentation</span>
+  <span class="sidebar-brand-text">Symphony 1.1.2 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder=Search name="q" aria-label="Search">
@@ -157,6 +157,7 @@
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="simulations.html">Simulations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="credits_acknowledgements.html">People &amp; Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="data_access.html">Data Access</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Data Analysis Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="intro_to_merger_trees.html">Introduction to Merger Trees</a></li>
@@ -196,17 +197,17 @@
         </div>
         <article role="main">
           <section id="data-analysis-tutorial">
-<h1>Data Analysis Tutorial<a class="headerlink" href="#data-analysis-tutorial" title="Permalink to this headline">#</a></h1>
+<h1>Data Analysis Tutorial<a class="headerlink" href="#data-analysis-tutorial" title="Permalink to this heading">#</a></h1>
 <p>Symphony data is stored in cutsom data formats and must be read with its analysis library, <code class="docutils literal notranslate"><span class="pre">symlib</span></code>. This page contains tutorials and example code showing how to use this library. A complete, detailed reference for this library can be found <a class="reference internal" href="symlib_documentation.html"><span class="doc">here</span></a>.</p>
 <section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">#</a></h2>
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">#</a></h2>
 <p>As disucssed in the <a class="reference internal" href="data_access.html"><span class="doc">Data Access</span></a> page, <code class="docutils literal notranslate"><span class="pre">symlib</span></code>  can be downloaded with the pip tool.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>pip install symlib -U
 </pre></div>
 </div>
 </section>
 <section id="reading-in-subhalo-data">
-<h2>Reading in Subhalo Data<a class="headerlink" href="#reading-in-subhalo-data" title="Permalink to this headline">#</a></h2>
+<h2>Reading in Subhalo Data<a class="headerlink" href="#reading-in-subhalo-data" title="Permalink to this heading">#</a></h2>
 <p>The first step to working with simulation data is loading the simulation
 parameters. This is a dictionary containing cosmological and numerical
 information. These can be looked up with <a class="reference internal" href="symlib_documentation.html#symlib.simulation_parameters" title="symlib.simulation_parameters"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.simulation_parameters()</span></code></a> by giving the directory of the halo as an argument.</p>
@@ -252,13 +253,13 @@ largest subhalo, including disrupted subhalos, at snapshot 100. Subhalos are ord
 <p>Fields in <code class="docutils literal notranslate"><span class="pre">histories</span></code> will be explained as needed, but can be found in full in the <a class="reference internal" href="symlib_documentation.html#symlib.HISTORY_DTYPE" title="symlib.HISTORY_DTYPE"><code class="xref py py-data docutils literal notranslate"><span class="pre">symlib.HISTORY_DTYPE</span></code></a> documentation.</p>
 </section>
 <section id="example-subhalo-analysis-plotting-postions">
-<h2>Example Subhalo Analysis: Plotting Postions<a class="headerlink" href="#example-subhalo-analysis-plotting-postions" title="Permalink to this headline">#</a></h2>
+<h2>Example Subhalo Analysis: Plotting Postions<a class="headerlink" href="#example-subhalo-analysis-plotting-postions" title="Permalink to this heading">#</a></h2>
 <p>Our first step with analyzing any simulation data should be to look at it
 qualitatively. We’ll start by looking at the positions of the major subhalos
 around our central halo at the last snapshot of the simulation. We will plot the central halo in one color and the subhalos in another. We’ll also need to skip all the subhalos that were destroyed before the end of the simulation.</p>
 <p>We’ll also use a utility function, <a class="reference internal" href="symlib_documentation.html#symlib.plot_circle" title="symlib.plot_circle"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.plot_circle()</span></code></a> to make the
 circles.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">symlib</span>
+<div class="highlight-python notranslate" id="halo-position-example"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">symlib</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
 
@@ -295,9 +296,9 @@ needed to skip over some subhalos which disrupted before the final snapshot.</p>
 <p>In the <code class="docutils literal notranslate"><span class="pre">histories</span></code> array, there is a field called <code class="docutils literal notranslate"><span class="pre">merger_snap</span></code> that gives the snapshot when a subhalo first fell into the host. Try coloring subhalos that fell in from the left side of the halo (<span class="math notranslate nohighlight">\(x_{\rm infall} &lt; 0\)</span>) differently from ones that fell in from the right.</p>
 </section>
 <section id="example-analysis-mass-growth">
-<h2>Example Analysis: Mass Growth<a class="headerlink" href="#example-analysis-mass-growth" title="Permalink to this headline">#</a></h2>
+<h2>Example Analysis: Mass Growth<a class="headerlink" href="#example-analysis-mass-growth" title="Permalink to this heading">#</a></h2>
 <p>Now, we’ll try analysis that’s a bit more quantitative. We’ll look at the growth of subhalos over time. To do this, we’ll need to get the scale factors, <span class="math notranslate nohighlight">\(a(z)\)</span>, for each snapshot with <a class="reference internal" href="symlib_documentation.html#symlib.scale_factors" title="symlib.scale_factors"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.scale_factors()</span></code></a>. We’ll also use one of the fields in <code class="docutils literal notranslate"><span class="pre">histories</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;merger_snap&quot;</span></code> which is the snapshot when the subhalo first fell into the host. We’ll use it to plot times before infall as dashed lines and times afterwards as solid lines.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sim_dir</span> <span class="o">=</span> <span class="s2">&quot;path/to/ExampleHalo&quot;</span>
+<div class="highlight-python notranslate" id="mah-example"><div class="highlight"><pre><span></span><span class="n">sim_dir</span> <span class="o">=</span> <span class="s2">&quot;path/to/ExampleHalo&quot;</span>
 
 <span class="n">scale</span> <span class="o">=</span> <span class="n">symlib</span><span class="o">.</span><span class="n">scale_factors</span><span class="p">(</span><span class="n">sim_dir</span><span class="p">)</span>
 <span class="n">h</span><span class="p">,</span> <span class="n">hist</span> <span class="o">=</span> <span class="n">symlib</span><span class="o">.</span><span class="n">read_subhalos</span><span class="p">(</span><span class="n">sim_dir</span><span class="p">)</span>
@@ -333,11 +334,11 @@ needed to skip over some subhalos which disrupted before the final snapshot.</p>
 <p>You might have noticed that subhalos start losing mass before they actually start falling into the host (look at the green curve in particular). Using logic similar to the above plot, try figuring out how far away subhalos are on average from a host when they reach their peak mass.</p>
 </section>
 <section id="example-analysis-the-subhalo-mass-functions">
-<h2>Example Analysis: The Subhalo Mass Functions<a class="headerlink" href="#example-analysis-the-subhalo-mass-functions" title="Permalink to this headline">#</a></h2>
+<h2>Example Analysis: The Subhalo Mass Functions<a class="headerlink" href="#example-analysis-the-subhalo-mass-functions" title="Permalink to this heading">#</a></h2>
 <p>Lastly, let’s try some more rigorous statistical analysis. We’re going to measure the subhalo mass function of the entire Milky Way suite. We’ll look at <span class="math notranslate nohighlight">\(N(&gt;M_{\rm peak})\)</span>, the average number of subhalos per host halo whose maximum mass was larger than <span class="math notranslate nohighlight">\(M_{\rm peak}\)</span>. To do this, we’ll need to access the <code class="docutils literal notranslate"><span class="pre">&quot;mpeak&quot;</span></code> field of the <code class="docutils literal notranslate"><span class="pre">histories</span></code> array.</p>
 <p>More importantly, to get good statistics we’ll need to loop over all the host halos in the Milky Way suite, <code class="docutils literal notranslate"><span class="pre">SymphonyMilkyWay</span></code>. One way to do this would be to manually store the names of all the halo directories, but instead we’ll use library functions to do it. First, we’ll count the number of halos in the Milky Way-mass suite with <a class="reference internal" href="symlib_documentation.html#symlib.n_hosts" title="symlib.n_hosts"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.n_hosts()</span></code></a>. Then, we can get directory names <a class="reference internal" href="symlib_documentation.html#symlib.get_host_directory" title="symlib.get_host_directory"><code class="xref py py-func docutils literal notranslate"><span class="pre">symlib.get_host_directory()</span></code></a>, which takes the base directory, suite name, and the index of the halo you want to read. Together this lets you loop over halo directories.</p>
 <p>Constructing a mass function has a bit more code overhead than the earlier examples: the important part is how the loop over files works.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">base_dir</span> <span class="o">=</span> <span class="s2">&quot;path/to/base/dir&quot;</span>
+<div class="highlight-python notranslate" id="shmf-example"><div class="highlight"><pre><span></span><span class="n">base_dir</span> <span class="o">=</span> <span class="s2">&quot;path/to/base/dir&quot;</span>
 <span class="n">suite_name</span> <span class="o">=</span> <span class="s2">&quot;SymphonyMilkyWay&quot;</span>
 
 <span class="c1"># Mass function bins and empty histogram.</span>
@@ -455,6 +456,7 @@ needed to skip over some subhalos which disrupted before the final snapshot.</p>
 </div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/scripts/furo.js"></script>
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
