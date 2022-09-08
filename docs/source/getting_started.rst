@@ -80,6 +80,8 @@ around our central halo at the last snapshot of the simulation. We will plot the
 We'll also use a utility function, :func:`symlib.plot_circle` to make the
 circles.
 
+.. _halo_position_example:
+
 .. code-block:: python
 
     import symlib
@@ -127,6 +129,8 @@ Example Analysis: Mass Growth
 -----------------------------
 
 Now, we'll try analysis that's a bit more quantitative. We'll look at the growth of subhalos over time. To do this, we'll need to get the scale factors, :math:`a(z)`, for each snapshot with :func:`symlib.scale_factors`. We'll also use one of the fields in ``histories``, ``"merger_snap"`` which is the snapshot when the subhalo first fell into the host. We'll use it to plot times before infall as dashed lines and times afterwards as solid lines.
+
+.. _mah_example:
 
 .. code-block:: python
 		
@@ -177,6 +181,8 @@ Lastly, let's try some more rigorous statistical analysis. We're going to measur
 More importantly, to get good statistics we'll need to loop over all the host halos in the Milky Way suite, ``SymphonyMilkyWay``. One way to do this would be to manually store the names of all the halo directories, but instead we'll use library functions to do it. First, we'll count the number of halos in the Milky Way-mass suite with :func:`symlib.n_hosts`. Then, we can get directory names :func:`symlib.get_host_directory`, which takes the base directory, suite name, and the index of the halo you want to read. Together this lets you loop over halo directories.
 
 Constructing a mass function has a bit more code overhead than the earlier examples: the important part is how the loop over files works.
+
+.. _shmf_example:
 
 .. code-block:: python
 
