@@ -22,7 +22,7 @@ copyright = '2022, Symphony, lead developer Phil Mansfield'
 author = 'Phil Mansfield'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.6'
+release = '1.1.2'
 
 
 # -- General configuration ---------------------------------------------------
