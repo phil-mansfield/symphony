@@ -1,5 +1,5 @@
 import setuptools
-version = "0.0.28"
+version = "1.1.1"
 
 with open("README.md", "r", encoding="utf-8") as f:
     long_description = f.read()
@@ -12,7 +12,7 @@ setuptools.setup(
     description="A library for working with data from the Symphony and MW-est zoom-in suites.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    install_requires=["numpy", "scipy", "matplotlib", "colossus", "gdown"],
+    install_requires=["numpy", "scipy", "matplotlib", "colossus", "requests"],
     url="https://github.com/phil-mansfield/symlib",
     keywords=["python"],
     classifiers = [
