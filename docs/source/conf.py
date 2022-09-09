@@ -22,7 +22,7 @@ copyright = '2022, Symphony, lead developer Phil Mansfield'
 author = 'Phil Mansfield'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.6'
+release = '1.1.2'
 
 
 # -- General configuration ---------------------------------------------------
@@ -49,7 +49,8 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+import furo
+html_theme = 'furo'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
