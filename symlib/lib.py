@@ -315,7 +315,7 @@ def merger_snap(h, x_sub, snap_sub):
     dist = np.sqrt(np.sum((h["x"][snap_sub] - x_sub)**2, axis=1))
     within = dist < h["rvir"][snap_sub]
     merger = h["ok"][snap_sub] & within
-    
+
     if np.sum(merger) == 0:
         return -1
     else:
@@ -459,8 +459,12 @@ def get_subhalo_histories(s, idx, dir_name):
         m_snap = merger_snap(central, x[ok], snap[ok])
         m_ratio = mvir[m_snap] / central["mvir"][m_snap]
 
+        target = (snap >= m_snap) & s["ok"][i]
+
         h[i]["merger_snap"], h[i]["merger_ratio"] = m_snap, m_ratio
-        
+        h["first_infall_snap"][i] = min(h["merger_snap"][i],
+                                        h["first_infall_snap"][i])
+
         infall_snap = h["first_infall_snap"][i]
         mpeak_infall = np.max(s[i,:infall_snap+1]["mvir"])
         h["false_selection"][i] = mpeak_infall < 300*param["mp"]
