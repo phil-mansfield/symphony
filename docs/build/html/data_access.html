@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Data Analysis Tutorial" href="getting_started.html" /><link rel="prev" title="Quickstart Guide" href="quickstart.html" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Data Analysis Tutorial" href="getting_started.html" /><link rel="prev" title="Quickstart &amp; FAQs" href="quickstart.html" />
 
     <meta name="generator" content="sphinx-5.1.1, furo 2022.06.21"/>
         <title>Data Access - Symphony 1.1.2 documentation</title>
@@ -157,7 +157,7 @@
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="simulations.html">Simulations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="credits_acknowledgements.html">People &amp; Credits</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart &amp; FAQs</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Data Access</a></li>
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Data Analysis Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="intro_to_merger_trees.html">Introduction to Merger Trees</a></li>
@@ -202,8 +202,8 @@
 <h2>Available data<a class="headerlink" href="#available-data" title="Permalink to this heading">#</a></h2>
 <p>As discussed in the <a class="reference internal" href="simulations.html"><span class="doc">Simulations</span></a> page, Symphony is organized into several suites of zoom-in simulations that respectively correspond to host halos containing the following solar masses (<span class="math notranslate nohighlight">\(M_\odot\)</span>): the LMC (<span class="math notranslate nohighlight">\(10^{11}\)</span>), Milky Way (<span class="math notranslate nohighlight">\(10^{12}\)</span>), Group (<span class="math notranslate nohighlight">\(10^{13}\)</span>), L-Cluster (<span class="math notranslate nohighlight">\(4\times 10^{14}\)</span>), and Cluster (<span class="math notranslate nohighlight">\(10^{15}\)</span>) suites.</p>
 <p>For each halo in these suites, Symphony contains information on the evolution of halos and particles over time. Because of the size of these data sets, a limited number of them are currently available for download.</p>
-<p><strong>Halos:</strong> This dataset contains information on the subhalos of the simulated host halos, including the evolution of those subhalos over time. Disrupted subhalos and “splashback” subhalos are also included. The subhalos, their properties, and their evolution over time were calculated with a combination of Rockstar, consistent-trees, and custom routines designed to remove numerical artifacts. A custom format is used for these halos, as descibed in the <a class="reference internal" href="getting_started.html"><span class="doc">Data Access Tutorial</span></a> and the <a class="reference internal" href="symlib_documentation.html"><span class="doc">Data Access Reference</span></a>. <em>This dataset is light-weight enough to analyze on a personal computer, is relatively easy to use, and will be sufficient for the majority of halo-based research tasks.</em></p>
-<p><strong>Trees:</strong> This dataset contains the full “merger trees” for all the high-resolution objects in the box, not just the subhalos near the central host. The trees also have the full merger history of each object. These trees were generated with Rockstar and consistent-trees, but have been converted to a more efficient and easy-to-use format and heavily annotated with several custom routines, as described in the <a class="reference internal" href="getting_started.html"><span class="doc">Data Access Tutorial</span></a> and the <a class="reference internal" href="symlib_documentation.html"><span class="doc">Data Access Reference</span></a>. <em>This dataset is large enough that it will be difficult to analyze on a personal computer, and it will be unnecessary for most halo-based analysis tasks, even those that require looking at the evolution of objects over time.</em></p>
+<p><strong>Halos:</strong> This dataset contains information on the subhalos of the simulated host halos, including the evolution of those subhalos over time (<strong>For experts</strong>: this means that the full main branch of each halo is included). Disrupted subhalos and “splashback” subhalos are also included. The subhalos, their properties, and their evolution over time were calculated with a combination of Rockstar, consistent-trees, and custom routines designed to remove numerical artifacts. A custom format is used for these halos, as descibed in the <a class="reference internal" href="getting_started.html"><span class="doc">Data Access Tutorial</span></a> and the <a class="reference internal" href="symlib_documentation.html"><span class="doc">Data Access Reference</span></a>. <em>This dataset is light-weight enough to analyze on a personal computer, is relatively easy to use, and will be sufficient for the majority of halo-based research tasks.</em></p>
+<p><strong>Trees:</strong> This dataset contains the full “merger trees” for all the high-resolution objects in the box, not just the subhalos near the central host. The trees also have the full merger history of each object. These trees were generated with Rockstar and consistent-trees, but have been converted to a more efficient and easy-to-use format and heavily annotated with several custom routines, as described in the <a class="reference internal" href="getting_started.html"><span class="doc">Data Access Tutorial</span></a> and the <a class="reference internal" href="symlib_documentation.html"><span class="doc">Data Access Reference</span></a>. <em>This dataset is large enough that it will be difficult to analyze on a personal computer, and it will be unnecessary for most halo-based analysis tasks, even those that require looking at the evolution of objects over time.</em> You should use this dataset only if you want to look at poorly-resolved subhalos, objects far from the host, or completed mergers that occured between future subhalos prior to their infall into the host.</p>
 <p>The table below shows the sizes of the different different datasets across the different simulation suites.</p>
 <div class="table-wrapper docutils container">
 <table class="docutils align-default">
@@ -320,7 +320,7 @@
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Quickstart Guide</div>
+                <div class="title">Quickstart &amp; FAQs</div>
                 
               </div>
             </a>
