@@ -62,11 +62,19 @@ largest subhalo, including disrupted subhalos, at snapshot 100. Subhalos are ord
 
 The full set of fields in ``halos`` is described in the :data:`symlib.SUBHALO_DTYPE` documentation. In this tutorial we will only use:
 
-* ``"x"`` - Position
-* ``"v"`` - Velocity
+* ``"x"`` - three-dimensional position vector (x, y, z)
+* ``"v"`` - three-dimensional velocity vector (v_x, v_y, v_z)
 * ``"mvir"`` - Mass
 * ``"rvir"`` - Radius
-* ``"ok"`` - ``True`` if the halo exists at the given snapshot, ``False`` otherwise.
+* ``"ok"`` - ``True`` if the halo was tracked by the halo finder the given snapshot, ``False`` if the halo was not tracked by the halo finder at the given snapshot.
+
+    TLDR:
+    Throughout the lifetime of a halo, there are two periods of time when the size of the halo is too small (below the resolution limit of the simulation) for the halo finder to track its position: 
+    
+    1. near the beginning of a halo's formation when it starts to rapidly accrete mass, or 
+    2. towards the end of a halo's life when it is shredded apart by the host halo and rapidly loses mass. 
+
+    During these periods of time, ``halos["ok"]`` will be ``False``. 
 
 Fields in ``histories`` will be explained as needed, but can be found in full in the :data:`symlib.HISTORY_DTYPE` documentation.
 

@@ -1,11 +1,11 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html class="no-js">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Data Analysis Tutorial" href="getting_started.html" /><link rel="prev" title="Quickstart &amp; FAQs" href="quickstart.html" />
 
-    <meta name="generator" content="sphinx-5.1.1, furo 2022.06.21"/>
+    <meta name="generator" content="sphinx-4.2.0, furo 2022.06.21"/>
         <title>Data Access - Symphony 1.1.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=40978830699223671f4072448e654b5958f38b89" />
@@ -197,9 +197,9 @@
         </div>
         <article role="main">
           <section id="data-access">
-<h1>Data Access<a class="headerlink" href="#data-access" title="Permalink to this heading">#</a></h1>
+<h1>Data Access<a class="headerlink" href="#data-access" title="Permalink to this headline">#</a></h1>
 <section id="available-data">
-<h2>Available data<a class="headerlink" href="#available-data" title="Permalink to this heading">#</a></h2>
+<h2>Available data<a class="headerlink" href="#available-data" title="Permalink to this headline">#</a></h2>
 <p>As discussed in the <a class="reference internal" href="simulations.html"><span class="doc">Simulations</span></a> page, Symphony is organized into several suites of zoom-in simulations that respectively correspond to host halos containing the following solar masses (<span class="math notranslate nohighlight">\(M_\odot\)</span>): the LMC (<span class="math notranslate nohighlight">\(10^{11}\)</span>), Milky Way (<span class="math notranslate nohighlight">\(10^{12}\)</span>), Group (<span class="math notranslate nohighlight">\(10^{13}\)</span>), L-Cluster (<span class="math notranslate nohighlight">\(4\times 10^{14}\)</span>), and Cluster (<span class="math notranslate nohighlight">\(10^{15}\)</span>) suites.</p>
 <p>For each halo in these suites, Symphony contains information on the evolution of halos and particles over time. Because of the size of these data sets, a limited number of them are currently available for download.</p>
 <p><strong>Halos:</strong> This dataset contains information on the subhalos of the simulated host halos, including the evolution of those subhalos over time (<strong>For experts</strong>: this means that the full main branch of each halo is included). Disrupted subhalos and “splashback” subhalos are also included. The subhalos, their properties, and their evolution over time were calculated with a combination of Rockstar, consistent-trees, and custom routines designed to remove numerical artifacts. A custom format is used for these halos, as descibed in the <a class="reference internal" href="getting_started.html"><span class="doc">Data Access Tutorial</span></a> and the <a class="reference internal" href="symlib_documentation.html"><span class="doc">Data Access Reference</span></a>. <em>This dataset is light-weight enough to analyze on a personal computer, is relatively easy to use, and will be sufficient for the majority of halo-based research tasks.</em></p>
@@ -207,6 +207,12 @@
 <p>The table below shows the sizes of the different different datasets across the different simulation suites.</p>
 <div class="table-wrapper docutils container">
 <table class="docutils align-default">
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Suite Name</p></th>
 <th class="head"><p><span class="math notranslate nohighlight">\(N_{\rm hosts}\)</span></p></th>
@@ -245,7 +251,7 @@
 </div>
 </section>
 <section id="downloading-data">
-<h2>Downloading Data<a class="headerlink" href="#downloading-data" title="Permalink to this heading">#</a></h2>
+<h2>Downloading Data<a class="headerlink" href="#downloading-data" title="Permalink to this headline">#</a></h2>
 <p>You can download this data with Symphony’s data analysis library, <code class="docutils literal notranslate"><span class="pre">symlib</span></code>. A full reference for this library can be found <a class="reference internal" href="symlib_documentation.html"><span class="doc">here</span></a>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">symlib</span></code> can be installed with pip. It depends on the standard scientific python libraries, <a class="reference external" href="https://numpy.org/install/">numpy</a>, <a class="reference external" href="https://scipy.org/install/">scipy</a>, and <a class="reference external" href="https://matplotlib.org/stable/users/installing/index.html">matplotlib</a>. It also depends on the cosmology library <a class="reference external" href="https://bdiemer.bitbucket.io/colossus/installation.html">colossus</a>. <code class="docutils literal notranslate"><span class="pre">symlib</span></code> will automatically install these libraries if they are not already on your machine, but if you encounter issues, you can find installation instructions for all four libraries on their respective web pages.</p>
 <p>If you don’t have pip installed, follow the instructions <a class="reference external" href="https://pip.pypa.io/en/stable/installation/">here</a>. Then, from the command line, run the following command.</p>
@@ -373,7 +379,6 @@
 </div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/scripts/furo.js"></script>
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
