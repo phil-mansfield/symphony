@@ -85,8 +85,9 @@ particle-tracked subhalo.
 """
 CORE_DTYPE = [("x", "f4", (3,)), ("v", "f4", (3,)), ("r_tidal", "f4"),
               ("r50_bound", "f4"), ("r95_bound", "f4"), ("m_tidal", "f4"),
-              ("m_tidal_bound", "f4"), ("m_bound", "f4"), ("ok", "?"),
-              ("intact", "?")]
+              ("m_tidal_bound", "f4"), ("m_bound", "f4"), ("vmax", "f4"),
+              ("f_core", "f4"), ("f_core_rs", "f4"), ("d_core_mbp", "f4"),
+              ("ok", "?"), ("intact", "?")]
 
 """ TREE_COL_NAMES is the mapping of variable names to columns in the
 consistent-trees file. These are the variable names you need to pass to
@@ -494,6 +495,10 @@ def read_cores(dir_name, include_false_selections=False):
         out["m_tidal"] = np.fromfile(fp, np.float32, n)
         out["m_tidal_bound"] = np.fromfile(fp, np.float32, n)
         out["m_bound"] = np.fromfile(fp, np.float32, n)
+        out["vmax"] = np.fromfile(fp, np.float32, n)
+        out["f_core"] = np.fromfile(fp, np.float32, n)
+        out["f_core_rs"] = np.fromfile(fp, np.float32, n)
+        out["d_core_mbp"] = np.fromfile(fp, np.float32, n)
 
         out["ok"] = out["m_bound"] != -1
 
@@ -928,30 +933,18 @@ def vmax_to_cvir_nfw(vmax, mvir, rvir):
     return cv_to_c_nfw(cv)    
 
 def main():
-    base_dir = "/home/phil/code/src/github.com/phil-mansfield/symphony_pipeline/tmp_data"
-    sim_dir = path.join(base_dir, "SymphonyMilkyWay", "Halo023")
+    base_dir = "/oak/stanford/orgs/kipac/users/phil1/simulations/ZoomIns"
+    suite = "SymphonyMilkyWay"
+    i_halo = 0
+    sim_dir = get_host_directory(base_dir, suite, i_halo)
 
-    param = parameter_table["SymphonyMilkyWay"]
+    param = simulation_parameters(suite)
     h, hist = read_subhalos(param, sim_dir)
     
     info = ParticleInfo(sim_dir)
 
-    x235 = read_particles(info, sim_dir, 235, "x")
-    v235 = read_particles(info, sim_dir, 235, "v")
-    ok235 = read_particles(info, sim_dir, 235, "valid")
-    owner235 = read_particles(info, sim_dir, 235, "ownership")
-    
-    x234 = read_particles(info, sim_dir, 234, "x")
-    v234 = read_particles(info, sim_dir, 234, "v")
-    ok234 = read_particles(info, sim_dir, 234, "valid")
-    owner234 = read_particles(info, sim_dir, 234, "ownership")
-
-    for i in range(4):
-        ok = ok234[i] & ok235[i]
-        dx = x235[i][ok] - x234[i][ok]
-        dv = v235[i][ok] - v234[i][ok]
-        x_mid = np.median(dx, axis=0)
-        v_mid = np.median(dv, axis=0)
-        print(x_mid, v_mid)
-        
+    x = read_particles(info, sim_dir, 235, "x")
+    v = read_particles(info, sim_dir, 235, "v")
+    ok = read_particles(info, sim_dir, 235, "valid")
+            
 if __name__ == "__main__": main()
