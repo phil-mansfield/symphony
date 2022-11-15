@@ -904,6 +904,35 @@ def v_circ(m, r):
     """
     return 655.8 * (m/1e14)**0.5 * (r/1e3)**-0.5
 
+def rmax_vmax(params, x, ok=None, bins=300):
+    eps = params["eps"]/params["h100"]
+    mp, h100 = params["mp"], params["h100"]
+    mp /= h100
+    
+    if ok is None:
+        r = np.sqrt(np.sum(x**2, axis=1))
+    else:
+        r = np.sqrt(np.sum(x[ok]**2, axis=1))
+
+    log_r_min = np.log10(params["eps"]/params["h100"])
+    r[r < eps/10] = eps/10
+    log_r_max = np.log10(np.max(r))
+    d_log_r = (log_r_max - log_r_min)/bins
+
+    log_r = np.log10(r)
+    ri = np.asarray(np.floor(((log_r - log_r_min)/d_log_r)), dtype=int)
+    ri[ri < -1] = -1
+    ri += 1
+    
+    n = np.bincount(ri)
+    mass = np.cumsum(n*mp)
+    r = 10**(np.arange(len(n))*d_log_r + log_r_min)
+    Vr = v_circ(mass, r)
+    
+    i_max = np.argmax(Vr) 
+    return r[i_max], Vr[i_max]
+
+
 def profile_info(params, x, ok=None, order=None):
     """ profile_info returns basic information about the spherically averaged
     profile of a halo. x is the the position of particles (pkpc) relative to
