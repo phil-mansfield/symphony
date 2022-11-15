@@ -7,7 +7,7 @@ import requests
 import time
 
 DOWNLOAD_TARGETS = ["halos", "trees"]
-BASE_URL_FORMAT = "https://%s:%s@s3df.slac.stanford.edu/groups/kipac/symphony/static/"
+BASE_URL_FORMAT = "https://%s:%s@s3df.slac.stanford.edu/data/kipac/symphony/"
 RETRY_WAIT_TIME = 5
 
 def pack_files(suite, halo_name, base_out_dir, target="halos",
@@ -109,7 +109,7 @@ def download_packed_files(user, password, suite, halo_name, base_out_dir,
                     raise ValueError("Recieved network error after exhausing maximum number of retries for halo %s. You could try increasing the retries variable, but the server is probably overloaded right now. Please try again later" % orig_halo_name)
                 else:
                     if logging:
-                        print("Internal server error encountered while downloading halo %s: trying to download again after a short wait (tries left: %d)" % (orig_halo_name, retries))
+                        print("Internal server error ('502 Bad Gateway') encountered while downloading halo %s: trying to download again after a short wait (tries left: %d)" % (orig_halo_name, retries))
                     time.sleep(RETRY_WAIT_TIME)
                     download_packed_files(
                         user, password, suite, halo_name, base_out_dir,
