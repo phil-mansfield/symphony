@@ -70,11 +70,13 @@ BRANCH_DTYPE = [("start", "i4"), ("end", "i4"), ("is_real", "?"),
 
 """ CORE_DTYPE is a numpy datatype representing the properties of the
 particle-tracked subhalo.
+TODO: UPDATE THIS COMMENT
  - x: position in pkpc
  - v: velocity in km/s
  - r_tidal: tidal radius in pkpc. Accounts for angular momentum and the
    mass profile of the central halo.
  - r50_bound: radius enclosing 50% of bound particles
+ - r50_bound_rs: radius enclosing 50% of bound particles
  - r95_bound: radius enclosing 95% of bound particles
  - m_tidal: total mass within tidal radius
  - m_tidal_bound: total bound mass within tidal radius
@@ -84,7 +86,7 @@ particle-tracked subhalo.
    otherwise.
 """
 CORE_DTYPE = [("x", "f4", (3,)), ("v", "f4", (3,)), ("r_tidal", "f4"),
-              ("r50_bound", "f4"), ("r95_bound", "f4"), ("m_tidal", "f4"),
+              ("r50_bound", "f4"), ("r50_bound_rs", "f4"), ("m_tidal", "f4"),
               ("m_tidal_bound", "f4"), ("m_bound", "f4"), ("vmax", "f4"),
               ("f_core", "f4"), ("f_core_rs", "f4"), ("d_core_mbp", "f4"),
               ("ok", "?"), ("intact", "?")]
@@ -472,12 +474,15 @@ def get_subhalo_histories(s, idx, dir_name):
 
     return h
 
-def read_cores(dir_name, include_false_selections=False):
+def read_cores(dir_name, include_false_selections=False, suffix="fid"):
     """ read_cores read the particle-tracked halo cores of the halo in the
     given directory. The returned array is a structured array of type CORE_DTYPE
     with shape (n_halos, n_snaps).
     """
-    file_name = path.join(dir_name, "halos", "cores.dat")
+    if suffix == "":
+        file_name = path.join(dir_name, "halos", "cores.dat")
+    else:
+        file_name = path.join(dir_name, "halos", "cores_%s.dat" % suffix)
 
     with open(file_name, "rb") as fp:
         n_halo, n_snap = struct.unpack("qq", fp.read(16))
@@ -491,7 +496,7 @@ def read_cores(dir_name, include_false_selections=False):
         out["v"] = v.reshape((n,3))
         out["r_tidal"] = np.fromfile(fp, np.float32, n)
         out["r50_bound"] = np.fromfile(fp, np.float32, n)
-        out["r95_bound"] = np.fromfile(fp, np.float32, n)
+        out["r50_bound_rs"] = np.fromfile(fp, np.float32, n)
         out["m_tidal"] = np.fromfile(fp, np.float32, n)
         out["m_tidal_bound"] = np.fromfile(fp, np.float32, n)
         out["m_bound"] = np.fromfile(fp, np.float32, n)
