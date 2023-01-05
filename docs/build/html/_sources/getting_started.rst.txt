@@ -81,9 +81,9 @@ Fields in ``histories`` will be explained as needed, but can be found in full in
 Example Subhalo Analysis: Plotting Postions
 -------------------------------------------
    
-Our first step with analyzing any simulation data should be to look at it
+Our first step with analyzing any simulation data will be to look at it
 qualitatively. We'll start by looking at the positions of the major subhalos
-around our central halo at the last snapshot of the simulation. We will plot the central halo in one color and the subhalos in another. We'll also need to skip all the subhalos that were destroyed before the end of the simulation.
+around our central halo at the last snapshot of the simulation. We will plot the central halo in one color and the subhalos in another. We'll also need to avoid plotting any of the subhalos that were destroyed before the end of the simulation.
 
 We'll also use a utility function, :func:`symlib.plot_circle` to make the
 circles.
@@ -136,7 +136,7 @@ In the ``histories`` array, there is a field called ``merger_snap`` that gives t
 Example Analysis: Mass Growth
 -----------------------------
 
-Now, we'll try analysis that's a bit more quantitative. We'll look at the growth of subhalos over time. To do this, we'll need to get the scale factors, :math:`a(z)`, for each snapshot with :func:`symlib.scale_factors`. We'll also use one of the fields in ``histories``, ``"merger_snap"`` which is the snapshot when the subhalo first fell into the host. We'll use it to plot times before infall as dashed lines and times afterwards as solid lines.
+Now, we'll try analysis that's a bit more quantitative. We'll look at the growth of subhalos over time: looking at the growth of the host halo and its five most massive subhalos over time. To do this, we'll need to get the scale factors, :math:`a(z)`, for each snapshot with :func:`symlib.scale_factors`. We'll also use one of the fields in ``histories``, ``"merger_snap"`` which is the snapshot when the subhalo first fell into the host. We'll use it to plot times before infall as dashed lines and times afterwards as solid lines.
 
 .. _mah_example:
 
@@ -179,12 +179,14 @@ Let's review the concepts that went into creating this image:
 
 **Example exercise:**
 
-You might have noticed that subhalos start losing mass before they actually start falling into the host (look at the green curve in particular). Using logic similar to the above plot, try figuring out how far away subhalos are on average from a host when they reach their peak mass.
+You might have noticed that subhalos start losing mass before they actually start falling into the host (look at the transition from a dashed to solid line on the green curve in particular). Create a histogram showing :math:`R_{\rm peak}`/ :math:`R_{\rm virial}`, where :math:`R_{\rm peak}` is the distance between the subhalo and the host halo and :math:`R_{\rm virial}` is the virial radius of the host halo, both calculated at the time the subhalo reaches its peak mass.
 
 Example Analysis: The Subhalo Mass Functions
 --------------------------------------------
 
-Lastly, let's try some more rigorous statistical analysis. We're going to measure the subhalo mass function of the entire Milky Way suite. We'll look at :math:`N(>M_{\rm peak})`, the average number of subhalos per host halo whose maximum mass was larger than :math:`M_{\rm peak}`. To do this, we'll need to access the ``"mpeak"`` field of the ``histories`` array.
+Lastly, let's try some more rigorous statistical analysis. So far we’ve been looking at a population of subhalos surrounding one host halo. Now, we’re going to measure the subhalo mass function for all of the host halos in the Milky Way suite. The subhalo mass function is a statistic that counts the number of subhalos orbiting a host halo as a function of the subhalo’s mass. It is essentially a cumulative histogram of subhalo mass. We'll need to look at :math:`N(>M_{\rm peak})`, the average number of subhalos per host halo whose maximum mass was larger than :math:`M_{\rm peak}`. 
+
+In the previous exercise, we did analysis on the time when a subhalo reached its maximum mass, or :math:`M_{\rm peak}`. We can calculate that value ourselves or use the ``"mpeak"`` field of the ``histories`` array.
 
 More importantly, to get good statistics we'll need to loop over all the host halos in the Milky Way suite, ``SymphonyMilkyWay``. One way to do this would be to manually store the names of all the halo directories, but instead we'll use library functions to do it. First, we'll count the number of halos in the Milky Way-mass suite with :func:`symlib.n_hosts`. Then, we can get directory names :func:`symlib.get_host_directory`, which takes the base directory, suite name, and the index of the halo you want to read. Together this lets you loop over halo directories.
 
@@ -224,7 +226,7 @@ With a little bit of additional pyplot work, this gives us the following. The fu
 .. image:: mass_func.png
    :width: 500
 
-Here, we can see the classic form of the subhalo mass function. At smaller subhalo masses, decreasing the subhalo mass by a increses the number of subhalos by :math:`N \lesssim M^{-1}`, and there's an exponential cutoff as the subhalos get close to the host mass.
+Here, we can see the classic form of the subhalo mass function. At smaller subhalo masses, decreasing the subhalo mass increases the number of subhalos and there’s an exponential cutoff as the subhalos approach the mass of the host halo.
    
 Let's review the concepts that went into creating this image: 
 
@@ -235,5 +237,5 @@ Let's review the concepts that went into creating this image:
 
 **Practice:**
 
-Try adding a curve for the mass function of surviving "splashback" subhalos to this plot.
+You might notice that the plot above only includes subhalos with positions within the virial radius of the host halo. Try adding a curve for the mass function of surviving “splashback” subhalos, subhalos which have temporarily orbited outside of the host halo's virial radius, to this plot.
 
