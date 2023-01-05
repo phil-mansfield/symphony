@@ -496,14 +496,12 @@ class UniverseMachineMStarFit(MStarModel):
         
         log10_M1_Msun = m0 + ma*(a-1) - m_lna*np.log(a) + mz*z
         e = e0 + ea*(a - 1) - e_lna*np.log(a) + ez*z
-        al = al0 + ala*(a - a) - al_lna*np.log(a) + alz*z
+        al = al0 + ala*(a - 1) - al_lna*np.log(a) + alz*z
         b = b0 + ba*(a - 1) + bz*z
         d = d0
-        g = 10**(g0 + ga*(a - a) + gz*z)
+        g = 10**(g0 + ga*(a - 1) + gz*z)
 
         x = np.log10(mpeak/10**log10_M1_Msun)
-
-        al = 2
         
         log10_Ms_M1 = (e - np.log10(10**(-al*x) + 10**(-b*x)) +
                        g*np.exp(-0.5*(x/d)**2))
