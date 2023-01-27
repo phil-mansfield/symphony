@@ -41,7 +41,8 @@ HISTORY_DTYPE = [("mpeak", "f4"), ("vpeak", "f4"), ("merger_snap", "i4"),
                  ("start", "i4"), ("end", "i4"), ("is_real", "?"),
                  ("is_disappear", "?"), ("is_main_sub", "?"),
                  ("preprocess", "i4"), ("first_infall_snap", "i4"),
-                 ("branch_idx", "i4"), ("false_selection", "?")]
+                 ("branch_idx", "i4"), ("false_selection", "?"),
+                 ("mpeak_pre", "f4")]
 
 
 """ BRANCH_DTYPE is a numpy datatype representing the main branch of of halo's
@@ -82,14 +83,12 @@ TODO: UPDATE THIS COMMENT
  - m_tidal_bound: total bound mass within tidal radius
  - m_bound: total bound mass
  - ok: true if the core is being tracked and false otherwise
- - intact: true if core still corresponds to an intact subhalo and false
-   otherwise.
 """
 CORE_DTYPE = [("x", "f4", (3,)), ("v", "f4", (3,)), ("r_tidal", "f4"),
               ("r50_bound", "f4"), ("r50_bound_rs", "f4"), ("m_tidal", "f4"),
               ("m_tidal_bound", "f4"), ("m_bound", "f4"), ("vmax", "f4"),
               ("f_core", "f4"), ("f_core_rs", "f4"), ("d_core_mbp", "f4"),
-              ("ok", "?"), ("intact", "?")]
+              ("ok", "?"), ("ok_rs", "?"), ("is_err", "?"), ("is_err_rs", "?")]
 
 """ TREE_COL_NAMES is the mapping of variable names to columns in the
 consistent-trees file. These are the variable names you need to pass to
@@ -247,14 +246,15 @@ def scale_factors(dir_name):
                     "SymphonyLCluster",  "SymphonyCluster"]:
         return default
 
-    file_name = path.join(dir_name, "halos", "snap_table.dat")
+    file_name = path.join(dir_name, "halos", "snap_scale.dat")
     if not path.exists(file_name):
         _SCALE_FACTOR_CACHE[dir_name] = default
         return default
 
-    f = open(fname, "rb")
+    f = open(file_name, "rb")
     n_snap = struct.unpack("q", f.read(8))[0]
     scale = np.fromfile(f, np.float64, n_snap)
+    print(scale)
     f.close()
 
     _SCALE_FACTOR_CACHE[dir_name] = scale
@@ -470,6 +470,7 @@ def get_subhalo_histories(s, idx, dir_name):
 
         infall_snap = h["first_infall_snap"][i]
         mpeak_infall = np.max(s[i,:infall_snap+1]["mvir"])
+        h["mpeak_pre"][i] = mpeak_infall
         h["false_selection"][i] = mpeak_infall < 300*param["mp"]
 
     return h
@@ -484,6 +485,7 @@ def read_cores(dir_name, include_false_selections=False, suffix="fid"):
     else:
         file_name = path.join(dir_name, "halos", "cores_%s.dat" % suffix)
 
+    h, hist = read_subhalos(dir_name, include_false_selections=True)
     with open(file_name, "rb") as fp:
         n_halo, n_snap = struct.unpack("qq", fp.read(16))
         n = n_halo*n_snap
@@ -507,7 +509,34 @@ def read_cores(dir_name, include_false_selections=False, suffix="fid"):
 
         out["ok"] = out["m_bound"] != -1
 
+
     out = out.reshape((n_halo, n_snap))
+
+    r_core = np.sqrt(np.sum(out["x"]**2, axis=2))
+    r_rs = np.sqrt(np.sum(h["x"]**2, axis=2))
+    r_core_rs = np.sqrt(np.sum((h["x"] - out["x"])**2, axis=2))
+
+    out["is_err"] = (out["f_core"] == 0) | (out["r50_bound"] > r_core)
+    out["is_err_rs"] = (out["f_core_rs"] == 0)|(out["r50_bound_rs"] > r_rs)
+
+    both_ok = ((out["ok"] & (~out["is_err"])) &
+               (h["ok"] & (~out["is_err_rs"])))
+    disagree = (both_ok & (r_core_rs > out["r50_bound"]) &
+                (r_core_rs > out["r50_bound_rs"]))
+    disagree_rs_wins = disagree & (out["f_core_rs"] > out["f_core"])
+    disagree_core_wins = disagree & (~disagree_rs_wins)
+    out["is_err"] = (out["is_err"] | disagree_rs_wins) & out["ok"]
+    out["is_err_rs"] = (out["is_err_rs"] | disagree_core_wins) & h["ok"]
+
+    out["ok"] = out["ok"] & (~out["is_err"])
+    out["ok_rs"] = h["ok"] & (~out["is_err_rs"])
+
+    has_neighbor = np.zeros(out.shape, dtype=bool)
+    has_neighbor[:,:-1] = out["ok"][:,1:]
+    has_neighbor[:,1:] = has_neighbor[:,1:] | out["ok"][:,:-1]
+    out["ok"] = out["ok"] & has_neighbor
+    recent_infall = hist["first_infall_snap"] == out.shape[1]-1
+    out["ok"][recent_infall, -1] = True
 
     if not include_false_selections:
         h, hist = read_subhalos(dir_name, include_false_selections=True)
