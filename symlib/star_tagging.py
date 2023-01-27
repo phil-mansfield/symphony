@@ -502,9 +502,7 @@ class UniverseMachineMStarFit(MStarModel):
         g = 10**(g0 + ga*(a - 1) + gz*z)
 
         x = np.log10(mpeak/10**log10_M1_Msun)
-
-        #al = 2
-        
+      
         log10_Ms_M1 = (e - np.log10(10**(-al*x) + 10**(-b*x)) +
                        g*np.exp(-0.5*(x/d)**2))
                        
