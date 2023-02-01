@@ -254,7 +254,6 @@ def scale_factors(dir_name):
     f = open(file_name, "rb")
     n_snap = struct.unpack("q", f.read(8))[0]
     scale = np.fromfile(f, np.float64, n_snap)
-    print(scale)
     f.close()
 
     _SCALE_FACTOR_CACHE[dir_name] = scale
