@@ -90,6 +90,28 @@ CORE_DTYPE = [("x", "f4", (3,)), ("v", "f4", (3,)), ("r_tidal", "f4"),
               ("f_core", "f4"), ("f_core_rs", "f4"), ("d_core_mbp", "f4"),
               ("ok", "?"), ("ok_rs", "?"), ("is_err", "?"), ("is_err_rs", "?")]
 
+""" UM_DTYPE is a numpy datatype representing UniverseMachine predictions for
+galaxy properties.
+- m_star: the stellar mass of the galaxy in Msun
+- m_in_situ: the stellar mass of a galaxy that formed inside the galaxy (as
+             opposed to coming in via mergers) in Msun
+- m_icl: the stellar mass of the galaxy's stellar halo
+- sfr: the starformaiton rate in Msun/yr
+- mvir: predicted virial mass of the halo in msun
+- vmax: predicted V_max of the halo in km/s
+- x: position of the galaxy relative to the host halo in pkpc
+- v: velocity of the galaxy relative to the host halo in km/s
+- rank: the galaxy's rank in delta vmax
+- is_orphan: true if the the galaxy is un-tracked and replaced with an orphan
+             model during this timestep and false otherwise
+- ok: true if UniverseMachine has an entry for this galaxy at this snapshot and
+      false otherwise
+"""
+UM_DTYPE = [("m_star", "f4"), ("m_in_situ", "f4"), ("m_icl", "f4"),
+            ("sfr", "f4"), ("x", "f4", (3,)), ("v", "f4", (3,)),
+            ("rank", "f4"), ("mvir", "f4"), ("vmax", "f4"),
+            ("is_orphan", "?"), ("ok", "?")]
+
 """ TREE_COL_NAMES is the mapping of variable names to columns in the
 consistent-trees file. These are the variable names you need to pass to
 read_tree().
@@ -506,8 +528,7 @@ def read_cores(dir_name, include_false_selections=False, suffix="fid"):
         out["f_core_rs"] = np.fromfile(fp, np.float32, n)
         out["d_core_mbp"] = np.fromfile(fp, np.float32, n)
 
-        out["ok"] = out["m_bound"] != -1
-
+        out["ok"] = out["m_bound"] > 0
 
     out = out.reshape((n_halo, n_snap))
 
@@ -522,6 +543,7 @@ def read_cores(dir_name, include_false_selections=False, suffix="fid"):
                (h["ok"] & (~out["is_err_rs"])))
     disagree = (both_ok & (r_core_rs > out["r50_bound"]) &
                 (r_core_rs > out["r50_bound_rs"]))
+
     disagree_rs_wins = disagree & (out["f_core_rs"] > out["f_core"])
     disagree_core_wins = disagree & (~disagree_rs_wins)
     out["is_err"] = (out["is_err"] | disagree_rs_wins) & out["ok"]
@@ -541,6 +563,31 @@ def read_cores(dir_name, include_false_selections=False, suffix="fid"):
         h, hist = read_subhalos(dir_name, include_false_selections=True)
         out = out[~hist["false_selection"]]
 
+    return out
+
+def read_um(dir_name):
+    fname = path.join(dir_name, "um", "um.dat")
+    h, _ = read_subhalos(dir_name)
+    n_halo, n_snap = h.shape
+    n = n_snap*n_halo
+
+    out = np.zeros(h.shape[0]*h.shape[1], UM_DTYPE)
+
+    with open(fname) as fp:
+        out["m_star"] = np.fromfile(fp, np.float32, n)
+        out["m_in_situ"] = np.fromfile(fp, np.float32, n)
+        x = np.fromfile(fp, np.float32, 3*n)
+        v = np.fromfile(fp, np.float32, 3*n)
+        out["x"] = x.reshape((n,3))
+        out["v"] = v.reshape((n,3))
+        out["sfr"] = np.fromfile(fp, np.float32, n)
+        out["rank"] = np.fromfile(fp, np.float32, n)
+        out["mvir"] = np.fromfile(fp, np.float32, n)
+        out["vmax"] = np.fromfile(fp, np.float32, n)
+        out["is_orphan"] = np.fromfile(fp, np.bool, n)
+        out["ok"] = np.fromfile(fp, np.bool, n)
+        
+    out = out.reshape((n_halo, n_snap))
     return out
 
 def read_branches(dir_name):
@@ -564,6 +611,7 @@ def read_branches(dir_name):
     out["preprocess"] = np.fromfile(f, np.int32, n)
     out["first_infall_snap"] = np.fromfile(f, np.int32, n)
 
+    f.close()
     return out    
 
 def read_tree(dir_name, var_names):
