@@ -417,7 +417,7 @@ def read_subhalos(dir_name, comoving=False, include_false_selections=False):
         out["cvir"][i,ok] = vmax_to_cvir_nfw(
             out["vmax"][i,ok], out["mvir"][i,ok], out["rvir"][i,ok]*a[ok]
         )
-        
+
     for i in range(n_merger):
         out["rvmax"][i,:] = np.fromfile(f, np.float32, n_snap)
     for i in range(n_merger):
@@ -485,6 +485,7 @@ def get_subhalo_histories(s, idx, dir_name):
 
         target = (snap >= m_snap) & s["ok"][i]
 
+        if h["first_infall_snap"][i] == -1: h["first_infall_snap"][i] = m_snap
         h[i]["merger_snap"], h[i]["merger_ratio"] = m_snap, m_ratio
         h["first_infall_snap"][i] = min(h["merger_snap"][i],
                                         h["first_infall_snap"][i])
@@ -571,6 +572,8 @@ def read_um(dir_name):
     n_halo, n_snap = h.shape
     n = n_snap*n_halo
 
+    h, hist = read_subhalos(dir_name)
+
     out = np.zeros(h.shape[0]*h.shape[1], UM_DTYPE)
 
     with open(fname) as fp:
@@ -588,6 +591,7 @@ def read_um(dir_name):
         out["ok"] = np.fromfile(fp, np.bool, n)
         
     out = out.reshape((n_halo, n_snap))
+    out["is_orphan"] = out["ok"] & (~h["ok"])
     return out
 
 def read_branches(dir_name):
@@ -831,7 +835,7 @@ class ParticleInfo(object):
         self.global_index = global_offset[self.lookup.halo] + self.lookup.index
         
         # Used to find false selections
-        _, self.hist_false = read_subhalos(
+        self.h_false, self.hist_false = read_subhalos(
             base_dir, include_false_selections=True)
 
 def is_real_confirmed(part_info, h, i_sub):
@@ -876,10 +880,13 @@ def read_particles(part_info, base_dir, snap, var_name,
             valid = (tags.snap[owner] <= snap)[tags.flag[owner] == 0]
             return valid
     elif var_name in ["x", "v"]:
-        x_full = np.zeros((hd.n_particle, 3))
-
         snap_name = "snap_%03d" % snap
         if owner is not None:
+            first_snap = np.min(np.where(part_info.h_false["ok"][owner,:])[0])
+            if snap < first_snap:
+                num = len(tags.flag[owner])
+                return np.ones((num, 3)) * np.nan
+
             i_file = hd.file_idxs[owner]
             file_name = "%s.%d.dat" % (var_name, i_file)
 
@@ -891,7 +898,7 @@ def read_particles(part_info, base_dir, snap, var_name,
 
             offset = tags.halo_offset(snap, owner)
             f.seek(offset, 0)
-
+            
             size = struct.unpack("q", f.read(8))[0]
             min = np.array(struct.unpack("fff", f.read(12)))
             max = np.array(struct.unpack("fff", f.read(12)))
@@ -902,6 +909,8 @@ def read_particles(part_info, base_dir, snap, var_name,
 
             f.close()
             return x_i
+
+        x_full = np.zeros((hd.n_particle, 3))
 
         for i_file in range(hd.n_file):
             file_name = "%s.%d.dat" % (var_name, i_file)
