@@ -884,7 +884,7 @@ def read_particles(part_info, base_dir, snap, var_name,
         if owner is not None:
             first_snap = np.min(np.where(part_info.h_false["ok"][owner,:])[0])
             if snap < first_snap:
-                num = int(np.sum(tags.flag[i] == 0))
+                num = int(np.sum(tags.flag[owner] == 0))
                 return np.ones((num, 3)) * np.nan
 
             i_file = hd.file_idxs[owner]
