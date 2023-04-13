@@ -707,7 +707,7 @@ def tree_var_offset(hd, var_name):
 
 def merger_lookup_table(b, dfid):
     """ merger_lookup_table creates a look-up table for finding the branches of
-    mergers. It's used alongsize find_merger_branch and
+    mergers. It's used along side find_merger_branch and
     find_all_merger_branches.
 
     b is an array of branches (BRANCH_DTYPE) and dfid is an array of
@@ -748,7 +748,14 @@ def read_particle_header(base_dir):
 class ParticleHeader(object):
     def __init__(self, base_dir):
         file_name = path.join(base_dir, "particles", "particle_header.dat")
-        f = open(file_name, "rb")
+        try:
+            f = open(file_name, "rb")
+        except FileNotFoundError:
+            print("The particle data for this halo has not been generated.")
+
+# BH: other way of doing this:
+#       if not file_name.is_file():
+#            raise FileNotFoundError("The particle data for {} has not been generated.".format(file_name))            
         
         self.n_file = struct.unpack("i", f.read(4))[0]
         self.n_halo = struct.unpack("i", f.read(4))[0]
