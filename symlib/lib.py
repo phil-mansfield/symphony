@@ -747,8 +747,8 @@ def read_particle_header(base_dir):
     
 class ParticleHeader(object):
     def __init__(self, base_dir):
-        file_name = path.join(base_dir, "particles", "particle_header.dat")
         try:
+            file_name = path.join(base_dir, "particles", "particle_header.dat")
             f = open(file_name, "rb")
         except FileNotFoundError:
             print("The particle data for this halo has not been generated.")
@@ -872,14 +872,13 @@ PARTICLE_DTYPE = [
             # BH: is smooth variable related to ownership?
             smooth = read_particles(part_info, sim_dir, snap, "ownership", owner=None, include_false_selections=False)
 
-        if mode == "current":
-            # TODO: add if then for snap >= input snap
-            idp = read_particles(part_info, sim_dir, snap, "id", owner=None, include_false_selections=False)
-            x = read_particles(part_info, sim_dir, snap, "x", owner=None, include_false_selections=False)
-            v = read_particles(part_info, sim_dir, snap, "v", owner=None, include_false_selections=False)
-            snap = read_particles(part_info, sim_dir, snap, "snap", owner=None, include_false_selections=False)
-            valid = read_particles(part_info, sim_dir, snap, "valid", owner=None, include_false_selections=False)
-            smooth = read_particles(part_info, sim_dir, snap, "ownership", owner=None, include_false_selections=False)
+        if mode == "current" and snap >= snap:
+                idp = read_particles(part_info, sim_dir, snap, "id", owner=None, include_false_selections=False)
+                x = read_particles(part_info, sim_dir, snap, "x", owner=None, include_false_selections=False)
+                v = read_particles(part_info, sim_dir, snap, "v", owner=None, include_false_selections=False)
+                snap = read_particles(part_info, sim_dir, snap, "snap", owner=None, include_false_selections=False)
+                valid = read_particles(part_info, sim_dir, snap, "valid", owner=None, include_false_selections=False)
+                smooth = read_particles(part_info, sim_dir, snap, "ownership", owner=None, include_false_selections=False)
 
         if mode == "smooth":
             # TODO: loop thru each subhalo in h and set owner = i 
@@ -901,10 +900,10 @@ PARTICLE_DTYPE = [
             p[i]["valid"] = valid[i]
             p[i]["smooth"] = smooth[i]
 
+        return p 
+
     def infall_particles(self, snap, halo=-1, comoving=False):
         pass
-
-        return p
 
 def read_particles(part_info, base_dir, snap, var_name,
                    owner=None, include_false_selections=False):
