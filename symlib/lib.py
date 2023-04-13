@@ -846,6 +846,66 @@ def is_real_confirmed(part_info, h, i_sub):
     ok = read_particles(part_info, None, first_snap, "valid", owner=i_sub)
     return np.sum(ok) > 0
 
+class Particle(object):
+# TODO: add docstring 
+
+PARTICLE_DTYPE = [
+    ("x", "f4", (3,)), ("v", "f4", (3,)),
+    ("snap", "i4"), ("id", "i4"),
+    ("ok", "?"), ("smooth", "?")
+]
+    def __init__(self, sim_dir):
+        self.part_info = ParticleInfo(sim_dir)
+        self.params = simulation_parameters(sim_dir)
+        self.h = read_subhalos(sim_dir)
+        self.h_comov = read_subhalos(comoving=True)
+
+    def read(self, snap, halo=-1, mode="current", comoving=False):
+#        mode_args = ["all", "current", "smooth"]
+
+        if mode == "all":
+            idp = read_particles(part_info, sim_dir, snap, "id", owner=None, include_false_selections=False)
+            x = read_particles(part_info, sim_dir, snap, "x", owner=None, include_false_selections=False)
+            v = read_particles(part_info, sim_dir, snap, "v", owner=None, include_false_selections=False)
+            snap = read_particles(part_info, sim_dir, snap, "snap", owner=None, include_false_selections=False)
+            valid = read_particles(part_info, sim_dir, snap, "valid", owner=None, include_false_selections=False)
+            # BH: is smooth variable related to ownership?
+            smooth = read_particles(part_info, sim_dir, snap, "ownership", owner=None, include_false_selections=False)
+
+        if mode == "current":
+            # TODO: add if then for snap >= input snap
+            idp = read_particles(part_info, sim_dir, snap, "id", owner=None, include_false_selections=False)
+            x = read_particles(part_info, sim_dir, snap, "x", owner=None, include_false_selections=False)
+            v = read_particles(part_info, sim_dir, snap, "v", owner=None, include_false_selections=False)
+            snap = read_particles(part_info, sim_dir, snap, "snap", owner=None, include_false_selections=False)
+            valid = read_particles(part_info, sim_dir, snap, "valid", owner=None, include_false_selections=False)
+            smooth = read_particles(part_info, sim_dir, snap, "ownership", owner=None, include_false_selections=False)
+
+        if mode == "smooth":
+            # TODO: loop thru each subhalo in h and set owner = i 
+            idp = read_particles(part_info, sim_dir, snap, "id", owner=None, include_false_selections=False)
+            x = read_particles(part_info, sim_dir, snap, "x", owner=None, include_false_selections=False)
+            v = read_particles(part_info, sim_dir, snap, "v", owner=None, include_false_selections=False)
+            snap = read_particles(part_info, sim_dir, snap, "snap", owner=None, include_false_selections=False)
+            valid = read_particles(part_info, sim_dir, snap, "valid", owner=None, include_false_selections=False)
+            smooth = read_particles(part_info, sim_dir, snap, "ownership", owner=None, include_false_selections=False)
+
+        p = [None]*len(self.h)
+
+        for i in range(len(x)):
+            p[i] = np.zeros(len(x[i]), dtype=PARTICLE_DTYPE)
+            p[i]["id"] = idp[i]
+            p[i]["x"] = x[i]
+            p[i]["v"] = v[i]
+            p[i]["snap"] = snap[i]
+            p[i]["valid"] = valid[i]
+            p[i]["smooth"] = smooth[i]
+
+    def infall_particles(self, snap, halo=-1, comoving=False):
+        pass
+
+        return p
+
 def read_particles(part_info, base_dir, snap, var_name,
                    owner=None, include_false_selections=False):
     hd, tags = part_info.part_hd, part_info.tags
