@@ -747,16 +747,15 @@ def read_particle_header(base_dir):
     
 class ParticleHeader(object):
     def __init__(self, base_dir):
+        file_name = path.join(base_dir, "particles", "particle_header.dat")
+## BH: first attempt
+#        if not file_name.is_file():
+#           raise FileNotFoundError("The particle data for {} has not been generated.".format(file_name))
         try:
-            file_name = path.join(base_dir, "particles", "particle_header.dat")
             f = open(file_name, "rb")
-        except FileNotFoundError:
-            print("The particle data for this halo has not been generated.")
+        except FileNotFoundError as e:
+            print("The particle data for this halo does not exist.", e.args)
 
-# BH: other way of doing this:
-#       if not file_name.is_file():
-#            raise FileNotFoundError("The particle data for {} has not been generated.".format(file_name))            
-        
         self.n_file = struct.unpack("i", f.read(4))[0]
         self.n_halo = struct.unpack("i", f.read(4))[0]
         self.n_particle = struct.unpack("i", f.read(4))[0]
@@ -857,8 +856,9 @@ PARTICLE_DTYPE = [
     def __init__(self, sim_dir):
         self.part_info = ParticleInfo(sim_dir)
         self.params = simulation_parameters(sim_dir)
+        self.scale = scale_factors(sim_dir)
         self.h = read_subhalos(sim_dir)
-        self.h_comov = read_subhalos(comoving=True)
+        self.h_cmov = read_subhalos(comoving=True)
 
     def read(self, snap, halo=-1, mode="current", comoving=False):
 #        mode_args = ["all", "current", "smooth"]
@@ -866,8 +866,12 @@ PARTICLE_DTYPE = [
         if mode == "all":
             idp = read_particles(part_info, sim_dir, snap, "id", owner=None, include_false_selections=False)
             x = read_particles(part_info, sim_dir, snap, "x", owner=None, include_false_selections=False)
+            # Correct to physical units.
+            x_i = symlib.set_units_x(x, h_cmov[0,-1], scale[-1], params)
             v = read_particles(part_info, sim_dir, snap, "v", owner=None, include_false_selections=False)
-            snap = read_particles(part_info, sim_dir, snap, "snap", owner=None, include_false_selections=False)
+            # Correct to physical units.
+            v_i = symlib.set_units_x(v, h_cmov[0,-1], scale[-1], params)
+            snaps = read_particles(part_info, sim_dir, snap, "snap", owner=None, include_false_selections=False)
             valid = read_particles(part_info, sim_dir, snap, "valid", owner=None, include_false_selections=False)
             # BH: is smooth variable related to ownership?
             smooth = read_particles(part_info, sim_dir, snap, "ownership", owner=None, include_false_selections=False)
@@ -875,28 +879,36 @@ PARTICLE_DTYPE = [
         if mode == "current" and snap >= snap:
                 idp = read_particles(part_info, sim_dir, snap, "id", owner=None, include_false_selections=False)
                 x = read_particles(part_info, sim_dir, snap, "x", owner=None, include_false_selections=False)
+                # Correct to physical units.
+                x_i = symlib.set_units_x(x, h_cmov[0,-1], scale[-1], params)
                 v = read_particles(part_info, sim_dir, snap, "v", owner=None, include_false_selections=False)
-                snap = read_particles(part_info, sim_dir, snap, "snap", owner=None, include_false_selections=False)
+                # Correct to physical units.
+                v_i = symlib.set_units_x(v, h_cmov[0,-1], scale[-1], params)
+                snaps = read_particles(part_info, sim_dir, snap, "snap", owner=None, include_false_selections=False)
                 valid = read_particles(part_info, sim_dir, snap, "valid", owner=None, include_false_selections=False)
                 smooth = read_particles(part_info, sim_dir, snap, "ownership", owner=None, include_false_selections=False)
 
         if mode == "smooth":
-            # TODO: loop thru each subhalo in h and set owner = i 
-            idp = read_particles(part_info, sim_dir, snap, "id", owner=None, include_false_selections=False)
-            x = read_particles(part_info, sim_dir, snap, "x", owner=None, include_false_selections=False)
-            v = read_particles(part_info, sim_dir, snap, "v", owner=None, include_false_selections=False)
-            snap = read_particles(part_info, sim_dir, snap, "snap", owner=None, include_false_selections=False)
-            valid = read_particles(part_info, sim_dir, snap, "valid", owner=None, include_false_selections=False)
-            smooth = read_particles(part_info, sim_dir, snap, "ownership", owner=None, include_false_selections=False)
+            for sh in range(len(h)):
+                idp = read_particles(part_info, sim_dir, snap, "id", owner=sh, include_false_selections=False)
+                x = read_particles(part_info, sim_dir, snap, "x", owner=None, include_false_selections=False)
+                # Correct to physical units.
+                x_i = symlib.set_units_x(x, h_cmov[0,-1], scale[-1], params)
+                v = read_particles(part_info, sim_dir, snap, "v", owner=None, include_false_selections=False)
+                # Correct to physical units.
+                v_i = symlib.set_units_x(v, h_cmov[0,-1], scale[-1], params)
+                snaps = read_particles(part_info, sim_dir, snap, "snap", owner=sh, include_false_selections=False)
+                valid = read_particles(part_info, sim_dir, snap, "valid", owner=sh, include_false_selections=False)
+                smooth = read_particles(part_info, sim_dir, snap, "ownership", owner=sh, include_false_selections=False)
 
         p = [None]*len(self.h)
 
         for i in range(len(x)):
             p[i] = np.zeros(len(x[i]), dtype=PARTICLE_DTYPE)
             p[i]["id"] = idp[i]
-            p[i]["x"] = x[i]
-            p[i]["v"] = v[i]
-            p[i]["snap"] = snap[i]
+            p[i]["x"] = x_i[i]
+            p[i]["v"] = v_i[i]
+            p[i]["snap"] = snaps[i]
             p[i]["valid"] = valid[i]
             p[i]["smooth"] = smooth[i]
 
