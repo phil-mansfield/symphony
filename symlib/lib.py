@@ -112,6 +112,14 @@ UM_DTYPE = [("m_star", "f4"), ("m_in_situ", "f4"), ("m_icl", "f4"),
             ("rank", "f4"), ("mvir", "f4"), ("vmax", "f4"),
             ("is_orphan", "?"), ("ok", "?")]
 
+""" TODO
+"""
+PARTICLE_DTYPE = [
+    ("x", "f4", (3,)), ("v", "f4", (3,)),
+    ("snap", "i4"), ("id", "i4"),
+    ("ok", "?"), ("smooth", "?")
+]
+
 """ TREE_COL_NAMES is the mapping of variable names to columns in the
 consistent-trees file. These are the variable names you need to pass to
 read_tree().
@@ -711,7 +719,7 @@ def tree_var_offset(hd, var_name):
 
 def merger_lookup_table(b, dfid):
     """ merger_lookup_table creates a look-up table for finding the branches of
-    mergers. It's used alongsize find_merger_branch and
+    mergers. It's used along side find_merger_branch and
     find_all_merger_branches.
 
     b is an array of branches (BRANCH_DTYPE) and dfid is an array of
@@ -752,8 +760,16 @@ def read_particle_header(base_dir):
 class ParticleHeader(object):
     def __init__(self, base_dir):
         file_name = path.join(base_dir, "particles", "particle_header.dat")
-        f = open(file_name, "rb")
-        
+        ## BH: first attempt
+        #        if not file_name.is_file():
+        #           raise FileNotFoundError("The particle data for {} has not been generated.".format(file_name))
+        try:
+            f = open(file_name, "rb")
+        except FileNotFoundError as e:
+            # TODO: raise error here
+            print("The particle data for this halo does not exist.", e.args)
+        # TODO: if not working, try os.path.exists() and os.path.isfile() after that
+
         self.n_file = struct.unpack("i", f.read(4))[0]
         self.n_halo = struct.unpack("i", f.read(4))[0]
         self.n_particle = struct.unpack("i", f.read(4))[0]
@@ -842,6 +858,88 @@ def is_real_confirmed(part_info, h, i_sub):
     first_snap = np.where(h[i_sub]["ok"])[0][0]
     ok = read_particles(part_info, None, first_snap, "valid", owner=i_sub)
     return np.sum(ok) > 0
+
+class Particles(object):
+    def __init__(self, sim_dir):
+        # TODO: write docstring
+        self.sim_dir = sim_dir
+        self.part_info = ParticleInfo(sim_dir)
+        self.params = simulation_parameters(sim_dir)
+        self.scale = scale_factors(sim_dir)
+        self.h_cmov, _ = read_subhalos(sim_dir, comoving=True)
+
+    def read(self, snap, halo=-1, mode="current", comoving=False):
+        # TODO: write docstring
+        """ mode_args: ["all", "current", "smooth"]
+        """
+
+        sim_dir = self.sim_dir
+        part_info = self.part_info
+        h0 = self.h_cmov[0,snap]
+        a = self.scale[snap]
+
+        # These modes need to read in all particles simultaneously: cannot
+        # just read one halo.
+        if mode == "all" or mode == "current":
+            idp = read_particles(part_info, sim_dir, snap, "id")
+            x = read_particles(part_info, sim_dir, snap, "x")
+            v = read_particles(part_info, sim_dir, snap, "v")
+            if not comoving:
+                for s in range(len(x)):
+                    x[s] = util.set_units_x(x[s], h0, a, self.params)
+                    v[s] = util.set_units_v(v[s], h0, a, self.params)
+            
+            snaps = read_particles(part_info, sim_dir, snap, "snap")
+            valid = read_particles(part_info, sim_dir, snap, "valid")
+            smooth = read_particles(part_info, sim_dir, snap, "ownership")
+            
+            # Remove invalid particles.
+            if mode == "current":
+                for i in range(len(x)):
+                    ok = valid[i]
+                    x[i], v[i], idp[i] = x[i][ok], v[i][ok], idp[i][ok]
+                    snaps[i], smooth[i] = snaps[i][ok], smooth[i][ok]
+                    valid[i] = valid[i][ok]
+
+        if mode == "smooth":
+            for sh in range(len(h)):
+                # A single halo read is fast for smooth particles, so we only
+                # have to read the specified halo in this mode
+                if halo != -1 and sh != halo: continue
+                idp = read_particles(part_info, sim_dir, snap, "id", owner=sh)
+                x = read_particles(part_info, sim_dir, snap, "x", owner=sh)
+                v = read_particles(part_info, sim_dir, snap, "v", owner=sh)
+                if not comoving:
+                    x[s] = util.set_units_x(x[s], h0, a, self.params)
+                    v[s] = util.set_units_v(v[s], h0, a, self.params)
+            
+                snaps = read_particles(part_info, sim_dir, snap,
+                                       "snap", owner=sh)
+                valid = read_particles(part_info, sim_dir, snap,
+                                       "valid", owner=sh)
+                smooth = read_particles(part_info, sim_dir, snap,
+                                        "ownership", owner=sh)
+
+
+        p = [None]*len(x)
+        for i in range(len(x)):
+            if halo == -1 or i == halo:
+                p[i] = np.zeros(len(x[i]), dtype=PARTICLE_DTYPE)
+                p[i]["id"] = idp[i]
+                p[i]["x"] = x[i]
+                p[i]["v"] = v[i]
+                p[i]["snap"] = snaps[i]
+                p[i]["ok"] = valid[i]
+                p[i]["smooth"] = smooth[i] == 0
+
+        if halo == -1:
+            return p 
+        else:
+            return p[halo]
+
+
+    def core_particles(self, snap, halo=-1, comoving=False):
+        pass
 
 def read_particles(part_info, base_dir, snap, var_name,
                    owner=None, include_false_selections=False):
