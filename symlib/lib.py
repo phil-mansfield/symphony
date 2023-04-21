@@ -112,7 +112,14 @@ UM_DTYPE = [("m_star", "f4"), ("m_in_situ", "f4"), ("m_icl", "f4"),
             ("rank", "f4"), ("mvir", "f4"), ("vmax", "f4"),
             ("is_orphan", "?"), ("ok", "?")]
 
-""" TODO
+""" PARTICLE_DTYPE is a numpy datatype representing the properties of tracked 
+particles within a subhalo. Positions (x) and velocities (v) are given in
+physical units.
+- x: position in pkpc
+- v: velocity in km/s
+- snap: integer value for the desired snapshot
+ - ok: true if the particle is being tracked and false otherwise
+ - smooth: true if the particle smoothly accreted onto the subhalo and false otherwise.
 """
 PARTICLE_DTYPE = [
     ("x", "f4", (3,)), ("v", "f4", (3,)),
@@ -760,14 +767,10 @@ def read_particle_header(base_dir):
 class ParticleHeader(object):
     def __init__(self, base_dir):
         file_name = path.join(base_dir, "particles", "particle_header.dat")
-        ## BH: first attempt
-        #        if not file_name.is_file():
-        #           raise FileNotFoundError("The particle data for {} has not been generated.".format(file_name))
         try:
             f = open(file_name, "rb")
-        except FileNotFoundError as e:
-            # TODO: raise error here
-            print("The particle data for this halo does not exist.", e.args)
+        except FileNotFoundError:
+            raise FileNotFoundError("The particle data for this halo does not exist.") from None
         # TODO: if not working, try os.path.exists() and os.path.isfile() after that
 
         self.n_file = struct.unpack("i", f.read(4))[0]
@@ -860,8 +863,8 @@ def is_real_confirmed(part_info, h, i_sub):
     return np.sum(ok) > 0
 
 class Particles(object):
+    """ A wrapper for accessing particle data associated with the desired halo suite."""
     def __init__(self, sim_dir):
-        # TODO: write docstring
         self.sim_dir = sim_dir
         self.part_info = ParticleInfo(sim_dir)
         self.params = simulation_parameters(sim_dir)
@@ -869,8 +872,24 @@ class Particles(object):
         self.h_cmov, _ = read_subhalos(sim_dir, comoving=True)
 
     def read(self, snap, halo=-1, mode="current", comoving=False):
-        # TODO: write docstring
-        """ mode_args: ["all", "current", "smooth"]
+        """ read returns a list of 1D arrays containing frequently used variables 
+        stored in the particle data for a given subhalo. 
+
+        Parameters
+        ----------
+        snap: int, snapshot.
+        halo: int, index for subhalo of interest, default returns all subhalos.
+        comoving: boolean, default is False to return physical units.
+        mode: string 
+            "Current" is the default setting and returns variables for valid particles.
+            "All" returns variables for all particles, valid or invalid.
+            "Smooth" returns variables for smoothly accreted particles. 
+
+        Returns
+        -------
+        p: list containing 1D arrays of the following variables from stored particle data:
+            id, x, v, snap, ok, and smooth. See PARTICLE_DTYPE for more detail.
+
         """
 
         sim_dir = self.sim_dir
@@ -919,8 +938,6 @@ class Particles(object):
                                        "valid", owner=sh)
                 smooth = read_particles(part_info, sim_dir, snap,
                                         "ownership", owner=sh)
-
-
         p = [None]*len(x)
         for i in range(len(x)):
             if halo == -1 or i == halo:
@@ -937,8 +954,9 @@ class Particles(object):
         else:
             return p[halo]
 
-
     def core_particles(self, snap, halo=-1, comoving=False):
+        """ TODO: write docstring
+        """
         pass
 
 def read_particles(part_info, base_dir, snap, var_name,

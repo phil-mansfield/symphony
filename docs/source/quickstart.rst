@@ -89,3 +89,7 @@ The default "halos" dataset (i.e. the data read in by :func:`symlib.read_subhalo
 - If the halo disrupts, consistent-trees merges it with any other halo.
 
 If you want other objects, you will need to analyze the full merger tree. This must be :doc:`downloaded separately <data_access>`. Symphony's merger trees use a different format than consistent-trees, so it would be best to read through the :doc:`full tutorial <intro_to_merger_trees>`. The full merger tree also contains `additional variables <merger_tree_variables>` not included in the standard halo dataset.
+
+# TODO: add info on getting particle data not included in the "halos" dataset.
+
+In order to access the particle data for each halo
