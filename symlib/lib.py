@@ -5,6 +5,7 @@ import os
 import os.path as path
 import scipy.interpolate as interpolate
 import numpy.random as random
+import scipy.optimize as optimize
 import glob
 from . import util
 
@@ -83,12 +84,22 @@ TODO: UPDATE THIS COMMENT
  - m_tidal_bound: total bound mass within tidal radius
  - m_bound: total bound mass
  - ok: true if the core is being tracked and false otherwise
+ - ok_rs: true if a rockstar halo exists and at least one core particle is
+   still inside Rockstar's r_50 (almost all cases where this fails are cases
+   where Rockstar has made an error)
+ - is_err: Rockstar and core-tracking disagree, but more core particles are
+   assoicated with Rockstar
+ - is_err_rs: Rockstar and core-tracking disagree, but more core particles are
+   with the particle-tracking subhalo.
+ - interp: true if the core in this snapshot is interpolated betwen two
+   nearby snapshots.
 """
 CORE_DTYPE = [("x", "f4", (3,)), ("v", "f4", (3,)), ("r_tidal", "f4"),
               ("r50_bound", "f4"), ("r50_bound_rs", "f4"), ("m_tidal", "f4"),
               ("m_tidal_bound", "f4"), ("m_bound", "f4"), ("vmax", "f4"),
               ("f_core", "f4"), ("f_core_rs", "f4"), ("d_core_mbp", "f4"),
-              ("ok", "?"), ("ok_rs", "?"), ("is_err", "?"), ("is_err_rs", "?")]
+              ("ok", "?"), ("ok_rs", "?"), ("is_err", "?"), ("is_err_rs", "?"),
+              ("interp", "?")]
 
 """ UM_DTYPE is a numpy datatype representing UniverseMachine predictions for
 galaxy properties.
@@ -507,14 +518,16 @@ def get_subhalo_histories(s, idx, dir_name):
 
 def read_cores(dir_name, include_false_selections=False, suffix="fid"):
     """ read_cores read the particle-tracked halo cores of the halo in the
-    given directory. The returned array is a structured array of type CORE_DTYPE
-    with shape (n_halos, n_snaps).
+    given directory. The returned array is a structured array of type
+    CORE_DTYPE with shape (n_halos, n_snaps).
     """
     if suffix == "":
         file_name = path.join(dir_name, "halos", "cores.dat")
     else:
         file_name = path.join(dir_name, "halos", "cores_%s.dat" % suffix)
 
+    param = simulation_parameters(dir_name)
+    mp = param["mp"]/param["h100"]
     h, hist = read_subhalos(dir_name, include_false_selections=True)
     with open(file_name, "rb") as fp:
         n_halo, n_snap = struct.unpack("qq", fp.read(16))
@@ -568,11 +581,111 @@ def read_cores(dir_name, include_false_selections=False, suffix="fid"):
     recent_infall = hist["first_infall_snap"] == out.shape[1]-1
     out["ok"][recent_infall, -1] = True
 
+    scale = scale_factors(dir_name)
+    interpolate_cores(scale, out, h, hist, mp)
+
     if not include_false_selections:
         h, hist = read_subhalos(dir_name, include_false_selections=True)
         out = out[~hist["false_selection"]]
 
     return out
+
+def interpolate_cores(scales, c, h, hist, mp):
+    log_a = np.log10(scales)
+    # This funciton is kind of cursed, and I'm sorry
+    for i in range(len(c)):
+        first_snap = hist["first_infall_snap"][i]
+        if np.sum(c["ok"][i]) == 0:
+            last_snap = hist["first_infall_snap"][i]
+        else:
+            last_snap = np.max(np.where(c["ok"][i])[0])
+
+        h_infall = h[i,first_snap]
+
+        # This almost never happens (0.7% of subhaloes). Only needed to keep
+        # interpolation from blowing up. In general, particle-tracking and
+        # rockstar get pretty similar halo properties immediately after infall,
+        # and the particle tracking is essentially initialized to start out
+        # with the same phase space position as the halo because the core
+        # particles are calculated based on Rockstar's location.
+        # Error and interpolation flags get set to make sure that this still
+        # counts as a "loss" for particle-tracking.
+        if not c["ok"][i,first_snap]:
+            r = np.sqrt(np.sum(h[i,first_snap]["x"]**2))
+            rvir = h[i,first_snap]["rvir"]
+            cvir = h[i,first_snap]["cvir"]
+            m_ratio = h[i,first_snap]["mvir"]/h[0,first_snap]["mvir"]
+            r50_rs = _half_mass_nfw(cvir, 0.5)/cvir * rvir
+            r_tidal_rs = r*(m_ratio/3)**(1/3.0)
+            x_tidal_rs = r_tidal_rs/(rvir/cvir)
+            m_tidal_rs = _m_enc_nfw(x_tidal_rs)/_m_enc_nfw(cvir)
+            m_tidal_rs = h[i,first_snap]["mvir"]*min(1, m_tidal_rs)
+            c[i,first_snap]["x"] = h[i,first_snap]["x"]
+            c[i,first_snap]["v"] = h[i,first_snap]["v"]
+            c[i,first_snap]["r_tidal"] = r_tidal_rs
+            c[i,first_snap]["r50_bound"] = r50_rs
+            c[i,first_snap]["r50_bound_rs"] = r50_rs
+            c[i,first_snap]["m_tidal"] = m_tidal_rs
+            c[i,first_snap]["m_tidal_bound"] = m_tidal_rs
+            c[i,first_snap]["m_bound"] = h[i,first_snap]["mvir"]
+            c[i,first_snap]["vmax"] = h[i,first_snap]["vmax"]
+            c[i,first_snap]["f_core"] = 0
+            c[i,first_snap]["f_core_rs"] = 1
+            c[i,first_snap]["d_core_mbp"] = 0
+            c[i,first_snap]["ok"] = True
+            c[i,first_snap]["ok_rs"] = True
+            c[i,first_snap]["is_err"] = True
+            c[i,first_snap]["is_err_rs"] = False
+            c[i,first_snap]["interp"] = True
+
+        n_interp = last_snap-first_snap + 1
+
+        bad_t = c["ok"][i] & (c["m_tidal"][i] <= 0)
+        c["m_tidal"][i,bad_t] = mp
+        bad_bt = c["ok"][i] & (c["m_tidal_bound"][i] <= 0)
+        c["m_tidal_bound"][i,bad_bt] = mp
+
+        # Interpolate x with the highest order method you can use
+        if n_interp > 3:
+            x_kind = "cubic"
+        elif n_interp > 2:
+            x_kind = "quadratic"
+        elif n_interp > 1:
+            x_kind = "linear"
+        else:
+            continue
+            
+        # If there are no errors, don't bother interpolating
+        if np.sum(c["ok"][i]) == n_interp: continue
+
+        snap = np.arange(len(log_a), dtype=int)
+        skipped = snap[(~c["ok"][i]) & (snap >= first_snap) &
+                       (snap <= last_snap)]
+
+        # Actually interpolate
+        ok = c["ok"][i]
+        def intr(x, kind="linear"):
+            return interpolate.interp1d(
+                log_a[ok], x, kind=kind)(log_a[skipped])
+
+        for dim in range(3):
+            c["x"][i,skipped,dim] = intr(c["x"][i,ok,dim], kind=x_kind)
+            c["v"][i,skipped,dim] = intr(c["v"][i,ok,dim])
+        names = [
+            "r_tidal", "r50_bound", "r50_bound_rs", "m_tidal", "m_tidal_bound",
+            "m_bound", "vmax", "f_core", "d_core_mbp"
+        ]
+        for name in names:
+            if name in ["m_bound", "m_tidal", "m_tidal_bound"]:
+                m = c[name][i,ok]
+                m[m <= 0] = mp
+                c[name][i,skipped] = 10**intr(np.log10(m))
+            else:
+                c[name][i,skipped] = intr(c[name][i,ok])
+            
+        c["ok"][i,skipped] = True
+        c["is_err"][i,skipped] = True
+        c["interp"][i,skipped] = True
 
 def read_um(dir_name):
     fname = path.join(dir_name, "um", "um.dat")
