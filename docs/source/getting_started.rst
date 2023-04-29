@@ -177,7 +177,7 @@ Let's review the concepts that went into creating this image:
 * We were able to figure out the snapshot when a subhalo fell into the host with ``histories``'s ``"merger_snap"`` field.
 * The indices of structured arrays work just like normal numpy arrays, so we were able to select parts of them with the boolean arrays ``ok`` and ``is_sub``.
 
-**Example exercise:**
+**Example exercise**
 
 You might have noticed that subhalos start losing mass before they actually start falling into the host (look at the transition from a dashed to solid line on the green curve in particular). Create a histogram showing :math:`R_{\rm peak}`/ :math:`R_{\rm virial}`, where :math:`R_{\rm peak}` is the distance between the subhalo and the host halo and :math:`R_{\rm virial}` is the virial radius of the host halo, both calculated at the time the subhalo reaches its peak mass.
 
@@ -235,7 +235,9 @@ Let's review the concepts that went into creating this image:
 * We needed the ``"mpeak"`` field of ``histories``
 * We needed to do a little bit of array magic with numpy arrays, although this could also have been done in a less concise way.
 
-**Practice:**
+**Example exercise**
 
 You might notice that the plot above only includes subhalos with positions within the virial radius of the host halo. Try adding a curve for the mass function of surviving “splashback” subhalos, subhalos which have temporarily orbited outside of the host halo's virial radius, to this plot.
+
+# TODO: add another tutorial for working with particle data and an example exercise.
 
