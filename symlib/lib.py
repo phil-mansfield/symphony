@@ -1034,23 +1034,30 @@ class Particles(object):
                     valid[i] = valid[i][ok]
 
         if mode == "smooth":
-            for sh in range(len(h)):
+            idp = [None]*len(self.h_cmov)
+            x = [None]*len(self.h_cmov)
+            v = [None]*len(self.h_cmov)
+            snaps = [None]*len(self.h_cmov)
+            valid = [None]*len(self.h_cmov)
+            smooth = [None]*len(self.h_cmov)
+            for sh in range(len(self.h_cmov)):
                 # A single halo read is fast for smooth particles, so we only
                 # have to read the specified halo in this mode
                 if halo != -1 and sh != halo: continue
-                idp = read_particles(part_info, sim_dir, snap, "id", owner=sh)
-                x = read_particles(part_info, sim_dir, snap, "x", owner=sh)
-                v = read_particles(part_info, sim_dir, snap, "v", owner=sh)
+                idp[sh] = read_particles(part_info, sim_dir, snap, "id", owner=sh)
+                x[sh] = read_particles(part_info, sim_dir, snap, "x", owner=sh)
+                v[sh] = read_particles(part_info, sim_dir, snap, "v", owner=sh)
                 if not comoving:
-                    x[s] = util.set_units_x(x[s], h0, a, self.params)
-                    v[s] = util.set_units_v(v[s], h0, a, self.params)
+        
+                    x[sh] = util.set_units_x(x[sh], h0, a, self.params)
+                    v[sh] = util.set_units_v(v[sh], h0, a, self.params)
             
-                snaps = read_particles(part_info, sim_dir, snap,
-                                       "snap", owner=sh)
-                valid = read_particles(part_info, sim_dir, snap,
-                                       "valid", owner=sh)
-                smooth = read_particles(part_info, sim_dir, snap,
-                                        "ownership", owner=sh)
+                snaps[sh] = read_particles(part_info, sim_dir, snap,
+                                           "snap", owner=sh)
+                valid[sh] = read_particles(part_info, sim_dir, snap,
+                                           "valid", owner=sh)
+                smooth[sh] = read_particles(part_info, sim_dir, snap,
+                                            "ownership", owner=sh)
         p = [None]*len(x)
         for i in range(len(x)):
             if halo == -1 or i == halo:
