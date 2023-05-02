@@ -323,8 +323,6 @@ def mvir_to_rvir(mvir, a, omega_M):
     rho_crit = 2.77519737e11*Ez**2
     omega_Mz = (omega_M/a**3)/Ez**2
 
-    rho_m = omega_Mz * rho_crit
-
     x = omega_Mz - 1
     delta_vir = 18*np.pi**2 + 82*x - 39.0*x**2
     rho_vir = rho_crit*delta_vir
@@ -556,11 +554,16 @@ def read_cores(dir_name, include_false_selections=False, suffix="fid"):
         out["f_core"] = np.fromfile(fp, np.float32, n)
         out["f_core_rs"] = np.fromfile(fp, np.float32, n)
         out["d_core_mbp"] = np.fromfile(fp, np.float32, n)
-
-        out["ok"] = out["m_bound"] > 0
+        out["ok"] = np.fromfile(fp, np.bool, n)
+        out["ok_rs"] = np.fromfile(fp, np.bool, n)
+        out["is_err"] = np.fromfile(fp, np.bool, n)
+        out["is_err_rs"] = np.fromfile(fp, np.bool, n)
+        out["interp"] = np.fromfile(fp, np.bool, n)
+       
 
     out = out.reshape((n_halo, n_snap))
 
+    """
     r_core = np.sqrt(np.sum(out["x"]**2, axis=2))
     r_rs = np.sqrt(np.sum(h["x"]**2, axis=2))
     r_core_rs = np.sqrt(np.sum((h["x"] - out["x"])**2, axis=2))
@@ -590,109 +593,13 @@ def read_cores(dir_name, include_false_selections=False, suffix="fid"):
 
     scale = scale_factors(dir_name)
     interpolate_cores(scale, out, h, hist, mp)
+    """
 
     if not include_false_selections:
         h, hist = read_subhalos(dir_name, include_false_selections=True)
         out = out[~hist["false_selection"]]
 
     return out
-
-def interpolate_cores(scales, c, h, hist, mp):
-    log_a = np.log10(scales)
-    # This funciton is kind of cursed, and I'm sorry
-    for i in range(len(c)):
-        first_snap = hist["first_infall_snap"][i]
-        if np.sum(c["ok"][i]) == 0:
-            last_snap = hist["first_infall_snap"][i]
-        else:
-            last_snap = np.max(np.where(c["ok"][i])[0])
-
-        h_infall = h[i,first_snap]
-
-        # This almost never happens (0.7% of subhaloes). Only needed to keep
-        # interpolation from blowing up. In general, particle-tracking and
-        # rockstar get pretty similar halo properties immediately after infall,
-        # and the particle tracking is essentially initialized to start out
-        # with the same phase space position as the halo because the core
-        # particles are calculated based on Rockstar's location.
-        # Error and interpolation flags get set to make sure that this still
-        # counts as a "loss" for particle-tracking.
-        if not c["ok"][i,first_snap]:
-            r = np.sqrt(np.sum(h[i,first_snap]["x"]**2))
-            rvir = h[i,first_snap]["rvir"]
-            cvir = h[i,first_snap]["cvir"]
-            m_ratio = h[i,first_snap]["mvir"]/h[0,first_snap]["mvir"]
-            r50_rs = _half_mass_nfw(cvir, 0.5)/cvir * rvir
-            r_tidal_rs = r*(m_ratio/3)**(1/3.0)
-            x_tidal_rs = r_tidal_rs/(rvir/cvir)
-            m_tidal_rs = _m_enc_nfw(x_tidal_rs)/_m_enc_nfw(cvir)
-            m_tidal_rs = h[i,first_snap]["mvir"]*min(1, m_tidal_rs)
-            c[i,first_snap]["x"] = h[i,first_snap]["x"]
-            c[i,first_snap]["v"] = h[i,first_snap]["v"]
-            c[i,first_snap]["r_tidal"] = r_tidal_rs
-            c[i,first_snap]["r50_bound"] = r50_rs
-            c[i,first_snap]["r50_bound_rs"] = r50_rs
-            c[i,first_snap]["m_tidal"] = m_tidal_rs
-            c[i,first_snap]["m_tidal_bound"] = m_tidal_rs
-            c[i,first_snap]["m_bound"] = h[i,first_snap]["mvir"]
-            c[i,first_snap]["vmax"] = h[i,first_snap]["vmax"]
-            c[i,first_snap]["f_core"] = 0
-            c[i,first_snap]["f_core_rs"] = 1
-            c[i,first_snap]["d_core_mbp"] = 0
-            c[i,first_snap]["ok"] = True
-            c[i,first_snap]["ok_rs"] = True
-            c[i,first_snap]["is_err"] = True
-            c[i,first_snap]["is_err_rs"] = False
-            c[i,first_snap]["interp"] = True
-
-        n_interp = last_snap-first_snap + 1
-
-        bad_t = c["ok"][i] & (c["m_tidal"][i] <= 0)
-        c["m_tidal"][i,bad_t] = mp
-        bad_bt = c["ok"][i] & (c["m_tidal_bound"][i] <= 0)
-        c["m_tidal_bound"][i,bad_bt] = mp
-
-        # Interpolate x with the highest order method you can use
-        if n_interp > 3:
-            x_kind = "cubic"
-        elif n_interp > 2:
-            x_kind = "quadratic"
-        elif n_interp > 1:
-            x_kind = "linear"
-        else:
-            continue
-            
-        # If there are no errors, don't bother interpolating
-        if np.sum(c["ok"][i]) == n_interp: continue
-
-        snap = np.arange(len(log_a), dtype=int)
-        skipped = snap[(~c["ok"][i]) & (snap >= first_snap) &
-                       (snap <= last_snap)]
-
-        # Actually interpolate
-        ok = c["ok"][i]
-        def intr(x, kind="linear"):
-            return interpolate.interp1d(
-                log_a[ok], x, kind=kind)(log_a[skipped])
-
-        for dim in range(3):
-            c["x"][i,skipped,dim] = intr(c["x"][i,ok,dim], kind=x_kind)
-            c["v"][i,skipped,dim] = intr(c["v"][i,ok,dim])
-        names = [
-            "r_tidal", "r50_bound", "r50_bound_rs", "m_tidal", "m_tidal_bound",
-            "m_bound", "vmax", "f_core", "d_core_mbp"
-        ]
-        for name in names:
-            if name in ["m_bound", "m_tidal", "m_tidal_bound"]:
-                m = c[name][i,ok]
-                m[m <= 0] = mp
-                c[name][i,skipped] = 10**intr(np.log10(m))
-            else:
-                c[name][i,skipped] = intr(c[name][i,ok])
-            
-        c["ok"][i,skipped] = True
-        c["is_err"][i,skipped] = True
-        c["interp"][i,skipped] = True
 
 def read_um(dir_name):
     fname = path.join(dir_name, "um", "um.dat")
@@ -1048,7 +955,6 @@ class Particles(object):
                 x[sh] = read_particles(part_info, sim_dir, snap, "x", owner=sh)
                 v[sh] = read_particles(part_info, sim_dir, snap, "v", owner=sh)
                 if not comoving:
-        
                     x[sh] = util.set_units_x(x[sh], h0, a, self.params)
                     v[sh] = util.set_units_v(v[sh], h0, a, self.params)
             
