@@ -57,6 +57,7 @@ def set_units_histories(hist, scale, param):
     """
     hist = np.copy(hist)
     hist["mpeak"] /= param["h100"]
+    hist["mpeak_pre"] /= param["h100"]
     return hist
 
 def set_units_halos(h, scale, param):
