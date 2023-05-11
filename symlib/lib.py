@@ -43,7 +43,10 @@ HISTORY_DTYPE = [("mpeak", "f4"), ("vpeak", "f4"), ("merger_snap", "i4"),
                  ("is_disappear", "?"), ("is_main_sub", "?"),
                  ("preprocess", "i4"), ("first_infall_snap", "i4"),
                  ("branch_idx", "i4"), ("false_selection", "?"),
-                 ("mpeak_pre", "f4")]
+                 ("mpeak_pre", "f4"), ("conv_snap_discrete", "i4"),
+                 ("conv_snap_eps", "i4"), ("conv_snap_relax", "i4"),
+                 ("conv_snap_relax_hydro", "i4"), ("disrupt_snap", "i4"),
+                 ("disrupt_snap_rs", "i4")]
 
 
 """ BRANCH_DTYPE is a numpy datatype representing the main branch of of halo's
@@ -519,9 +522,38 @@ def get_subhalo_histories(s, idx, dir_name):
         h["mpeak_pre"][i] = mpeak_infall
         h["false_selection"][i] = mpeak_infall < 300*param["mp"]
 
+    (snap_discrete, snap_eps,
+     snap_relax, snap_relax_hydro,
+     disrupt_snap, disrupt_snap_rs) = read_convergence_limits(dir_name)
+    if snap_discrete is not None:
+        h["conv_snap_discrete"] = snap_discrete
+        h["conv_snap_eps"] = snap_eps
+        h["conv_snap_relax"] = snap_relax
+        h["conv_snap_relax_hydro"] = snap_relax_hydro
+        h["disrupt_snap"] = disrupt_snap
+        h["disrupt_snap_rs"] = disrupt_snap_rs
+
     return h
 
-def read_cores(dir_name, include_false_selections=False, suffix="fid"):
+def read_convergence_limits(sim_dir):
+    file_name = path.join(sim_dir, "convergence_limits.dat")
+    if not path.exists(file_name): return None, None, None, None, None, None
+
+    try:
+        with open(file_name, "rb") as fp:
+            n_halo, = struct.unpack("q", fp.read(8))
+            snap_discrete = np.fromfile(fp, np.int32, n_halo)
+            snap_eps = np.fromfile(fp, np.int32, n_halo)
+            snap_relax = np.fromfile(fp, np.int32, n_halo)
+            snap_relax_hydro = np.fromfile(fp, np.int32, n_halo)
+            disrupt_snap = np.fromfile(fp, np.int32, n_halo)
+            disrupt_snap_rs = np.fromfile(fp, np.int32, n_halo)
+
+            return snap_discrete, snap_eps, snap_relax, snap_relax_hydro, disrupt_snap, disrupt_snap_rs
+    except:
+        return None, None, None, None, None, None
+
+def read_cores(dir_name, include_false_selections=False, suffix="fid3"):
     """ read_cores read the particle-tracked halo cores of the halo in the
     given directory. The returned array is a structured array of type
     CORE_DTYPE with shape (n_halos, n_snaps).
