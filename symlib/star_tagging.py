@@ -45,7 +45,7 @@ class ProfileModel(abc.ABC):
     """
     
     @abc.abstractmethod
-    def m_enc(self, m_star, r_half, r):
+    def m_enc(self, m_star, r_half, r, **kwargs):
         """ m_enc returns the enclosed mass profile as a function of 3D radius,
         r. m_star is the asymptotic stellar mass of the galaxy, r_half is the 2D
         half-light radius of the galaxy. Returned masses will be in the same
@@ -54,13 +54,26 @@ class ProfileModel(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def density(self, m_star, r_half, r):
+    def density(self, m_star, r_half, r, **kwargs):
         """ density returns the local density as a function of 3D radius, r.
         m_star is the asymptotic stellas mass of the galaxy, r_hald is the 2D
         half-light radius of the galaxy. Returned masses will be in the same
         units of m_star.
         """
         pass
+
+    @abc.abstractmethod
+    def var_names(self):
+        """ var_names returns the names of the variables this model requires.
+        """
+        pass
+
+    def trim_kwargs(self, kwargs):
+        out = {}
+        for key in self.var_names():
+            out[key] = kwargs[key]
+        return out
+
 
 class RHalfModel(abc.ABC):
     """ RHalfModel is an abstract base class for models of galaxy half-mass
@@ -196,14 +209,17 @@ class AbstractRanking(abc.ABC):
         core = self.v[np.searchsorted(self.idx, self.core_idx)]
         return np.median(core, axis=0)
         
-    def set_mp_star(self, rvir, profile_model, r_half, m_star,
+    def set_mp_star(self, kwargs, profile_model, r_half, m_star,
                     r_bins=DEFAULT_R_BINS):
+        rvir = kwargs["rvir"]
+
         r = np.sqrt(np.sum(self.x**2, axis=1))/rvir
         M = ranked_np_profile_matrix(self.ranks, self.idx, r, r_bins)
         n = M.shape[1]
 
+        profile_kwargs = profile_model.trim_kwargs(kwargs)
         m_star_enc_target = profile_model.m_enc(
-            m_star, r_half, r_bins[1:]*rvir)
+            m_star, r_half, r_bins[1:]*rvir, **profile_kwargs)
         
         dm_star_enc_target = np.zeros(len(m_star_enc_target))
         dm_star_enc_target[1:] = m_star_enc_target[1:] - m_star_enc_target[:-1]
@@ -279,7 +295,7 @@ class AbstractRanking(abc.ABC):
 class PlummerProfile(ProfileModel):
     """ PlummerProfile models a galaxy's mass distribution as a Plummer sphere.
     """
-    def m_enc(self, m_star, r_half, r):
+    def m_enc(self, m_star, r_half, r, **kwargs):
         """ m_enc returns the enclosed mass profile as a function of 3D radius,
         r. m_star is the asymptotic stellar mass of the galaxy, r_half is the 2D
         half-light radius of the galaxy. Returned masses will be in the same
@@ -288,7 +304,7 @@ class PlummerProfile(ProfileModel):
         a = r_half
         return m_star*r**3 /(r**2 + a**2)**1.5
     
-    def density(self, m_star, r_half, r):
+    def density(self, m_star, r_half, r, **kwargs):
         """ density returns the local density as a function of 3D radius, r.
         m_star is the asymptotic stellas mass of the galaxy, r_hald is the 2D
         half-light radius of the galaxy. Returned masses will be in the same
@@ -297,6 +313,9 @@ class PlummerProfile(ProfileModel):
         a = r_half
         return 3*m_star/(4*np.pi*a**3) * (1 + r**2/a**2)**(-5/2)
     
+    def var_names(self):
+        return []
+
 class Nadler2020RHalf(RHalfModel):
     """ Nadler20202RHalf models galaxies according to the z=0 size-mass relation
     in Nadler et al. 2020. (https://arxiv.org/abs/1912.03303)
@@ -402,7 +421,9 @@ class Carlsten2021RHalf(RHalfModel):
     def r_half(self, rvir=None, cvir=None, z=None, no_scatter=False):
         """ r_half returns the half-mass radius of a a galaxy in physical kpc.
         Required keyword arguments:
-         - mstar
+         - rvir
+         - cvir
+         - z
         """
         R = 10**(self.a + self.b*np.log10(0.247))
         log_scatter = self.sigma_log_R*random.normal(0, 1, size=np.shape(rvir))
@@ -415,7 +436,7 @@ class Carlsten2021RHalf(RHalfModel):
     def var_names(self):
         """ var_names returns the names of the variables this model requires.
         """
-        return ["mstar"]
+        return ["rvir", "cvir", "z"]
 
 class Kirby2013Metallicity(MetallicityModel):
     """ Kirby2013Metallicity models galaxy metallicity according to the
@@ -453,8 +474,7 @@ class UniverseMachineMStarFit(MStarModel):
     def m_star(self, mpeak=None, z=None, no_scatter=False):
         """
          Required keyword arguments:
-         - rvir
-         - cvir
+         - mpeak
          - z
         """
 
@@ -792,7 +812,7 @@ class GalaxyHaloModel(object):
                 no_scatter=self.no_scatter,
                 **self.r_half_model.trim_kwargs(kwargs))
             
-        mp_star = ranks.set_mp_star(kwargs["rvir"], self.profile_model,
+        mp_star = ranks.set_mp_star(kwargs, self.profile_model,
                                     r_half, m_star)
 
 
@@ -809,12 +829,18 @@ class GalaxyHaloModel(object):
         """
         r_half_names = self.r_half_model.var_names()
         m_star_names = self.m_star_model.var_names()
-        
+        metal_names = self.metal_model.var_names()
+        profile_names = self.profile_model.var_names()
+
         out_dict = { }
         for i in range(len(r_half_names)):
             out_dict[r_half_names[i]] = None
         for i in range(len(m_star_names)):
             out_dict[m_star_names[i]] = None
+        for i in range(len(metal_names)):
+            out_dict[metal_names[i]] = None
+        for i in range(len(profile_names)):
+            out_dict[profile_names[i]] = None
 
         if "rvir" not in out_dict: out_dict["rvir"] = None
             
@@ -839,6 +865,8 @@ class GalaxyHaloModel(object):
 
             if var_names[i] == "mpeak":
                 x = np.max(halo["mvir"][:snap+1])
+            elif var_names[i] == "mstar":
+                continue
             else:
                 x = halo[snap][var_names[i]]
             
