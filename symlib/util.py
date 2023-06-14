@@ -84,13 +84,17 @@ def set_units_halos(h, scale, param):
             if dim == 0:
                 h["rvir"][hi,:] *= 1e3*scale/param["h100"]
                 h["mvir"][hi,:] *= 1/param["h100"]
-
+                h["rvmax"][hi,:] *= scale/param["h100"]
     
     for hi in range(len(h)):
-        invalid = h[hi]["rvir"] < 0
-        h[hi, invalid]["rvir"] = -1
-        h[hi, invalid]["x"] = -1
-        h[hi, invalid]["v"] = -1
+        invalid = np.where(~h[hi,:]["ok"])[0]
+        h["mvir"][hi,invalid] = -1
+        h["rvir"][hi,invalid] = -1
+        h["rvmax"][hi,invalid] = -1
+        h["x"][hi,invalid] = 0
+        h["v"][hi,invalid] = 0
+        h["vmax"][hi,invalid] = 0
+        h["cvir"][hi,invalid] = 0
         
     return h
 
@@ -103,6 +107,20 @@ DEFAULT_HALO_NAMES = {
         "Halo088", "Halo208", "Halo340", "Halo440", "Halo539", "Halo711", "Halo850"
     ]),
     "SymphonyMilkyWay": sorted([
+        "Halo023", "Halo268", "Halo364", "Halo440", "Halo558", "Halo641", "Halo797", "Halo878", "Halo939",
+        "Halo088", "Halo270", "Halo374", "Halo460", "Halo567", "Halo675", "Halo800", "Halo881", "Halo967",
+        "Halo119", "Halo288", "Halo414", "Halo469", "Halo570", "Halo718", "Halo825", "Halo925", "Halo9749",
+        "Halo188", "Halo327", "Halo415", "Halo490", "Halo606", "Halo738", "Halo829", "Halo926", "Halo9829",
+        "Halo247", "Halo349", "Halo416", "Halo530", "Halo628", "Halo749", "Halo852", "Halo937", "Halo990"
+    ]),
+    "SymphonyMilkyWayDisk": sorted([
+        "Halo023", "Halo268", "Halo364", "Halo440", "Halo558", "Halo641", "Halo797", "Halo878", "Halo939",
+        "Halo088", "Halo270", "Halo374", "Halo460", "Halo567", "Halo675", "Halo800", "Halo881", "Halo967",
+        "Halo119", "Halo288", "Halo414", "Halo469", "Halo570", "Halo718", "Halo825", "Halo925", "Halo9749",
+        "Halo188", "Halo327", "Halo415", "Halo490", "Halo606", "Halo738", "Halo829", "Halo926", "Halo9829",
+        "Halo247", "Halo349", "Halo416", "Halo530", "Halo628", "Halo749", "Halo852", "Halo937", "Halo990"
+    ]),
+    "SymphonyMilkyWayDiskDMO": sorted([
         "Halo023", "Halo268", "Halo364", "Halo440", "Halo558", "Halo641", "Halo797", "Halo878", "Halo939",
         "Halo088", "Halo270", "Halo374", "Halo460", "Halo567", "Halo675", "Halo800", "Halo881", "Halo967",
         "Halo119", "Halo288", "Halo414", "Halo469", "Halo570", "Halo718", "Halo825", "Halo925", "Halo9749",
