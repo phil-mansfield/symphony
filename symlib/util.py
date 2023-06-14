@@ -91,10 +91,10 @@ def set_units_halos(h, scale, param):
         h["mvir"][hi,invalid] = -1
         h["rvir"][hi,invalid] = -1
         h["rvmax"][hi,invalid] = -1
-        h["x"][hi,invalid] = 0
-        h["v"][hi,invalid] = 0
-        h["vmax"][hi,invalid] = 0
-        h["cvir"][hi,invalid] = 0
+        h["x"][hi,invalid] = -1
+        h["v"][hi,invalid] = -1
+        h["vmax"][hi,invalid] = -1
+        h["cvir"][hi,invalid] = -1
         
     return h
 
