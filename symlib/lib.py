@@ -619,6 +619,8 @@ def get_subhalo_histories(s, idx, dir_name):
         h["mpeak_pre"][i] = mpeak_infall
         h["false_selection"][i] = mpeak_infall < 300*param["mp"]
 
+    h["mpeak_pre"][0] = h["mpeak"][0]
+
     (snap_discrete, snap_eps,
      snap_relax, snap_relax_hydro,
      disrupt_snap, disrupt_snap_rs) = read_convergence_limits(dir_name)
