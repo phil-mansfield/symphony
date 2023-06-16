@@ -492,8 +492,8 @@ ROCKSTAR_DTYPE = [("id", "i4"), ("m", "f4"), ("vmax", "f4"), ("rvmax", "f4"),
                  ("x", "f4", (3,)), ("v", "f4", (3,)), ("ok", "?"),
                  ("rvir", "f4"), ("cvir", "f4")]
 
-def read_rockstar(dir_name):
-    h, hist = read_subhalos(dir_name)
+def read_rockstar(dir_name, comoving=False):
+    h, hist = read_subhalos(dir_name, comoving=comoving)
     r = np.zeros(h.shape, dtype=ROCKSTAR_DTYPE)
     r["id"], r["m"], r["vmax"] = h["id"], h["mvir"], h["vmax"]
     r["rvmax"], r["x"], r["v"] = h["rvmax"], h["x"], h["v"]
