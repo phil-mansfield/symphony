@@ -135,7 +135,9 @@ CORE_DTYPE = [("x", "f4", (3,)), ("v", "f4", (3,)), ("r_tidal", "f4"),
 """ SYMFIND_DTYPE is the main numpy datatype returned by read_symfind().
  - x (physical kpc): displacement from the host halo to the subhalo.
  - v (km/s): velocity relative to the host.
- - m (Msun): bound mass of the subhalo.
+ - m (Msun): bound mass of the subhalo. Post-porcessing has been done to reduce
+   noise by enfocing monotonicity (i.e. m(z) = max(m_raw(>= z)))
+ - m_raw (Msun): bound mass of the suhalo with no post-processing.
  - r_half (physical kpc) half-mass radius of the subhalo.
  - r_tidal (physical kpc): tidal radius of the subhalo. Accounts for angular
    momentum and the mass profile of the central halo. Tidal radii can be
@@ -174,6 +176,7 @@ Some diagnostic values are included that will not be useful for a typical user:
 SYMFIND_DTYPE = [("x", "f4", (3,)), ("v", "f4", (3,)), ("r_tidal", "f4"),
                  ("r_half", "f4"), ("m_tidal", "f4"),
                  ("m_tidal_bound", "f4"), ("m", "f4"), ("vmax", "f4"),
+                 ("m_raw", "f4"),
                  ("ok", "?"), ("interp", "?"),
                  ("f_core", "f4"), ("f_core_rs", "f4"), ("d_core_mbp", "f4"),
                  ("r_half_rs", "f4"), ("ok_rs", "?"),
@@ -671,14 +674,29 @@ def read_symfind(dir_name, suffix="fid3"):
     s["x"], s["v"] = c["x"], c["v"]
     s["r_tidal"], s["r_half"] = c["r_tidal"], c["r50_bound"] 
     s["m_tidal_bound"], s["m"] = c["m_tidal_bound"], c["m_bound"]
+    s["m_raw"] = c["m_bound"]
     s["vmax"], s["ok"], s["interp"] = c["vmax"], c["ok"], c["interp"]
     s["f_core"], s["f_core_rs"] = c["f_core"], c["f_core"]
     s["d_core_mbp"] = c["d_core_mbp"]
     s["r_half_rs"], s["ok_rs"] = c["r50_bound_rs"], c["ok_rs"]
     s["is_err"], s["is_err_rs"] = c["is_err"], c["is_err_rs"]
 
+    # Enforce monotonicity to reduce noise in the commonly used "m"
+    for i in range(len(s)):
+        s["m"][i] = monotonic_m(s["m_raw"][i], s["ok"][i])
+
     return s, hist
 
+def monotonic_m(m_in, ok):
+    m_out = np.zeros(len(m_in))
+    idx = np.where(ok)[0]
+
+    prev_max = 0
+    for i in idx[::-1]:
+        m_out[i] = max(m_in[i], prev_max)
+        prev_max = m_out[i]
+
+    return m_out
 
 def read_cores(dir_name, include_false_selections=False, suffix="fid3"):
     """ read_cores read the particle-tracked halo cores of the halo in the
