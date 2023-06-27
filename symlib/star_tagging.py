@@ -583,7 +583,7 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
     param = lib.simulation_parameters(sim_dir)
     h, hist = lib.read_subhalos(sim_dir)
     h_cmov, _ = lib.read_subhalos(sim_dir, comoving=True)
-    c = lib.read_cores(sim_dir)
+    #c = lib.read_cores(sim_dir)
     scale = lib.scale_factors(sim_dir)
 
     if target_subs is None:
