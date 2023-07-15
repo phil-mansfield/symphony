@@ -804,7 +804,7 @@ def read_tree(dir_name, var_names):
     TREE_COL_NAMES). A list of arrays is returned. Use the branches and merger
     files to identify main branches and important haloes, respectively.
     """
-    tree_files = sorted(glob.glob(path.join(dir_name, "halos", "tree_*.dat")))
+    tree_files = sorted(glob.glob(path.join(dir_name, "trees", "tree_*.dat")))
     tree_files = [fname for fname in tree_files if
                   path.basename(fname) != "tree_header.dat"]
 
