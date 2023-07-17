@@ -6,7 +6,7 @@ import shutil
 import requests
 import time
 
-DOWNLOAD_TARGETS = ["halos", "trees"]
+DOWNLOAD_TARGETS = ["halos", "trees", "particles", "full_snapshots"]
 BASE_URL_FORMAT = "https://%s:%s@s3df.slac.stanford.edu/data/kipac/symphony/"
 RETRY_WAIT_TIME = 5
 
@@ -76,13 +76,12 @@ def download_packed_files(user, password, suite, halo_name, base_out_dir,
         raise ValueError("Unrecognized halo, %s, for the suite %s" %
                          (str(halo_name), suite))
                 
-    out_dir = path.join(base_out_dir, "tar_files", suite, target)
-    os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(base_out_dir, exist_ok=True)
 
     base_url = BASE_URL_FORMAT % (user, password)
-    url = "%s%s/%s/%s.tar.gz" % (base_url, suite, target, halo_name)
-    out_file = path.join(out_dir, "%s.tar" % halo_name)
-
+    base_name = "%s_%s_%s.tar" % (suite, halo_name, target)
+    url = base_url + base_name
+    out_file = path.join(base_out_dir, base_name)    
     # The next three lines are adapted from
     # https://stackoverflow.com/a/39217788
     # Original author is John Zwink, edited by the users vog, Martjin Peters, and
@@ -94,7 +93,7 @@ def download_packed_files(user, password, suite, halo_name, base_out_dir,
     if not path.exists(out_file):
         raise FileNotFoundError("Unable to download halo %s from the suite %s" %
                                 (halo_name, suite))
-    
+ 
     with open(out_file, "rb") as f:
         text = f.read(6)
         if text == b"<html>":
@@ -139,8 +138,7 @@ def unpack_files(suite, halo_name, base_out_dir,
     if isinstance(halo_name, int):
         halo_name = util.DEFAULT_HALO_NAMES[suite][halo_name]
 
-    tar_loc = path.join(base_out_dir, "tar_files", suite,
-                        target, "%s.tar" % halo_name)
+    tar_loc = path.join(base_out_dir, "%s_%s_%s.tar" % (suite, halo_name, target))
     if not path.exists(tar_loc):
         raise FileNotFoundError("The file associated with the requested target data for host %s in suite %s does not exist within the base directory %s. This is probably because it was already downloaded or already unpacked." % (halo_name, suite, base_out_dir))
     shutil.unpack_archive(tar_loc, base_out_dir)
