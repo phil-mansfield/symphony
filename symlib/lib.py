@@ -1037,8 +1037,8 @@ class Particles(object):
         self.h_cmov, _ = read_subhalos(sim_dir, comoving=True)
 
     def read(self, snap, halo=-1, mode="current", comoving=False):
-        """ read returns a list of 1D arrays containing frequently used variables 
-        stored in the particle data for a given subhalo. 
+        """ read returns a list of 1D arrays containing frequently used
+        variables stored in the particle data for a given subhalo. 
 
         Parameters
         ----------
@@ -1046,15 +1046,16 @@ class Particles(object):
         halo: int, index for subhalo of interest, default returns all subhalos.
         comoving: boolean, default is False to return physical units.
         mode: string 
-            "Current" is the default setting and returns variables for valid particles.
-            "All" returns variables for all particles, valid or invalid.
-            "Smooth" returns variables for smoothly accreted particles. 
+            "current" is the default setting and returns variables for
+            valid particles.
+            "all" returns variables for all particles, valid or invalid.
+            "smooth" returns variables for smoothly accreted particles. 
 
         Returns
         -------
-        p: list containing 1D arrays of the following variables from stored particle data:
-            id, x, v, snap, ok, and smooth. See PARTICLE_DTYPE for more detail.
-
+        p: list containing 1D arrays of the following variables from stored
+        particle data: "id", "x", "v", "snap", "ok", and "smooth". See
+        PARTICLE_DTYPE for more detail.
         """
 
         sim_dir = self.sim_dir
@@ -1125,10 +1126,116 @@ class Particles(object):
         else:
             return p[halo]
 
-    def core_particles(self, snap, halo=-1, comoving=False):
-        """ TODO: write docstring
+    def core_indices(self, snap=-1, halo=-1, mode="current"):
+        """ core_indices returns the indices of the "core" particles for
+        subhalos. Core particles are the 32 most-bound smoothly-accreted
+        particles at the snapshot of first infall for the subhalo. These
+        particles are ordered by boundedness during this snapshot and will be
+        set to -1 if that core particle is invalid (either due to the indexing
+        mode or because the subhalo had fewer than 32 particles).
+
+        The indices of these particles change depending on which mode of
+        particle array they are indexing into. This can be set with the mode
+        parameter and has the same meaning as the read method.
+
+        The host halo does not have any core particles.
+
+        Parameters
+        ----------
+        snap: int, snapshot. Only needed for the "current" mode.
+        halo: int, index for subhalo of interest, default returns all subhalos.
+        mode: string 
+            "current" is the default and indexes across all currently-accreted
+            particles. Indices will be negative if the particle hasn't been
+            accreted before the chosen snapshot.
+            "all" indexes across all particles ever accreted by the subhalo
+            "smooth" indexes over 
+
+        Returns
+        -------
+        idx: A (N_subhalo, 32)-shape array giving core particle indices of
+           each subhalo. If the halo parameter is set to a non-negative
+           integer, only the row for that halo will be returned.
         """
-        pass
+        idx = read_particles(self.part_info, self.sim_dir,
+                             0, "infall_core")
+        idx = np.array(idx)
+        if mode == "all":
+            pass
+        elif mode == "smooth":
+            smooth = read_particles(self.part_info, self.sim_dir,
+                                    0, "ownership")
+            for sh in range(len(smooth)):
+                if halo == -1 or sh == halo:
+                    smooth_i = smooth[sh]==0
+                    idx_smooth = np.cumsum(smooth_i)-1
+                    idx[sh] = idx_smooth[idx[sh]]
+        elif mode == "current":
+            if snap == -1:
+                raise ValueError("The snap variable must be set when calling core_indices in mode 'current'")
+            valid = read_particles(self.part_info, self.sim_dir, snap, "valid")
+            for sh in range(len(valid)):
+                if halo == -1 or sh == halo:
+                    valid_i = np.asarray(valid[sh], dtype=int)
+                    idx_valid = np.cumsum(valid_i)-1
+                    idx[sh] = idx_valid[idx[sh]]
+                    is_ok = np.asarray(valid[sh][idx[sh]], dtype=bool)
+                    idx[sh,~is_ok] = -1
+        else:
+            raise ValueError("Unrecognized mode '%s'" % mode)
+
+        if halo == -1:
+            idx[0] = -1
+            return idx
+        else:
+            return idx[halo]
+
+    def count(self, snap=-1, halo=-1, mode="current"):
+        """ core_indices returns the number of particles in each subhalo
+        according to different read modes.
+
+        Parameters
+        ----------
+        snap: int, snapshot. Only needed for the "current" mode.
+        halo: int, index for subhalo of interest, default returns all subhalos.
+        mode: string 
+            "current" is the default and gives the number of all
+            currently-accreted particles.
+            "all" returns the number of accreted particles by z=0
+            "smooth" returns the number of smoothly accreted particles by z=0
+
+        Returns
+        -------
+        idx: A (N_subhalo, 32)-shape array giving core particle indices of
+           each subhalo. If the halo parameter is set to a non-negative
+           integer, only the row for that halo will be returned.
+        """
+        # Despite the internal names, this doesn't require actually doing any
+        # reads. These arrays are already loaded into RAM.
+        if mode == "current":
+            valid = read_particles(self.part_info, self.sim_dir, snap, "valid")
+            count = np.zeros(len(valid), dtype=int)
+            for sh in range(len(smooth)):
+                if halo == -1 or halo == sh:
+                    count[sh] = np.sum(valid[sh])
+        else:
+            smooth = read_particles(self.part_info, self.sim_dir,
+                                    snap, "ownership")
+            count = np.zeros(len(smooth), dtype=int)
+            for sh in range(len(smooth)):
+                if halo == -1 or halo == sh:
+                    if mode == "smooth":
+                        count[sh] = np.sum(smooth[sh] == 0)
+                    elif mode == "all":
+                        count[sh] = len(smooth[sh])
+                    else:
+                        raise ValueError("Unrecoganized mode '%s'" % mode)
+
+        if halo == -1:
+            return count
+        else:
+            return count[halo]
+
 
 def read_particles(part_info, base_dir, snap, var_name,
                    owner=None, include_false_selections=False):
