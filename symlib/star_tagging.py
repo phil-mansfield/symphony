@@ -542,6 +542,13 @@ class UniverseMachineMStarFit(MStarModel):
         return ["mpeak", "z"]
     
 
+class UniverseMachineMStar(MStarModel):
+    def m_star(self, um_mstar=None, no_scatter=False):
+        return np.maximum(1, um_mstar)
+
+    def var_names(self):
+        return ["um_mstar"]
+
 class RadialEnergyRanking(AbstractRanking):
     def __init__(self, params, x, v, idx, n_max,
                  core_particles=DEFAULT_CORE_PARTICLES,
@@ -583,8 +590,14 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
     param = lib.simulation_parameters(sim_dir)
     h, hist = lib.read_subhalos(sim_dir)
     h_cmov, _ = lib.read_subhalos(sim_dir, comoving=True)
-    #c = lib.read_cores(sim_dir)
     scale = lib.scale_factors(sim_dir)
+
+    # Not everyone is going to run UM on their zoom-ins, so don't force this
+    # file to be read.
+    if "um_mstar" in galaxy_halo_model.var_names():
+        um = lib.read_um(sim_dir)
+    else:
+        um = [None]*len(h)
 
     if target_subs is None:
         # Don't read in the host: wouldn't make sense.
@@ -605,12 +618,14 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
             # Look back an eighth of an orbital time, or to the half-mass
             # scale, whichever is later.
             if star_snap[i] == 0:
-                raise ValueError(("Subhalo %d has a star-tagging snapshot " + 
-                                  "of 0. Either change star_snap for " + 
-                                  "this subhalo or remove it from " + 
-                                  "target_subs") % i)
-            E_snap[i] = look_back_orbital_time(
-                param, scale, star_snap[i], 0.125, h[i,:], 0.5)
+                #raise ValueError(("Subhalo %d has a star-tagging snapshot " + 
+                #                  "of 0. Either change star_snap for " + 
+                #                  "this subhalo or remove it from " + 
+                #                  "target_subs") % i)
+                E_snap[i] = 0
+            else:
+                E_snap[i] = look_back_orbital_time(
+                    param, scale, star_snap[i], 0.125, h[i,:], 0.5)
 
     # Set up buffers and shared information for I/O.
 
@@ -687,7 +702,7 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
             continue
 
         kwargs = galaxy_halo_model.get_kwargs(
-            param, scale, h[i], star_snap[i])
+            param, scale, h[i], um[i], star_snap[i])
 
         (mp_star[i], m_star[i], r_half[i],
          Fe_H[i]) = galaxy_halo_model.set_mp_star(
@@ -846,7 +861,7 @@ class GalaxyHaloModel(object):
             
         return sorted(list(out_dict.keys()))
 
-    def get_kwargs(self, params, scale, halo, snap):
+    def get_kwargs(self, params, scale, halo, um, snap):
         """ get_kwargs creates the kwargs that that are needed for a call to
         set_mp_star.
         """
@@ -867,6 +882,8 @@ class GalaxyHaloModel(object):
                 x = np.max(halo["mvir"][:snap+1])
             elif var_names[i] == "mstar":
                 continue
+            elif var_names[i] == "um_mstar":
+                x = um[snap]["m_star"]
             else:
                 x = halo[snap][var_names[i]]
             
