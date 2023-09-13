@@ -847,6 +847,37 @@ def propagate_parent_indices(idx):
                 n_changed += 1
                 idx[i] = idx[idx[i]]
 
+def pre_infall_host(hist, first_order=False):
+    if first_order:
+        pre = hist["preprocess"]
+        idx = np.arange(len(hist), dtype=int)
+        order = np.argsort(hist["branch_idx"])
+        idx, branch = idx[order], hist["branch_idx"][order]
+        
+        i = np.searchsorted(branch, pre)
+        i[i > len(i) - 1] = len(i) - 1
+
+        ext_host = pre != branch[i]
+        no_host = hist["preprocess"] == -1
+
+        host = idx[i]
+        host[ext_host] = 0
+        host[no_host] = -1
+
+        return host
+    else:
+        host = pre_infall_host(hist, first_order=True)
+
+        n_changed = -1
+        while n_changed != 0:
+            n_changed = 0
+            for i in range(len(host)):
+                if host[i] > 0 and host[host[i]] > 0:
+                    n_changed += 1
+                    host[i] = host[host[i]]
+        return host
+
+
 def read_merger_idxs(dir_name):
     halo_name = dir_name.split("/")[-1]
     parent_dir = "/".join(dir_name.split("/")[:-1])
