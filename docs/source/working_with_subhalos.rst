@@ -1,5 +1,5 @@
-Data Analysis Tutorial
-======================
+Working With Subhalos
+=====================
 
 Symphony data is stored in cutsom data formats and must be read with its analysis library, ``symlib``. This page contains tutorials and example code showing how to use this library. A complete, detailed reference for this library can be found :doc:`here <symlib_documentation>`.
 
@@ -41,52 +41,44 @@ information. These can be looked up with :func:`symlib.simulation_parameters` by
 
 The first six values are `colossus <https://bdiemer.bitbucket.io/colossus/>`__-compatible cosmological parameters, the next two are numerical parameters (``"eps"`` is the radius of each particle in comoving :math:`h^{-1}{\rm kpc}`, and ``mp`` is the mass of each particle in :math:`h^{-1}M_\odot`). The last value is :math:`h_{100} = H_0/(100\ {\rm km/s})`, which is often convenient to have.
 
-Next, we read in the subhalos with the function :func:`symlib.read_subhalos`
+Next, we read in the subhalos with two functions
 
 .. code-block::
 
-   halos, histories = symlib.read_subhalos(sim_dir)
+   s, hist = symlib.read_symfind(sim_dir)
+   r, _ = symlib.read_rockstar(sim_dir)
 
-There are two return return values, ``halos`` and ``histories``. In your
-code, you'll probably want to abbreviate these as ``h`` and ``hist``, or something similar, following the library code.
+The first function returns information from our Symfind subhalo finder, and the second returns information from the widely-used Rockstar halo finder.
 
-``halos`` is a 2D array that represents how the host halo and all its subhalos evolve over time. The first index accesses different halos and
+Both functions have two return values: the first is information a 2D array representing the evolution of the host halo and subhaloes snapshot-by-snapshot, and the second is a 1D array summarizing various statistics about the overall evolution of each object.
+
+In ``s`` and ``r``, the first index accesses different halos and
 second different times. It contains information like mass and
-position. ``halos[0,235]`` is the host halo at snapshot
-235, the last snapshot in the simulation. ``halos[3, 100]`` is the third
-largest subhalo, including disrupted subhalos, at snapshot 100. Subhalos are ordered according to the largest mass they ever had, :math:`M_{\rm peak}`. Halos stay at the same index across their lifetimes.
+position. ``r[0,235]`` is the host halo at snapshot
+235, the last snapshot in the simulation. ``r[3, 100]`` is the third
+largest subhalo, including disrupted subhalos, at snapshot 100. Subhalos are ordered according to the largest mass they achieved prior to becoming a subhalo, :math:`M_{\rm peak}`. Halos stay at the same index across their lifetimes.
 
-``histories`` contains summary information about a halo's full history, including :math:`M_{\rm peak}` and when that subhalo fell into the host. Its length and ordering are the same as the first index of ``halos``. 
+``hist`` contains summary information about a halo's full history, including :math:`M_{\rm peak}` and when that subhalo fell into the host. Its length and ordering are the same as the first index of ``s`` and ``r``. 
 
-``halos`` is a numpy structured array has type :data:`symlib.SUBHALO_DTYPE`, and ``histories`` is a structured array with type :data:`symlib.HISTORY_DTYPE`. Structured arrays are arrays that have different fields which can be accessed with strings. For example, ``halos[3,100]["mvir"]`` and ``halos["mvir"][3,100]`` both return the mass, :math:`M_{\rm vir}` of the third most massive halo at snapshot 100. The non-string indices obey normal numpy indexing rules, so you can use slicing, boolean indexing, axis removal and whatever other tricks you use with normal numpy arrays.
+``s`` and ``r`` are numpy structured arrays has type :data:`symlib.SYMLIB_DTYPE` and :data:`symlib.ROCKSTAR_DTYPE`, and ``hist`` is a structured array with type :data:`symlib.HISTORY_DTYPE`. Structured arrays are arrays that have different fields which can be accessed with strings. For example, ``r[3,100]["m"]`` and ``r["m"][3,100]`` both return the mass, :math:`M_{\rm vir}` of the third most massive halo at snapshot 100. The non-string indices obey normal numpy indexing rules, so you can use slicing, boolean indexing, axis removal and whatever other tricks you use with normal numpy arrays.
 
-The full set of fields in ``halos`` is described in the :data:`symlib.SUBHALO_DTYPE` documentation. In this tutorial we will only use:
+The full set of fields for ``s`` and ``r``  are described in the :data:`symlib.SYMFIND_DTYPE` and :data:`symlib.ROCKSTAR_DTYPE` documentation. In this tutorial we will only use:
 
 * ``"x"`` - three-dimensional position vector (x, y, z)
 * ``"v"`` - three-dimensional velocity vector (v_x, v_y, v_z)
-* ``"mvir"`` - Mass
-* ``"rvir"`` - Radius
+* ``"m"`` - Mass (virial mass for non-subhaloes and bound mass for subhaloes)
+* ``"rvir"`` (Rockstar) ``"r_half"`` (Symfind) - Radius (virial radius and half-mass radius, respectively)
 * ``"ok"`` - ``True`` if the halo was tracked by the halo finder the given snapshot, ``False`` if the halo was not tracked by the halo finder at the given snapshot.
 
-    TLDR:
-    Throughout the lifetime of a halo, there are two periods of time when the size of the halo is too small (below the resolution limit of the simulation) for the halo finder to track its position: 
-    
-    1. near the beginning of a halo's formation when it starts to rapidly accrete mass, or 
-    2. towards the end of a halo's life when it is shredded apart by the host halo and rapidly loses mass. 
-
-    During these periods of time, ``halos["ok"]`` will be ``False``. 
-
-Fields in ``histories`` will be explained as needed, but can be found in full in the :data:`symlib.HISTORY_DTYPE` documentation.
+Fields in ``hist`` will be explained as needed, but can be found in full in the :data:`symlib.HISTORY_DTYPE` documentation.
 
 Example Subhalo Analysis: Plotting Postions
 -------------------------------------------
    
 Our first step with analyzing any simulation data will be to look at it
-qualitatively. We'll start by looking at the positions of the major subhalos
-around our central halo at the last snapshot of the simulation. We will plot the central halo in one color and the subhalos in another. We'll also need to avoid plotting any of the subhalos that were destroyed before the end of the simulation.
+qualitatively. We'll start by looking at the positions of the major ROkcstar subhalos around our central halo at the last snapshot of the simulation. We will plot the central halo in one color and the subhalos in another. We'll also need to avoid plotting any of the subhalos that were destroyed before the end of the simulation.
 
-We'll also use a utility function, :func:`symlib.plot_circle` to make the
-circles.
+We'll use a utility function, :func:`symlib.plot_circle` to make circles that will represent each halo.
 
 .. _halo_position_example:
 
@@ -97,21 +89,21 @@ circles.
     fig, ax = plt.subplots()
     
     sim_dir = "path/to/ExampleHalo"
-    h, hist = symlib.read_subhalos(sim_dir)
+	r, hist = symlib.read_rockstar(sim_dir)
     
-    host = h[0,-1] # First halo, last snapshot.
+    host = r[0,-1] # First halo, last snapshot.
     symlib.plot_circle(ax, host["x"][0], host["x"][1],
                        host["rvir"], c="tab:red")
 		       
-    for i in range(1, len(h)):
-        sub = h[i,-1] # i-th halo, last snapshot.
+    for i in range(1, len(r)):
+        sub = r[i,-1] # i-th halo, last snapshot.
         if not sub["ok"]: continue
         symlib.plot_circle(
             ax, sub["x"][0], sub["x"][1],
             sub["rvir"], c="tab:blue"
         )
     
-With a little bit of additional pyplot work that we've ellided here, this gives us the following. The full script used to create this image, including the omitted pyplot code is shown in `examples/positions.py <https://github.com/phil-mansfield/symphony/blob/main/examples/positions.py>`__.
+With a little bit of additional pyplot work that we've ellided here, this gives us the following.
 
 .. image:: positions.png
    :width: 500
@@ -120,8 +112,8 @@ From this, we can see that our host halo is surrounded by a swarm of subhalos. B
 	   
 Let's review the concepts that went into creating this image:
 
-* We read in simulation parameters and halo information with :func:`symlib.simulation_parameters` and :func:`symlib.read_subhalos`.
-* We got the host halo at the last snapshot with ``halos[0,-1]`` and the subhalos with ``halos[i,-1]``.
+* We read in simulation parameters and halo information with :func:`symlib.read_rockstar`.
+* We got the host halo at the last snapshot with ``r[0,-1]`` and the subhalos with ``r[i,-1]``.
 * We got a vector representing the postion of the host by accessing ``host["x"]`` and the radius with ``host["rvir"]`` and were able to get similar quantities for subhalos.
 * We needed to check ``sub["ok"]`` to make sure that the halo still existed at the snapshot we were interested in.
 
@@ -145,24 +137,29 @@ Now, we'll try analysis that's a bit more quantitative. We'll look at the growth
     sim_dir = "path/to/ExampleHalo"
 
     scale = symlib.scale_factors(sim_dir)
-    h, hist = symlib.read_subhalos(sim_dir)
-
-    snaps = np.arange(len(h[0])) # Snapshots #s, for making cuts.
+    s, hist = symlib.read_symfind(sim_dir)
+    r, _ = symlib.read_rockstar(sim_dir)
 
     fig, ax = plt.subplots()
-    colors = ["k", "tab:red", "tab:orange", "tab:green",
+    colors = ["tab:red", "tab:orange", "tab:green",
               "tab:blue", "tab:purple"]
-    for i in range(6):
-        ok = h[i,:]["ok"] # Snapshots where the halo exists
-        if i == 0:
-            # Plot the host halo
-            plt.plot(scale[ok], h[i,ok]["mvir"], c=colors[i])
-        else:
-            # Plot the full history of the subhalo as a dahsed line
-            plt.plot(scale[ok], h[i,ok]["mvir"], "--", c=colors[i])
-            # Plot its history inside the host halo as a solid line
-            is_sub = (snaps >= hist["merger_snap"][i]) & ok
-            plt.plot(scale[is_sub], h[i,is_sub]["mvir"], c=colors[i])
+
+    # First, plot the host
+    ok = r[0,:]["ok"]
+    ax.plot(scale[ok], r[0,ok]["m"], c="k")
+
+    # For now, let's only plot minor mergers which dirupt before
+    # the end of the simulation in the Rockstar catalogue.
+    is_target = (hist["merger_ratio"] < 0.1) & (~r["ok"][:,-1])
+    targets = np.where(is_target)[0][:5]
+    for i_color, i in enumerate(targets):
+        # Plot the mass history of the rockstar subhalo
+        ok = r[i,:]["ok"]
+        ax.plot(scale[ok], r[i,ok]["m"], c=colors[i_color])
+        # Plot the mass history of the symfind subhalo
+        ok = s[i,:]["ok"]
+        ax.plot(scale[ok], s[i,ok]["m"], c=colors[i_color], lw=1.5)
+	
 
 With a little bit of additional pyplot work, this gives us the following. The full script used to create this image, including the omitted pyplot code is shown in `examples/mah.py <https://github.com/phil-mansfield/symphony/blob/main/examples/mah.py>`__.
 
@@ -178,6 +175,8 @@ Let's review the concepts that went into creating this image:
 * The indices of structured arrays work just like normal numpy arrays, so we were able to select parts of them with the boolean arrays ``ok`` and ``is_sub``.
 
 **Example exercise**
+
+Try remaking this
 
 You might have noticed that subhalos start losing mass before they actually start falling into the host (look at the transition from a dashed to solid line on the green curve in particular). Create a histogram showing :math:`R_{\rm peak}`/ :math:`R_{\rm virial}`, where :math:`R_{\rm peak}` is the distance between the subhalo and the host halo and :math:`R_{\rm virial}` is the virial radius of the host halo, both calculated at the time the subhalo reaches its peak mass.
 

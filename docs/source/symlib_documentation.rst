@@ -3,7 +3,7 @@ Library Documentation
 
 ``symlib`` is Symphony's data analysis library. Symphony uses custom file formats to reduce the size of files, to speed up common common tasks, and to make some common tasks easier. These library functions will allow you to work with these files. ``symlib`` also allows you to download Symphony data sets.
 
-This page is meant to be a full technical reference to this library. First-time users will probably find it easiest to start with the tutorial pages on :doc:`Data Access <data_access>` and :doc:`Data Analysis Tutorial <getting_started>` rather than try to read through this page from start to finish.
+This page is meant to be a full technical reference to this library. First-time users will probably find it easiest to start with the tutorial pages on :doc:`Data Access <data_access>`, :doc:`Working with Subhalos <working_with_subhalos>`, :doc:`Working with Particles <working_with_particles>`, and :doc:`Working with Merger Trees <working_with_trees>` rather than trying to read through this page from start to finish.
 
 .. _units_ref:
 
@@ -22,7 +22,7 @@ Much of the data that ``symlib`` reads in is a processed form of data from anoth
 Datatypes
 ---------
 
-``symlib`` halo data is generally returned as a numpy `structured array <https://numpy.org/doc/stable/user/basics.rec.html>`_, which allows for fields to be accessesed and subselected easily. See the :doc:`Data Analysis Tutorial <getting_started>` page for usage examples.
+``symlib`` halo data is generally returned as a numpy `structured array <https://numpy.org/doc/stable/user/basics.rec.html>`_, which allows for fields to be accessesed and subselected easily. See the :doc:`Working with Subhalos <working_with_subhalos>` page for usage examples.
 
 .. data:: symlib.SUBHALO_DTYPE
 		   

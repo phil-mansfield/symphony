@@ -1,10 +1,10 @@
-Introduction to Merger Trees
-============================
+Working With Merger Trees
+=========================
 
 What Are Merger Trees?
 ----------------------
 
-For some analysis, the set of subhaloes described above won't be enough. In some cases you might want to know about the extended history of subhalos, including objects that merged with those subhalos before they fell into the host. You would need to use a merger tree.
+For some analysis, the set of subhaloes in the ``halos`` dataset won't be enough. In some cases you might want to know about the extended history of subhalos, including objects that merged with those subhalos before they fell into the host. You would need to use a merger tree.
 
 A merger tree is an array that contains all the halos and subhalos in a simulation across all times. It also has additional structure and information which allows one to figure out which halos at an earlier snapshot evolve into which halos at a later snapshot. This includes "mergers," events that occur when subhalos disrupt and contribute most of their mass to a larger host. This is a bit of a different definition than what we qualitatively think of as a merger: tree-mergers can happen many orbits after a subhalo falls into a host.
 
