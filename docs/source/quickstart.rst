@@ -9,10 +9,11 @@ First, install/update the Python 3 analysis library, symlib, using pip:
 
         pip install symlib -U
 
-Next, fill out `this form <https://docs.google.com/forms/d/e/1FAIpQLSdud6b4i51AP13glVibkzyLAtT9b2ctVx516_hvy5nm76uq1Q/viewform?usp=sf_link>`__ to get emailed a user name and password. To download all the Milky Way mass hosts, call
+Next, fill out `this form <https://docs.google.com/forms/d/e/1FAIpQLSdud6b4i51AP13glVibkzyLAtT9b2ctVx516_hvy5nm76uq1Q/viewform?usp=sf_link>`__ to get emailed a user name and password. To download all the Milky Way mass hosts, call the following within Python:
 
 .. code-block:: python
-		
+
+	import symlib
 	symlib.download_files(
 	    "my_user_name", "my_password",
 	    "SymphonyMilkyWay", None, "my/local/directory"
@@ -22,15 +23,16 @@ The files will be downloaded and unpacked in ``my/local/directory/SymphonyMilkyW
 
 .. code-block:: python
 
-	h, hist = symlib.read_subhalos("my/local/directory/SymphonyMilkyWay/HaloXXX")
+	r, hist = symlib.read_rockstar("my/local/directory/SymphonyMilkyWay/HaloXXX")
+	s, hist = symlib.read_symfind("my/local/directory/SymphonyMilkyWay/HaloXXX")
+
+The first line reads in subhalo data accoridng to the Rockstar halo finder and the second according to the Symfind halo finder. Both functions return a pair of similarly formatted arrays: ``r`` and ``s`` are 2D arrays which track the evolution of subhalo properties along the main branches of each of the host's subhaloes, including disrupted and splashback subhaloes. ``hist`` contains useful annotations on each main branch (e.g. the snapshot of first infall, :math:`V_{\rm peak}`, etc.) Some subhalos that are clearly artifacts have been removed.
 	
-``h`` contains the properties of the main branches of all the subhalos of the host, including disrupted and splashback subhalos. ``hist`` contains useful annotations on each main branch (e.g. the snapshot of first infall, :math:`V_{\rm peak}`, etc.) Some subhalos that are clearly artifacts have been removed.
-	
-``h`` is a 2D structured numpy array. The first index goes over subhaloes and the second over snapshots. The first object is the host halo and the remaining are subhlaos sorted by decreasing :math:`M_{\rm peak}`, down to :math:`N_{\rm peak} > 300`. ``h["mvir"][3,200]`` gives the mass of of the third largest subhalo during snapshot 200. ``hist`` is a 1D structured array; ``hist["mpeak"][3]`` gives :math:`M_{\rm peak}` for the same subhalo.
+``r`` and ``s`` are 2D structured numpy arrays which means that multiple values are stored at each element and can be accessed withstrings. The first index goes over subhaloes and the second over snapshots. The first object is the host halo and the remaining are subhlaos sorted by decreasing :math:`M_{\rm peak}`, down to :math:`N_{\rm peak} > 300`. For example, ``r["mvir"][3,200]`` gives the mass of of the third largest subhalo during snapshot 200. ``hist`` is a 1D structured array, so ``hist["mpeak"][3]`` gives :math:`M_{\rm peak}` for the same subhalo.
 
 A full list of the values in ``h`` can be found :data:`here <symlib.SUBHALO_DTYPE>`, and a similar list for ``hist`` can be found by combining :data:`this list <symlib.HISTORY_DTYPE>` and :data:`this list <symlib.BRANCH_DTYPE>`. Units can be found :ref:`here <units_ref>`.
 
-One ``h`` variable requires special note, ``h["ok"]``, which is true when a subhalo exists and false when it doesn't exist. For example, if you want to analyze all the subhalos in snapshot 200, you should only analyze halos where ``h["ok"][:,200]`` is true.
+One ``h`` variable requires special note, ``h["ok"]``, which is true when a subhalo exists and false when it doesn't exist. For example, if you want to analyze all the subhalos in snapshot 200, you should only analyze halos where ``h["ok"][:,200]`` is true. Symfind does not track subhalos prior to infall.
 
 Below this point are some FAQs about working with this data.
 
@@ -89,7 +91,3 @@ The default "halos" dataset (i.e. the data read in by :func:`symlib.read_subhalo
 - If the halo disrupts, consistent-trees merges it with any other halo.
 
 If you want other objects, you will need to analyze the full merger tree. This must be :doc:`downloaded separately <data_access>`. Symphony's merger trees use a different format than consistent-trees, so it would be best to read through the :doc:`full tutorial <intro_to_merger_trees>`. The full merger tree also contains `additional variables <merger_tree_variables>` not included in the standard halo dataset.
-
-# TODO: add info on getting particle data not included in the "halos" dataset.
-
-In order to access the particle data for each halo

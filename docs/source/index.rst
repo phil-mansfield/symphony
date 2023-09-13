@@ -17,7 +17,8 @@ Full Table of Contents
    credits_acknowledgements
    quickstart
    data_access
-   getting_started
-   intro_to_merger_trees
+   working_with_subhalos
+   working_with_particles
+   working_with_trees
    symlib_documentation
    background_reading
