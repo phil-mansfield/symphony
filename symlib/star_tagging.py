@@ -6,6 +6,7 @@ import abc
 import scipy.optimize as optimize
 from . import lib
 from . import util
+import time
 
 # cosmology information
 from colossus.cosmology import cosmology
@@ -148,7 +149,7 @@ class AbstractRanking(abc.ABC):
     rank particles.
     """
 
-    def __init__(self, ranks, core_idx):
+    def __init__(self, ranks, core_idx, rvir, r_bins=DEFAULT_R_BINS):
         """ ranks is an array of ranks for every particle in the halo. If that
         particle has been accreted by the time of tagging, it should have an
         non-negative integer rank. If the particle hasn't been accreted yet,
@@ -171,6 +172,9 @@ class AbstractRanking(abc.ABC):
         self.v = None
         self.xc = None
         self.vc = None
+        self.r_bins = r_bins
+        self.rvir=rvir
+        self.M = None
         
     def load_particles(self, x, v, idx):
         """ load_particles loads paritcle properties into the ranking. Must
@@ -192,6 +196,9 @@ class AbstractRanking(abc.ABC):
             self.vc = self.core_v()
             for dim in range(3): self.v[:,dim] -= self.vc[dim]
 
+        r = np.sqrt(np.sum(self.x**2, axis=1))/self.rvir
+        self.M = ranked_np_profile_matrix(self.ranks, self.idx, r, self.r_bins)
+
     def core_x(self):
         """ core_x returns the position of the halo core. You must have called
         load_particles() first.
@@ -209,17 +216,13 @@ class AbstractRanking(abc.ABC):
         core = self.v[np.searchsorted(self.idx, self.core_idx)]
         return np.median(core, axis=0)
         
-    def set_mp_star(self, kwargs, profile_model, r_half, m_star,
-                    r_bins=DEFAULT_R_BINS):
-        rvir = kwargs["rvir"]
-
-        r = np.sqrt(np.sum(self.x**2, axis=1))/rvir
-        M = ranked_np_profile_matrix(self.ranks, self.idx, r, r_bins)
+    def set_mp_star(self, kwargs, profile_model, r_half, m_star):
+        M = self.M
         n = M.shape[1]
 
         profile_kwargs = profile_model.trim_kwargs(kwargs)
         m_star_enc_target = profile_model.m_enc(
-            m_star, r_half, r_bins[1:]*rvir, **profile_kwargs)
+            m_star, r_half, self.r_bins[1:]*self.rvir, **profile_kwargs)
         
         dm_star_enc_target = np.zeros(len(m_star_enc_target))
         dm_star_enc_target[1:] = m_star_enc_target[1:] - m_star_enc_target[:-1]
@@ -550,7 +553,7 @@ class UniverseMachineMStar(MStarModel):
         return ["um_mstar"]
 
 class RadialEnergyRanking(AbstractRanking):
-    def __init__(self, params, x, v, idx, n_max,
+    def __init__(self, params, x, v, idx, n_max, rvir,
                  core_particles=DEFAULT_CORE_PARTICLES,
                  quantile_edges=DEFAULT_QUANTILE_EDGES):
         """ Takes mp (Msun; may be a scalar), x (pkpc), v (pkm/s), idx (the
@@ -578,7 +581,7 @@ class RadialEnergyRanking(AbstractRanking):
         ranks, self.E_edges = rank_by_quantile(
             quantile_edges, self.E_vmax2, idx, n_max)
     
-        super(RadialEnergyRanking, self).__init__(ranks, core_idx)
+        super(RadialEnergyRanking, self).__init__(ranks, core_idx, rvir)
         
 #################################
 # General classes and functions #
@@ -691,7 +694,8 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
     Fe_H = [None]*len(h)
     for i in target_subs:
         ranks[i] = RadialEnergyRanking(
-            param, x_E[i], v_E[i], idx_E[i], n_max[i])
+            param, x_E[i], v_E[i], idx_E[i], n_max[i],
+            h["rvir"][i, star_snap[i]])
         ranks[i].load_particles(x_star[i], None, idx_star[i])
 
         # It's some tiny subhalo that Rockstar made a mistake on. Doesn't have
@@ -710,6 +714,59 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
 
     return mp_star, ranks, m_star, r_half, Fe_H
 
+class RetagStarsState(object):
+    def __init__(self, sim_dir, galaxy_halo_model):
+        self.param = lib.simulation_parameters(sim_dir)
+        self.h, self.hist = lib.read_subhalos(sim_dir)
+        self.h_cmov, _ = lib.read_subhalos(sim_dir, comoving=True)
+        self.scale = lib.scale_factors(sim_dir)
+
+        if "um_mstar" in galaxy_halo_model.var_names():
+            self.um = lib.read_um(sim_dir)
+        else:
+            self.um = [None]*len(self.h)
+    
+    def get_all(self):
+        return self.param, self.h, self.hist, self.h_cmov, self.scale, self.um
+
+def retag_stars(sim_dir, galaxy_halo_model, ranks,
+                state=None, star_snap=None,
+                target_subs=None):
+    # Basic simulation information
+
+    if state is None:
+        state = RetagStarsState(sim_dir, galaxy_halo_model)
+    param, h, hist, h_cmov, scale, um = state.get_all()
+    if star_snap is None:
+        star_snap = hist["first_infall_snap"]
+    if target_subs is None:
+        # Don't read in the host: wouldn't make sense.
+        target_subs = np.arange(1, len(h), dtype=int)
+
+    if 0 in target_subs:
+        raise ValueError("Cannot do star-tagging on the central halo. " + 
+                         "Remove 0 from the target_subs array.")
+
+    t0 = 0
+    mp_star = [None]*len(h)
+    r_half, m_star = np.ones(len(h))*-1, np.ones(len(h))*-1
+    Fe_H = [None]*len(h)
+    for i in target_subs:
+        # It's some tiny subhalo that Rockstar made a mistake on. Doesn't have
+        # any bins with more than 10 particles in them.
+        if np.max(ranks[i].ranks) == -1:
+            mp_star[i] = np.zeros(len(ranks[i].ranks))
+            Fe_H[i] = np.zeros(len(ranks[i].ranks))
+            continue
+
+        kwargs = galaxy_halo_model.get_kwargs(
+            param, scale, h[i], um[i], star_snap[i])
+
+        (mp_star[i], m_star[i], r_half[i],
+         Fe_H[i]) = galaxy_halo_model.set_mp_star(
+            ranks[i], kwargs)
+
+    return mp_star, m_star, r_half, Fe_H, state
 
 def old_tag_stars(base_dir, params, galaxy_halo_model, mergers, halo_idx, tag_snap,
               E_snap=None):
@@ -781,7 +838,6 @@ def look_back_orbital_time(params, scale, snap, dt_orbit, halo, min_mass_frac):
             break
 
     return snap_start
-            
 
 class GalaxyHaloModel(object):
     def __init__(self, m_star_model, r_half_model, profile_model, metal_model,
@@ -826,10 +882,9 @@ class GalaxyHaloModel(object):
             r_half = self.r_half_model.r_half(
                 no_scatter=self.no_scatter,
                 **self.r_half_model.trim_kwargs(kwargs))
-            
+  
         mp_star = ranks.set_mp_star(kwargs, self.profile_model,
                                     r_half, m_star)
-
 
         if Fe_H is None:
             check_var_names(kwargs, self.metal_model)
