@@ -731,11 +731,11 @@ def read_cores(dir_name, include_false_selections=False, suffix="fid3"):
         out["f_core"] = np.fromfile(fp, np.float32, n)
         out["f_core_rs"] = np.fromfile(fp, np.float32, n)
         out["d_core_mbp"] = np.fromfile(fp, np.float32, n)
-        out["ok"] = np.fromfile(fp, np.bool, n)
-        out["ok_rs"] = np.fromfile(fp, np.bool, n)
-        out["is_err"] = np.fromfile(fp, np.bool, n)
-        out["is_err_rs"] = np.fromfile(fp, np.bool, n)
-        out["interp"] = np.fromfile(fp, np.bool, n)
+        out["ok"] = np.fromfile(fp, np.bool_, n)
+        out["ok_rs"] = np.fromfile(fp, np.bool_, n)
+        out["is_err"] = np.fromfile(fp, np.bool_, n)
+        out["is_err_rs"] = np.fromfile(fp, np.bool_, n)
+        out["interp"] = np.fromfile(fp, np.bool_, n)
        
 
     out = out.reshape((n_halo, n_snap))
