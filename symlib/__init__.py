@@ -23,7 +23,7 @@ from .star_tagging import RadialEnergyRanking
 # Galaxy-halo models
 from .star_tagging import GalaxyHaloModel
 # Utility functions
-from .star_tagging import clean_particles, tag_stars, look_back_orbital_time, profile_info, rmax_vmax
+from .star_tagging import clean_particles, tag_stars, look_back_orbital_time, profile_info, rmax_vmax, retag_stars
 
 # Unit conversion
 from .util import set_units_halos, set_units_x, set_units_v, set_units_parameters, set_units_histories
