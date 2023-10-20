@@ -195,7 +195,7 @@ def get_host_directory(base_dir, suite_name, halo_name):
     else:
         suite_dir = suite_name
 
-    if isinstance(halo_name, int) or isinstance(halo_name, np.int) or isinstance(halo_name, np.int64) or isinstance(halo_name, np.int32):
+    if isinstance(halo_name, int) or isinstance(halo_name, np.int64) or isinstance(halo_name, np.int32):
         halo_name = DEFAULT_HALO_NAMES[suite_name][halo_name]
 
     return path.join(base_dir, suite_dir, halo_name)
