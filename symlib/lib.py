@@ -204,6 +204,10 @@ UM_DTYPE = [("m_star", "f4"), ("m_in_situ", "f4"), ("m_icl", "f4"),
             ("rank", "f4"), ("mvir", "f4"), ("vmax", "f4"),
             ("is_orphan", "?"), ("ok", "?")]
 
+GALAXY_DTYPE = [("m_star", "f4"), ("r_half", "f4"), ("m_dyn", "f4"),
+                ("x", "f4", (3,)), ("v", "f4", (3,)), ("ok", "?")]
+GALAXY_HISTORY_DTYPE = [("m_star_i", "f4"), ("r_half_i", "f4")]
+
 """ PARTICLE_DTYPE is a numpy datatype representing the properties of tracked 
 particles within a subhalo. Positions (x) and velocities (v) are given in
 physical units.
@@ -264,6 +268,7 @@ the number of snapshots in the suite.
 parameter_table = {
     "SymphonyLMC": _chinchilla_cosmology.copy(),
     "SymphonyMilkyWay": _chinchilla_cosmology.copy(),
+    "EDEN_MilkyWay_8K": _chinchilla_cosmology.copy(),
     "SymphonyMilkyWayDisk": _chinchilla_cosmology.copy(),
     "SymphonyMilkyWayDiskDMO": _chinchilla_cosmology.copy(),
     "SymphonyMilkyWayLR": _chinchilla_cosmology.copy(),
@@ -276,6 +281,7 @@ parameter_table = {
 
 parameter_table["SymphonyLMC"]["eps"] = 0.080
 parameter_table["SymphonyMilkyWay"]["eps"] = 0.170
+parameter_table["EDEN_MilkyWay_8K"]["eps"] = 0.170
 parameter_table["SymphonyMilkyWayDisk"]["eps"] = 0.170*2
 parameter_table["SymphonyMilkyWayDiskDMO"]["eps"] = 0.170*2
 parameter_table["SymphonyMilkyWayLR"]["eps"] = 0.170
@@ -287,6 +293,7 @@ parameter_table["MWest"]["eps"] = 0.170
 
 parameter_table["SymphonyLMC"]["mp"] = 3.52476e4
 parameter_table["SymphonyMilkyWay"]["mp"] = 2.81981e5
+parameter_table["EDEN_MilkyWay_8K"]["mp"] = 2.81981e5
 parameter_table["SymphonyMilkyWayDisk"]["mp"] = 2.81981e5*8
 parameter_table["SymphonyMilkyWayDiskDMO"]["mp"] = 2.81981e5*8
 parameter_table["SymphonyMilkyWayLR"]["mp"] = 2.81981e5
@@ -298,6 +305,7 @@ parameter_table["MWest"]["mp"] = 2.81981e5
 
 parameter_table["SymphonyLMC"]["n_snap"] = 236
 parameter_table["SymphonyMilkyWay"]["n_snap"] = 236
+parameter_table["EDEN_MilkyWay_8K"]["n_snap"] = 236
 parameter_table["SymphonyMilkyWayDisk"]["n_snap"] = 236
 parameter_table["SymphonyMilkyWayDiskDMO"]["n_snap"] = 236
 parameter_table["SymphonyMilkyWayLR"]["n_snap"] = 236
@@ -364,11 +372,11 @@ def scale_factors(dir_name):
     # TODO: individual halo-by-halo scale factors
     suite_name = halo_dir_to_suite_name(dir_name)
     if (suite_name in ["SymphonyLMC", "SymphonyGroup", "SymphonyMilkyWayDisk",
-                       "SymphonyMilkyWayDiskDMO",
+                       "SymphonyMilkyWayDiskDMO", "EDEN_MilkyWay_8K",
                       "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayLR",
                        "SymphonyMilkyWayHR"] or
         dir_name in ["SymphonyLMC", "SymphonyGroup", "SymphonyMilkyWayDisk",
-                       "SymphonyMilkyWayDiskDMO",
+                     "SymphonyMilkyWayDiskDMO", "EDEN_MilkyWay_8K",
                      "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayLR",
                      "SymphonyMilkyWayHR"]):
         default = 10**np.linspace(np.log10(0.05), np.log10(1), 236)
@@ -381,7 +389,7 @@ def scale_factors(dir_name):
 
     if dir_name in ["SymphonyLMC", "SymphonyGroup",
                     "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayLR",
-                    "SymphonyMilkyWayHR", 
+                    "SymphonyMilkyWayHR",  "EDEN_MilkyWay_8K",
                     "SymphonyLCluster",  "SymphonyCluster"]:
         return default
 
@@ -748,13 +756,12 @@ def read_cores(dir_name, include_false_selections=False, suffix="fid3"):
 
 def read_um(dir_name):
     fname = path.join(dir_name, "um", "um.dat")
-    h, _ = read_subhalos(dir_name)
+    h, hist = read_subhalos(dir_name)
+    h_cmov, hist_cmov = read_subhalos(dir_name, comoving=True)
     n_halo, n_snap = h.shape
     n = n_snap*n_halo
 
-    h, hist = read_subhalos(dir_name)
-
-    out = np.zeros(h.shape[0]*h.shape[1], UM_DTYPE)
+    out = np.zeros(n, dtype=UM_DTYPE)
 
     with open(fname) as fp:
         out["m_star"] = np.fromfile(fp, np.float32, n)
@@ -770,9 +777,38 @@ def read_um(dir_name):
         out["is_orphan"] = np.fromfile(fp, np.bool, n)
         out["ok"] = np.fromfile(fp, np.bool, n)
         
+    out["x"] *= 1e3
+
     out = out.reshape((n_halo, n_snap))
     out["is_orphan"] = out["ok"] & (~h["ok"])
     return out
+
+def read_galaxies(dir_name, model="um"):
+    fname = path.join(dir_name, "galaxies", "%s.dat" % model)
+
+    h, _ = read_rockstar(dir_name)
+    n_halo, n_snap = h.shape
+    n = n_snap*n_halo
+
+    gal = np.zeros(n, dtype=GALAXY_DTYPE)
+    gal_hist = np.zeros(n_halo, dtype=GALAXY_HISTORY_DTYPE)
+
+    with open(fname) as fp:
+        gal_hist["m_star_i"] = np.fromfile(fp, np.float32, n_halo)
+        gal_hist["r_half_i"] = np.fromfile(fp, np.float32, n_halo)
+
+        gal["m_star"] = np.fromfile(fp, np.float32, n)
+        gal["r_half"] = np.fromfile(fp, np.float32, n)
+        gal["m_dyn"] = np.fromfile(fp, np.float32, n)
+        x = np.fromfile(fp, np.float32, 3*n)
+        v = np.fromfile(fp, np.float32, 3*n)
+        gal["x"] = x.reshape((n,3))
+        gal["v"] = v.reshape((n,3))
+        gal["ok"] = np.fromfile(fp, np.bool, n)
+        
+    gal = gal.reshape((n_halo, n_snap))
+    
+    return gal, gal_hist
 
 def read_branches(dir_name):
     """ read_branches reads main branch data from the halo directory dir_name.
