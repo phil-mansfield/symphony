@@ -205,7 +205,11 @@ UM_DTYPE = [("m_star", "f4"), ("m_in_situ", "f4"), ("m_icl", "f4"),
             ("is_orphan", "?"), ("ok", "?")]
 
 GALAXY_DTYPE = [("m_star", "f4"), ("r_half", "f4"), ("m_dyn", "f4"),
-                ("x", "f4", (3,)), ("v", "f4", (3,)), ("ok", "?")]
+                ("v_disp_3d_dm", "f4"), ("v_disp_3d_star", "f4"),
+                ("vmax_dm", "f4"), ("vmax_dm_debias", "f4",),
+                ("x", "f4", (3,)), ("v", "f4", (3,)), ("m23_weight", "f4"),
+                ("m23_m_conv", "?"), ("m23_v_conv", "?"), ("ok", "?")]
+
 GALAXY_HISTORY_DTYPE = [("m_star_i", "f4"), ("r_half_i", "f4")]
 
 """ PARTICLE_DTYPE is a numpy datatype representing the properties of tracked 
@@ -276,6 +280,7 @@ parameter_table = {
     "SymphonyGroup": _chinchilla_cosmology.copy(),
     "SymphonyLCluster": _banerjee_cosmology.copy(),
     "SymphonyCluster": _carmen_cosmology.copy(),
+    "SymphonyClusterCorrupted": _carmen_cosmology.copy(),
     "MWest": _chinchilla_cosmology.copy(),
 }
 
@@ -289,6 +294,7 @@ parameter_table["SymphonyMilkyWayHR"]["eps"] = 0.170/2
 parameter_table["SymphonyGroup"]["eps"] = 0.360
 parameter_table["SymphonyLCluster"]["eps"] = 1.200
 parameter_table["SymphonyCluster"]["eps"] = 3.250
+parameter_table["SymphonyClusterCorrupted"]["eps"] = 3.250
 parameter_table["MWest"]["eps"] = 0.170
 
 parameter_table["SymphonyLMC"]["mp"] = 3.52476e4
@@ -301,6 +307,7 @@ parameter_table["SymphonyMilkyWayHR"]["mp"] = 2.81981e5/8
 parameter_table["SymphonyGroup"]["mp"] = 2.25585e6
 parameter_table["SymphonyLCluster"]["mp"] = 1.51441632e8
 parameter_table["SymphonyCluster"]["mp"] = 1.26201360e8
+parameter_table["SymphonyClusterCorrupted"]["mp"] = 1.26201360e8
 parameter_table["MWest"]["mp"] = 2.81981e5
 
 parameter_table["SymphonyLMC"]["n_snap"] = 236
@@ -313,6 +320,7 @@ parameter_table["SymphonyMilkyWayHR"]["n_snap"] = 236
 parameter_table["SymphonyGroup"]["n_snap"] = 236
 parameter_table["SymphonyLCluster"]["n_snap"] = 200
 parameter_table["SymphonyCluster"]["n_snap"] = 200
+parameter_table["SymphonyClusterCorrupted"]["n_snap"] = 200
 parameter_table["MWest"]["n_snap"] = 236
 
 for sim in parameter_table:
@@ -380,8 +388,8 @@ def scale_factors(dir_name):
                      "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayLR",
                      "SymphonyMilkyWayHR"]):
         default = 10**np.linspace(np.log10(0.05), np.log10(1), 236)
-    elif (suite_name in ["SymphonyLCluster",  "SymphonyCluster"] or
-          dir_name in ["SymphonyLCluster",  "SymphonyCluster"]):
+    elif (suite_name in ["SymphonyLCluster",  "SymphonyCluster", "SymphonyClusterCorrupted"] or
+          dir_name in ["SymphonyLCluster",  "SymphonyCluster", "SymphonyClusterCorrupted"]):
         default = 10**np.linspace(np.log10(0.075), np.log10(1), 200)
     else:
         raise ValueError(("The halo in %s does not belong to a " + 
@@ -390,7 +398,7 @@ def scale_factors(dir_name):
     if dir_name in ["SymphonyLMC", "SymphonyGroup",
                     "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayLR",
                     "SymphonyMilkyWayHR",  "EDEN_MilkyWay_8K",
-                    "SymphonyLCluster",  "SymphonyCluster"]:
+                    "SymphonyLCluster",  "SymphonyCluster", "SymphonyCluster"]:
         return default
 
     file_name = path.join(dir_name, "halos", "snap_scale.dat")
@@ -804,6 +812,13 @@ def read_galaxies(dir_name, model="um"):
         v = np.fromfile(fp, np.float32, 3*n)
         gal["x"] = x.reshape((n,3))
         gal["v"] = v.reshape((n,3))
+        gal["v_disp_3d_dm"] = np.fromfile(fp, np.float32, n)
+        gal["v_disp_3d_star"] = np.fromfile(fp, np.float32, n)
+        gal["vmax_dm"] = np.fromfile(fp, np.float32, n)
+        gal["vmax_dm_debias"] = np.fromfile(fp, np.float32, n)
+        gal["m23_weight"] = np.fromfile(fp, np.float32, n)
+        gal["m23_m_conv"] = np.fromfile(fp, bool, n)
+        gal["m23_v_conv"] = np.fromfile(fp, bool, n)
         gal["ok"] = np.fromfile(fp, np.bool, n)
         
     gal = gal.reshape((n_halo, n_snap))
