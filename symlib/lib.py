@@ -1434,8 +1434,43 @@ def read_particles(part_info, base_dir, snap, var_name,
             idxs = idxs.reshape((n_halo, n_core))
         return [idxs[i] for i in false_remapping]
     else:
-        raise ValueError("Unknown property name, '%s'" % var_name)    
+        raise ValueError("Unknown property name, '%s'" % var_name)
+
+def transform_smooth_particles(x, part_info, mode="all", ok=None):
+    hd, tags = part_info.part_hd, part_info.tags
+    if len(x) != hd.n_halo:
+        raise ValueError("part_info (n_halo = %d) does not match given set of particle data (n_halo = %d)" % (hd.n_halo, len(x)))
+
+    if mode == "smooth": return x
+
+    if len(x[0].shape) == 1:
+        full_shape = (hd.n_particle,)
+    else:
+        full_shape = (hd.n_particle,) + x[0].shape[1:]
     
+    x_full = np.zeros(full_shape, dtype=x[0].dtype)
+    
+    offset = part_info.global_offset
+    for i_halo in range(hd.n_halo):
+        x_i = x[i_halo]
+        x_full[offset[i_halo]: offset[i_halo]+len(x_i)] = x_i
+            
+    out = [None]*hd.n_halo
+    for i_halo in range(hd.n_halo):
+        idx = part_info.global_index[tags.id[i_halo] - 1]
+        out[i_halo] = x_full[idx]
+
+    if mode == "all": return out
+
+    if mode != "current": raise ValueError("Unknown mode '%s'" % mode)
+    if ok is None:
+        raise ValueError("Must pass an ok list to use mode='current'")
+
+    for i_halo in range(len(out)):
+        out[i_halo] = out[i_halo][ok[i_halo]]
+
+    return out
+
 def _dequantize_vector(qx, min, max):
     dx = max - min
     n = len(qx)//3
