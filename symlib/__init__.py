@@ -4,7 +4,7 @@ from .lib import SUBHALO_DTYPE, HISTORY_DTYPE, BRANCH_DTYPE, CORE_DTYPE, UM_DTYP
 from .lib import read_subhalos, read_cores, read_branches, read_tree, read_particles, read_um, read_galaxies, ParticleInfo
 from .lib import Particles
 # Utilities
-from .lib import simulation_parameters, parameter_table, scale_factors, pristine_merger_indices, merger_stats, propagate_parent_indices, colossus_parameters, suite_names, merger_lookup_table, find_merger_branch, find_all_merger_branches, is_real_confirmed, read_symfind, read_rockstar, pre_infall_host
+from .lib import simulation_parameters, parameter_table, scale_factors, pristine_merger_indices, merger_stats, propagate_parent_indices, colossus_parameters, suite_names, merger_lookup_table, find_merger_branch, find_all_merger_branches, is_real_confirmed, read_symfind, read_rockstar, pre_infall_host, transform_smooth_particles
 # TODO: better names for pristine_merger_indices and propagate_parent_indices
 from .match import match_subhalos, plot_matched_subhalos
 
