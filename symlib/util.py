@@ -158,9 +158,7 @@ DEFAULT_HALO_NAMES = {
         "Halo_003", "Halo_009", "Halo_015", "Halo_021", "Halo_026", "Halo_043",
         "Halo_004", "Halo_010", "Halo_016", "Halo_022", "Halo_027", "Halo_044",
     ]),
-    "SymphonyCluster": sorted([
-        "Halo156", "Halo175", "Halo200", "Halo211", "Halo213", "Halo222", "Halo225", "Halo266", "Halo274", "Halo277", "Halo282", "Halo293", "Halo304", "Halo305", "Halo306", "Halo308", "Halo317", "Halo321", "Halo324", "Halo326", "Halo335", "Halo337", "Halo339", "Halo345", "Halo346", "Halo348", "Halo349", "Halo352", "Halo354", "Halo358", "Halo360", "Halo361", "Halo366", "Halo367", "Halo377", "Halo378", "Halo385", "Halo386", "Halo387", "Halo390", "Halo391", "Halo394", "Halo400", "Halo407", "Halo409", "Halo415", "Halo416", "Halo419", "Halo428", "Halo429", "Halo436", "Halo437", "Halo441", "Halo445", "Halo447", "Halo448", "Halo452", "Halo454", "Halo455", "Halo456", "Halo461", "Halo462", "Halo465", "Halo471", "Halo472", "Halo474", "Halo475", "Halo476", "Halo478", "Halo479", "Halo480", "Halo483", "Halo489", "Halo494", "Halo502", "Halo517", "Halo518", "Halo522", "Halo529", "Halo544", "Halo545", "Halo546", "Halo561", "Halo572", "Halo574", "Halo595", "Halo600", "Halo604", "Halo629", "Halo631", "Halo639", "Halo645", "Halo653", "Halo734", "Halo372", "Halo425"
-    ]),
+    "SymphonyCluster": sorted(['Halo156', 'Halo175', 'Halo200', 'Halo211', 'Halo213', 'Halo222', 'Halo225', 'Halo266', 'Halo274', 'Halo277', 'Halo282', 'Halo293', 'Halo304', 'Halo306', 'Halo308', 'Halo317', 'Halo321', 'Halo324', 'Halo326', 'Halo335', 'Halo337', 'Halo339', 'Halo345', 'Halo346', 'Halo348', 'Halo349', 'Halo352', 'Halo354', 'Halo358', 'Halo360', 'Halo361', 'Halo366', 'Halo367', 'Halo377', 'Halo378', 'Halo385', 'Halo386', 'Halo387', 'Halo390', 'Halo391', 'Halo394', 'Halo400', 'Halo407', 'Halo409', 'Halo415', 'Halo428', 'Halo437', 'Halo441', 'Halo445', 'Halo447', 'Halo448', 'Halo454', 'Halo455', 'Halo456', 'Halo461', 'Halo472', 'Halo474', 'Halo475', 'Halo476', 'Halo478', 'Halo479', 'Halo480', 'Halo483', 'Halo489', 'Halo494', 'Halo502', 'Halo517', 'Halo522', 'Halo544', 'Halo545', 'Halo546', 'Halo561', 'Halo572', 'Halo574', 'Halo600', 'Halo629', 'Halo639', 'Halo645', 'Halo734', 'Halo372', 'Halo425']),
     "SymphonyClusterCorrupted": sorted([
         "Halo156", "Halo293", "Halo339", "Halo367", "Halo409", "Halo448", "Halo475", "Halo522", "Halo629",
         "Halo175", "Halo304", "Halo345", "Halo377", "Halo415", "Halo452", "Halo476", "Halo529", "Halo631",
@@ -176,7 +174,7 @@ DEFAULT_HALO_NAMES = {
     ]),
     "MWest": sorted([
         "Halo004", "Halo170", "Halo282", "Halo407", "Halo523", "Halo666", "Halo756", "Halo908", "Halo983",
-        "Halo113", "Halo222", "Halo327", "Halo453", "Halo625", "Halo719", "Halo788", "Halo953",
+        "Halo113", "Halo222", "Halo327", "Halo453", "Halo719", "Halo788",
         "Halo169", "Halo229", "Halo349", "Halo476", "Halo659", "Halo747", "Halo858", "Halo975"
     ]),
 }
