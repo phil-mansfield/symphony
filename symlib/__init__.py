@@ -1,5 +1,5 @@
 # Data types
-from .lib import SUBHALO_DTYPE, HISTORY_DTYPE, BRANCH_DTYPE, CORE_DTYPE, UM_DTYPE, PARTICLE_DTYPE, GALAXY_DTYPE, GALAXY_HISTORY_DTYPE
+from .lib import SUBHALO_DTYPE, HISTORY_DTYPE, BRANCH_DTYPE, CORE_DTYPE, UM_DTYPE, PARTICLE_DTYPE, GALAXY_DTYPE, GALAXY_HISTORY_DTYPE, STAR_DTYPE
 # I/O function
 from .lib import read_subhalos, read_cores, read_branches, read_tree, read_particles, read_um, read_galaxies, ParticleInfo
 from .lib import Particles
@@ -9,21 +9,30 @@ from .lib import simulation_parameters, parameter_table, scale_factors, pristine
 from .match import match_subhalos, plot_matched_subhalos
 
 # Abstract models
-from .star_tagging import ProfileModel, RHalfModel, MStarModel, AbstractRanking
-# Profile models
+from .star_tagging import ProfileShapeModel, RHalfModel, MStarModel, AbstractRanking, FeHMeanModel, FeHMDFModel, FeHProfileModel, MetalCorrelationModel, SFHModel
+# ProfileShape models
 from .star_tagging import PlummerProfile
 # R_half models
 from .star_tagging import Nadler2020RHalf, Jiang2019RHalf, FixedRHalf
 # Metallicity models
-from .star_tagging import Kirby2013Metallicity
+from .star_tagging import Kirby2013Metallicity, Kirby2013MDF, FlatFeHProfile
 # M_star models
 from .star_tagging import UniverseMachineMStarFit, UniverseMachineMStar
+# SFH models
+from.star_tagging import UniverseMachineSFH, DarkMatterSFH
+# Metal correlation models
+from .star_tagging import GaussianCoupalaCorrelation
 # Ranking schemes
 from .star_tagging import RadialEnergyRanking
+# Galaxy-halo model components
+from .star_tagging import StellarMassModel, ProfileModel, MetalModel
 # Galaxy-halo models
 from .star_tagging import GalaxyHaloModel
 # Utility functions
 from .star_tagging import clean_particles, tag_stars, look_back_orbital_time, profile_info, rmax_vmax, retag_stars
+
+# Default models:
+from .star_tagging import DWARF_GALAXY_HALO_MODEL
 
 # Unit conversion
 from .util import set_units_halos, set_units_x, set_units_v, set_units_parameters, set_units_histories
