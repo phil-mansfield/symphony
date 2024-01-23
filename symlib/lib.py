@@ -210,7 +210,31 @@ GALAXY_DTYPE = [("m_star", "f4"), ("r_half", "f4"), ("m_dyn", "f4"),
                 ("x", "f4", (3,)), ("v", "f4", (3,)), ("m23_weight", "f4"),
                 ("m23_m_conv", "?"), ("m23_v_conv", "?"), ("ok", "?")]
 
-GALAXY_HISTORY_DTYPE = [("m_star_i", "f4"), ("r_half_i", "f4")]
+""" GALAXY_HISTORY_DTYPE gives the propetis of the galaxy at the epoch of
+star tagging.
+m_star_i - initial M* of the galaxy in M_sun
+r_half_2d_i - initial projected 2d half-mass radius (kpc)
+r_half_3d_i - initial projected 3D half-mass radius (kpc)
+Fe_H_i - initial mass-weighted mean [Fe/H] of stars
+sigma_Fe_H_i - the initial 1-sigma scatter in the metallicity distribution
+               funciton in dex.
+t_50 - the half-mass formation time of stars in Gyr
+t_90 - the 90% formation time of stars in Gyr
+"""
+GALAXY_HISTORY_DTYPE = [("m_star_i", "f4"), ("r_half_2d_i", "f4"),
+                        ("r_half_3d_i", "f4"),
+                        ("Fe_H_i", "f4"), 
+                        ("sigma_Fe_H_i", "f4"),
+                        ("a50", "f4"), ("a90", "f4")]
+
+""" STAR_DTYPE gives the properites of an individual star particle.
+mp - the stellar mass of the particle in M_sun
+Fe_H - [Fe/H] of the particle
+t_form - the age of the universe when this star particle formed
+"""
+STAR_DTYPE = [
+    ("mp", "f4"), ("Fe_H", "f4"), ("a_form", "f4")
+]
 
 """ PARTICLE_DTYPE is a numpy datatype representing the properties of tracked 
 particles within a subhalo. Positions (x) and velocities (v) are given in
