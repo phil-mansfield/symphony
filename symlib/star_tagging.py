@@ -635,7 +635,7 @@ class FlatFeHProfile(FeHProfileModel):
     def var_names(self):
         return []
 
-class GaussianCoupalaCorrelation(abc.ABC):
+class GaussianCoupalaCorrelation(MetalCorrelationModel):
     """ GaussianCoupalaCorrelation connects ages to metallicities by assuming 
     that thjey can be represented by a Gaussian coupala.
     """
@@ -646,7 +646,6 @@ class GaussianCoupalaCorrelation(abc.ABC):
     def a_form(self, Fe_H, sfh):
         return sampling.gaussian_coupala_sample(Fe_H, sfh, self.rho)
         
-
     def var_names(self):
         return []
 
@@ -1321,19 +1320,20 @@ def ranked_np_profile_matrix(ranks, idx, r, bins):
         
     return M
 
-DWARF_GALAXY_HALO_MODEL = symlib.GalaxyHaloModel(
-    stellar_mass = symlib.StellarMassModel(
-        symlib.UniverseMachineMStar(),
-        symlib.UniverseMachineSFH()
+
+DWARF_GALAXY_HALO_MODEL = GalaxyHaloModel(
+    StellarMassModel(
+        UniverseMachineMStar(),
+        UniverseMachineSFH()
     ),
-    profile = symlib.ProfileModel(
-        symlib.Jiang2019RHalf(),
-        symlib.PlummerProfile()
+    ProfileModel(
+        Jiang2019RHalf(),
+        PlummerProfile()
     ),
-    metals = symlib.MetalModel(
-        symlib.Kirby2013Metallicity(),
-        symlib.Kirby2013MDF(model_type="leaky box"),
-        symlib.FlatFeHProfile(),
-        symlib.GaussianCoupalaCorrelation()
+    MetalModel(
+        Kirby2013Metallicity(),
+        Kirby2013MDF(model_type="leaky box"),
+        FlatFeHProfile(),
+        GaussianCoupalaCorrelation()
     )
 )
