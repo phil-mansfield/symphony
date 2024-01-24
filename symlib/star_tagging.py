@@ -878,7 +878,7 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
     gal_hists = np.zeros(len(h), dtype=lib.GALAXY_HISTORY_DTYPE)
     stars = [None]*len(h)
     for i in target_subs:
-        stars[i] = np.zeros(len(x_E[i]), dtype=lib.STAR_DTYPE)
+        stars[i] = np.zeros(n_max[i], dtype=lib.STAR_DTYPE)
 
     for i in target_subs:
         ranks[i] = RadialEnergyRanking(
@@ -888,7 +888,8 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
 
         # It's some tiny subhalo that Rockstar made a mistake on. Doesn't have
         # any bins with more than 10 particles in them.
-        if np.max(ranks[i].ranks) == -1: continue
+        if np.max(ranks[i].ranks) == -1:
+            continue
 
         kwargs = galaxy_halo_model.get_kwargs(
             param, scale, h[i], um[i], star_snap[i])
@@ -1116,8 +1117,7 @@ class GalaxyHaloModel(object):
             elif var_names[i] == "dm_mah":
                 x = np.zeros((2, len(scale)))
                 x[0,:] = scale
-                x[1,:] = (running_mpeak(halo["mvir"]) *
-                          np.max(um["m_star"])/np.max(halo["mvir"]))
+                x[1,:] = running_mpeak(halo["mvir"])
             elif var_names[i] == "um_sfh":
                 x = np.zeros((2, len(scale)))
                 x[0,:] = scale
@@ -1325,6 +1325,23 @@ DWARF_GALAXY_HALO_MODEL = GalaxyHaloModel(
     StellarMassModel(
         UniverseMachineMStar(),
         UniverseMachineSFH()
+    ),
+    ProfileModel(
+        Jiang2019RHalf(),
+        PlummerProfile()
+    ),
+    MetalModel(
+        Kirby2013Metallicity(),
+        Kirby2013MDF(model_type="leaky box"),
+        FlatFeHProfile(),
+        GaussianCoupalaCorrelation()
+    )
+)
+
+DWARF_GALAXY_HALO_MODEL_NO_UM = GalaxyHaloModel(
+    StellarMassModel(
+        UniverseMachineMStarFit(),
+        DarkMatterSFH()
     ),
     ProfileModel(
         Jiang2019RHalf(),
