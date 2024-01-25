@@ -32,7 +32,7 @@ from .star_tagging import GalaxyHaloModel
 from .star_tagging import clean_particles, tag_stars, look_back_orbital_time, profile_info, rmax_vmax, retag_stars
 
 # Default models:
-from .star_tagging import DWARF_GALAXY_HALO_MODEL
+from .star_tagging import DWARF_GALAXY_HALO_MODEL, DWARF_GALAXY_HALO_MODEL_NO_UM
 
 # Unit conversion
 from .util import set_units_halos, set_units_x, set_units_v, set_units_parameters, set_units_histories
