@@ -1156,6 +1156,8 @@ class Particles(object):
             valid particles.
             "all" returns variables for all particles, valid or invalid.
             "smooth" returns variables for smoothly accreted particles. 
+            "stars" returns variables for particles that can host stars. (this
+            is the same as "smooth" mode)
 
         Returns
         -------
@@ -1192,7 +1194,7 @@ class Particles(object):
                     snaps[i], smooth[i] = snaps[i][ok], smooth[i][ok]
                     valid[i] = valid[i][ok]
 
-        if mode == "smooth":
+        if mode == "smooth" or mode == "stars":
             idp = [None]*len(self.h_cmov)
             x = [None]*len(self.h_cmov)
             v = [None]*len(self.h_cmov)
@@ -1268,7 +1270,7 @@ class Particles(object):
         idx = np.array(idx)
         if mode == "all":
             pass
-        elif mode == "smooth":
+        elif mode == "smooth" or mode == "stars":
             smooth = read_particles(self.part_info, self.sim_dir,
                                     0, "ownership")
             for sh in range(len(smooth)):
@@ -1330,7 +1332,7 @@ class Particles(object):
             count = np.zeros(len(smooth), dtype=int)
             for sh in range(len(smooth)):
                 if halo == -1 or halo == sh:
-                    if mode == "smooth":
+                    if mode == "smooth" or mode == "stars":
                         count[sh] = np.sum(smooth[sh] == 0)
                     elif mode == "all":
                         count[sh] = len(smooth[sh])
@@ -1465,7 +1467,7 @@ def transform_smooth_particles(x, part_info, mode="all", ok=None):
     if len(x) != hd.n_halo:
         raise ValueError("part_info (n_halo = %d) does not match given set of particle data (n_halo = %d)" % (hd.n_halo, len(x)))
 
-    if mode == "smooth": return x
+    if mode == "smooth" or mode == "stars": return x
 
     if len(x[0].shape) == 1:
         full_shape = (hd.n_particle,)
