@@ -932,7 +932,7 @@ def retag_stars(sim_dir, galaxy_halo_model, ranks,
         raise ValueError("Cannot do star-tagging on the central halo. " + 
                          "Remove 0 from the target_subs array.")
 
-    gal_hists = np.zeros(len(h), dtpye=lib.GALAXY_HISTORY_DTYPE)
+    gal_hists = np.zeros(len(h), dtype=lib.GALAXY_HISTORY_DTYPE)
     stars = [None]*len(h)
     for i in target_subs:
         stars[i] = np.zeros(len(ranks[i].ranks), dtype=lib.STAR_DTYPE)
