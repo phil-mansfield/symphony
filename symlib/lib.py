@@ -334,19 +334,6 @@ parameter_table["SymphonyCluster"]["mp"] = 1.26201360e8
 parameter_table["SymphonyClusterCorrupted"]["mp"] = 1.26201360e8
 parameter_table["MWest"]["mp"] = 2.81981e5
 
-parameter_table["SymphonyLMC"]["n_snap"] = 236
-parameter_table["SymphonyMilkyWay"]["n_snap"] = 236
-parameter_table["EDEN_MilkyWay_8K"]["n_snap"] = 236
-parameter_table["SymphonyMilkyWayDisk"]["n_snap"] = 236
-parameter_table["SymphonyMilkyWayDiskDMO"]["n_snap"] = 236
-parameter_table["SymphonyMilkyWayLR"]["n_snap"] = 236
-parameter_table["SymphonyMilkyWayHR"]["n_snap"] = 236
-parameter_table["SymphonyGroup"]["n_snap"] = 236
-parameter_table["SymphonyLCluster"]["n_snap"] = 200
-parameter_table["SymphonyCluster"]["n_snap"] = 200
-parameter_table["SymphonyClusterCorrupted"]["n_snap"] = 200
-parameter_table["MWest"]["n_snap"] = 236
-
 for sim in parameter_table:
     param = parameter_table[sim]
     param["h100"] = param["H0"]/100
