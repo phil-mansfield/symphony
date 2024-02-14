@@ -771,11 +771,11 @@ def read_cores(dir_name, include_false_selections=False, suffix="fid3"):
         out["f_core"] = np.fromfile(fp, np.float32, n)
         out["f_core_rs"] = np.fromfile(fp, np.float32, n)
         out["d_core_mbp"] = np.fromfile(fp, np.float32, n)
-        out["ok"] = np.fromfile(fp, np.bool_, n)
-        out["ok_rs"] = np.fromfile(fp, np.bool_, n)
-        out["is_err"] = np.fromfile(fp, np.bool_, n)
-        out["is_err_rs"] = np.fromfile(fp, np.bool_, n)
-        out["interp"] = np.fromfile(fp, np.bool_, n)
+        out["ok"] = np.fromfile(fp, bool, n)
+        out["ok_rs"] = np.fromfile(fp, bool, n)
+        out["is_err"] = np.fromfile(fp, bool, n)
+        out["is_err_rs"] = np.fromfile(fp, bool, n)
+        out["interp"] = np.fromfile(fp, bool, n)
        
 
     out = out.reshape((n_halo, n_snap))
@@ -806,8 +806,8 @@ def read_um(dir_name):
         out["rank"] = np.fromfile(fp, np.float32, n)
         out["mvir"] = np.fromfile(fp, np.float32, n)
         out["vmax"] = np.fromfile(fp, np.float32, n)
-        out["is_orphan"] = np.fromfile(fp, np.bool, n)
-        out["ok"] = np.fromfile(fp, np.bool, n)
+        out["is_orphan"] = np.fromfile(fp, bool, n)
+        out["ok"] = np.fromfile(fp, bool, n)
         
     out["x"] *= 1e3
 
@@ -843,7 +843,7 @@ def read_galaxies(dir_name, model="um"):
         gal["m23_weight"] = np.fromfile(fp, np.float32, n)
         gal["m23_m_conv"] = np.fromfile(fp, bool, n)
         gal["m23_v_conv"] = np.fromfile(fp, bool, n)
-        gal["ok"] = np.fromfile(fp, np.bool, n)
+        gal["ok"] = np.fromfile(fp, bool, n)
         
     gal = gal.reshape((n_halo, n_snap))
     

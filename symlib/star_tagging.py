@@ -604,24 +604,20 @@ class Kirby2013MDF(FeHMDFModel):
 
         self.model_type = model_type
 
-    def mdf(self, Fe_H_mean):
-        if self.model_type == "leaky box":
+        if model_type == "leaky box":
             def leaky_mean(p_eff):
                 pdf = lambda Fe_H: 10**Fe_H/p_eff*np.exp(-10**Fe_H/p_eff)
                 return (integrate.quad(lambda Fe_H: Fe_H*pdf(Fe_H), -10, 5)[0] /
                         integrate.quad(lambda Fe_H: pdf(Fe_H), -10, 5)[0])
-            log_p_eff = optimize.fsolve(
-                lambda log_p_eff: leaky_mean(10**log_p_eff) - Fe_H_mean,
-                -1.5)
+            p_eff = 10**np.linspace(-4, 2, 200)
+            mean_Fe_H = [leaky_mean(p_eff[i]) for i in range(len(p_eff))]
+            self.f_leaky_mean = interpolate.interp1d(mean_Fe_H, np.log10(p_eff))
+        
+    def mdf(self, Fe_H_mean): 
+        if self.model_type == "leaky box":
+            log_p_eff = self.f_leaky_mean(Fe_H_mean)
             p_eff = 10**log_p_eff
             return sampling.PDF(lambda Fe_H: 10**Fe_H/p_eff*np.exp(-10**Fe_H/p_eff), -10, 5)
-            
-            #p_eff = 10**np.random.normal(-1.460, 0.306)
-            #pdf_i = PDF(lambda Fe_H: 10**Fe_H/p_eff*np.exp(-10**Fe_H/p_eff))
-            #mean_i = pdf_i.mean()
-            #def shifted_pdf(Fe_H):
-            #    dFe_H = Fe_H - mean_i
-            #    return 
         else:
             assert(0)
 
