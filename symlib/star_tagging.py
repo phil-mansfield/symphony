@@ -782,18 +782,20 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
 
     if target_subs is None:
         # Don't read in the host: wouldn't make sense.
-        target_subs = np.arange(1, len(h), dtype=int)
+        target_subs = np.arange(len(h), dtype=int)
     target_subs = np.asarray(target_subs, dtype=int)
-
-    if 0 in target_subs:
-        raise ValueError("Cannot do star-tagging on the central halo. " + 
-                         "Remove 0 from the target_subs array.")
 
     # Set the optional arguments to their default values
     if star_snap is None:
         # Match profiles at the snapshot when the subhalo first crosses the
         # virial radius.
         star_snap = hist["first_infall_snap"]
+
+    idx0 = np.where(target_subs == 0)
+    if len(idx0) != 0:
+        star_snap[idx0] = h.shape[1]-1
+    
+
     if E_snap is None:
         E_snap = np.zeros(len(h), dtype=int)
         for i in target_subs:
