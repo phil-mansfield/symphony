@@ -783,6 +783,7 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
     if target_subs is None:
         # Don't read in the host: wouldn't make sense.
         target_subs = np.arange(1, len(h), dtype=int)
+    target_subs = np.asarray(target_subs, dtype=int)
 
     if 0 in target_subs:
         raise ValueError("Cannot do star-tagging on the central halo. " + 
@@ -799,10 +800,6 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
             # Look back an eighth of an orbital time, or to the half-mass
             # scale, whichever is later.
             if star_snap[i] == 0:
-                #raise ValueError(("Subhalo %d has a star-tagging snapshot " + 
-                #                  "of 0. Either change star_snap for " + 
-                #                  "this subhalo or remove it from " + 
-                #                  "target_subs") % i)
                 E_snap[i] = 0
             else:
                 E_snap[i] = look_back_orbital_time(
@@ -820,7 +817,7 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
     # Shared information across snapshots.
     part_info = lib.ParticleInfo(sim_dir)
 
-    for snap in range(param["n_snap"]):
+    for snap in range(h.shape[1]):
         # If nobody needs this snapshot, don't read it in.
         if (snap not in E_snap[target_subs] and
             snap not in star_snap[target_subs]): continue
