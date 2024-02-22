@@ -1338,8 +1338,8 @@ DWARF_GALAXY_HALO_MODEL = GalaxyHaloModel(
     ),
     MetalModel(
         Kirby2013Metallicity(),
-        #Kirby2013MDF(model_type="gaussian"),
-        Kirby2013MDF(model_type="leaky box"),
+        Kirby2013MDF(model_type="gaussian"),
+        #Kirby2013MDF(model_type="leaky box"),
         FlatFeHProfile(),
         GaussianCoupalaCorrelation()
     )
@@ -1356,8 +1356,8 @@ DWARF_GALAXY_HALO_MODEL_NO_UM = GalaxyHaloModel(
     ),
     MetalModel(
         Kirby2013Metallicity(),
-        #Kirby2013MDF(model_type="gaussian"),
-        Kirby2013MDF(model_type="leaky box"),
+        Kirby2013MDF(model_type="gaussian"),
+        #Kirby2013MDF(model_type="leaky box"),
         FlatFeHProfile(),
         GaussianCoupalaCorrelation()
     )
