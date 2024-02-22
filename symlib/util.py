@@ -173,9 +173,9 @@ DEFAULT_HALO_NAMES = {
         "Halo282", "Halo337", "Halo366", "Halo407", "Halo447", "Halo474", "Halo518", "Halo604", "Halo372", "Halo425"
     ]),
     "MWest": sorted([
-        "Halo004", "Halo170", "Halo282", "Halo407", "Halo523", "Halo666", "Halo756", "Halo908", "Halo983",
+        "Halo004", "Halo170", "Halo282", "Halo407", "Halo666", "Halo756", "Halo983",
         "Halo113", "Halo222", "Halo327", "Halo453", "Halo719", "Halo788",
-        "Halo169", "Halo229", "Halo349", "Halo476", "Halo659", "Halo747", "Halo858", "Halo975"
+        "Halo169", "Halo229", "Halo349", "Halo476", "Halo659", "Halo747", "Halo975"
     ]),
 }
 
