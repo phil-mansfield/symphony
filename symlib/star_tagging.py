@@ -561,12 +561,13 @@ class Kirby2013Metallicity(FeHMeanModel):
     z-agnostic fit in Kirby et al. 2013 (https://arxiv.org/pdf/1310.0814.pdf;
     Equation 4).
     """
-    def __init__(self, sigma_Fe_H=0.17, Fe_H_dist_width=0.3):
+    def __init__(self, sigma_Fe_H=0.17):
         """ The constructor for Kirby2013Metallicity allows you to change the
         intrinsic scatter in the relation.
+
+        That 0.17 comes from scraping the data points in Fig 9 with WPD.
         """
         self.sigma_Fe_H = sigma_Fe_H
-        #self.Fe_H_dist_width = Fe_H_dist_width
     
     def Fe_H(self, mstar=None, no_scatter=False):
         """ Fe_H returns the metallicity of a given galaxy.
@@ -589,8 +590,9 @@ class Kirby2013Metallicity(FeHMeanModel):
         return ["mstar"]
     
 class Kirby2013MDF(FeHMDFModel):
-    def __init__(self, model_type="leaky box"):
+    def __init__(self, model_type="gaussian"):
         """ accepted model_types are:
+          - "gaussian"
           - "leaky box"
 
         Maybe I'll add pre-enriched and accretion later if people care.
@@ -599,12 +601,17 @@ class Kirby2013MDF(FeHMDFModel):
         model, but it doesn't fit higher mass galaxies as well as more
         complicated models.
         """
-        if model_type != "leaky box":
+        if model_type not in ["leaky box", "gaussian"]:
             raise ValueError("Unknown model_type, %s" % model_type)
-
         self.model_type = model_type
 
-        if model_type == "leaky box":
+        if model_type == "gaussian":
+            sigmas = [0.29, 0.28, 0.44, 0.36, 0.38, 0.34, 0.35, 0.39, 0.45,
+                      0.6, 0.59, 0.57, 0.6, 0.39, 0.33, 0.47, 0.32, 0.55, 0.54,
+                      0.36, 0.31, 0.47]
+            self.mdf_sigma_mean = np.mean(sigmas)
+            self.mdf_sigma_sigma = np.std(sigmas)
+        elif model_type == "leaky box":
             def leaky_mean(p_eff):
                 pdf = lambda Fe_H: 10**Fe_H/p_eff*np.exp(-10**Fe_H/p_eff)
                 return (integrate.quad(lambda Fe_H: Fe_H*pdf(Fe_H), -10, 5)[0] /
@@ -614,7 +621,11 @@ class Kirby2013MDF(FeHMDFModel):
             self.f_leaky_mean = interpolate.interp1d(mean_Fe_H, np.log10(p_eff))
         
     def mdf(self, Fe_H_mean): 
-        if self.model_type == "leaky box":
+        if self.model_type == "gaussian":
+            sigma = random.randn()*self.mdf_sigma_sigma + self.mdf_sigma_mean
+            return sampling.PDF(lambda x: np.exp(-(x-Fe_H_mean)**2 / 
+                                                 (2*sigma**2)), -10, 5)
+        elif self.model_type == "leaky box":
             log_p_eff = self.f_leaky_mean(Fe_H_mean)
             p_eff = 10**log_p_eff
             return sampling.PDF(lambda Fe_H: 10**Fe_H/p_eff*np.exp(-10**Fe_H/p_eff), -10, 5)
@@ -1327,6 +1338,7 @@ DWARF_GALAXY_HALO_MODEL = GalaxyHaloModel(
     ),
     MetalModel(
         Kirby2013Metallicity(),
+        #Kirby2013MDF(model_type="gaussian"),
         Kirby2013MDF(model_type="leaky box"),
         FlatFeHProfile(),
         GaussianCoupalaCorrelation()
@@ -1344,6 +1356,7 @@ DWARF_GALAXY_HALO_MODEL_NO_UM = GalaxyHaloModel(
     ),
     MetalModel(
         Kirby2013Metallicity(),
+        #Kirby2013MDF(model_type="gaussian"),
         Kirby2013MDF(model_type="leaky box"),
         FlatFeHProfile(),
         GaussianCoupalaCorrelation()
