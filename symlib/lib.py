@@ -639,8 +639,10 @@ def get_subhalo_histories(s, idx, dir_name):
 
         target = (snap >= m_snap) & s["ok"][i]
 
-        if h["first_infall_snap"][i] == -1: h["first_infall_snap"][i] = m_snap
         h[i]["merger_snap"], h[i]["merger_ratio"] = m_snap, m_ratio
+        if h["merger_snap"][i] == -1:
+            h["merger_snap"][i] = h["first_infall_snap"][i]
+        if h["first_infall_snap"][i] == -1: h["first_infall_snap"][i] = m_snap
         h["first_infall_snap"][i] = min(h["merger_snap"][i],
                                         h["first_infall_snap"][i])
 
