@@ -10,12 +10,11 @@ class PDF(object):
 
         x = np.linspace(low, high, 150)
 
-        y_pdf = interpolate.UnivariateSpline(x, pdf(x))
+        y_pdf = interpolate.UnivariateSpline(x, pdf(x), k=1, s=0)
         
         y = np.zeros(len(x))
 
         for i in range(1, len(y)):
-            #y[i] = integrate.quad(pdf, low, x[i])[0]
             y[i] = y_pdf.integral(low, x[i])
             y[i] = max(y[i], y[i-1])
         y /= y[-1]
