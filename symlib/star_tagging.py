@@ -752,7 +752,8 @@ class RadialEnergyRanking(AbstractRanking):
         
         core_idx = idx[self.E_vmax2 <= core_E_vmax2]
 
-        E_edges = np.linspace(-10, 0, 41)
+        #E_edges = np.linspace(-10, 0, 41)
+        E_edges = np.linspace(-15, 0, 61)
         quantile_edges = [np.sum(self.E_vmax2< E_edges[i])/
                           len(self.E_vmax2) for i in range(len(E_edges))]
 
