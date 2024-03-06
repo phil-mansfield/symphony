@@ -459,7 +459,7 @@ class FixedRHalf(RHalfModel):
         self.scatter = scatter
 
     def r_half(self, rvir=None):
-        if scatter <= 0.0:
+        if self.scatter <= 0.0:
             return rvir*self.ratio
         else:
             log_scatter = self.sigma_log_R*random.normal(
