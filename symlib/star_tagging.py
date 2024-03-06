@@ -198,9 +198,10 @@ class FeHProfileModel(abc.ABC):
     distirbution funciton of [Fe/H]. 
     """
     @abc.abstractmethod
-    def Fe_H_profile(self, FeH_MDF, ranks, **kwargs):
-        """ FeH_profile returns Fe/H values for each star particle based
-        on a given Fe/H MDF
+    def Fe_H_profile(self, FeH, ranks, **kwargs):
+        """ FeH_profile returns the indices that a given set of particle
+        metallicities would need to have in order to obey the target
+        metallicity profile. Also returns the target metallicity gradient.
         """
         pass
         
@@ -421,25 +422,25 @@ class Nadler2020RHalf(RHalfModel):
     This is calibrated by fitting a galaxy-halo model to Milky Way satellites.
     """
     
-    def __init__(self, A=27e-6, n=1.07, R0=10e-3, sigma_log_R=0.63):
+    def __init__(self, A=27e-6, n=1.07, R0=10e-3, scatter=0.63):
         """ The constructor for Nadler2020RHalf allows you to change the
         parameters of the fit. Please consult the paper for discussion on what
         these parameters mean. This allows you to sample the posterior
-        distribution for these parameters.
+        distribution for these parameters. Scatter is logarithmic in base-10.
         """
         self.A = A
         self.n = n
         self.R0 = R0
-        self.sigma_log_R = sigma_log_R
+        self.sigma_log_R = scatter
 
-    def r_half(self, no_scatter=False, **kwargs):
+    def r_half(self, **kwargs):
         """ r_half returns the half-mass radius of a a galaxy in physical kpc.
         Required keyword arguments:
          - rvir
         """
         # inputs and outputs are in pMpc (no h).
         log_R = np.log10(self.A * (rvir/self.R0)**self.n)
-        if no_scatter:
+        if scatter <= 0:
             return 10**log_R
         else:
             log_scatter = self.sigma_log_R*random.normal(
@@ -453,11 +454,17 @@ class Nadler2020RHalf(RHalfModel):
 
 
 class FixedRHalf(RHalfModel):
-    def __init__(self, ratio=0.015):
+    def __init__(self, ratio=0.015, scatter=0.0):
         self.ratio = ratio
+        self.scatter = scatter
 
-    def r_half(self, no_scatter=False, rvir=None):
-        return rvir*self.ratio
+    def r_half(self, rvir=None):
+        if scatter <= 0.0:
+            return rvir*self.ratio
+        else:
+            log_scatter = self.sigma_log_R*random.normal(
+                0, 1, size=np.shape(rvir))
+            return rvir*self.ratio * 10**(log_scatter)
 
     def var_names(self):
         return ["rvir"]
@@ -470,15 +477,15 @@ class Jiang2019RHalf(RHalfModel):
     combined with abundance matching (Somerville et al. 2018;
     https://arxiv.org/abs/1701.03526; M* > 1e8 Msun).
     """
-    def __init__(self, sigma_log_R=0.2):
+    def __init__(self, scatter=0.2):
         """ The constructor for Jiang2019RHalf allows you to change the
         intrinsic scatter in the relation. I eyeballed sigma_log_R at 0.2 from
         their plots, so this value in particular is worth modifying.
         """
         # I eyeballed the 0.2 from their plots.
-        self.sigma_log_R = sigma_log_R
+        self.sigma_log_R = scatter
     
-    def r_half(self, rvir=None, cvir=None, z=None, no_scatter=False):
+    def r_half(self, rvir=None, cvir=None, z=None):
         """ r_half returns the half-mass radius of a a galaxy in physical kpc.
         Required keyword arguments:
          - rvir
@@ -492,8 +499,9 @@ class Jiang2019RHalf(RHalfModel):
         # From Appendix D
         fz = 0.02*(1 + z)**-0.2
         R = fz * (cvir/10)**-0.7 * rvir
-        log_scatter = self.sigma_log_R*random.normal(0, 1, size=np.shape(rvir))
-        if not no_scatter:
+        if self.sigma_log_R > 0.0:
+            log_scatter = self.sigma_log_R*random.normal(
+                0, 1, size=np.shape(rvir))
             return 10**(np.log10(R) + log_scatter)
         else:
             return R
@@ -508,15 +516,14 @@ class Carlsten2021RHalf(RHalfModel):
     calibrated off of observations in the local volume.
     (https://arxiv.org/pdf/2105.03435.pdf) (10^5.5 Msun < M* < 10^8.5 Msun).
     """
-    def __init__(self, sigma_log_R=0.181, a=1.071, b=0.247):
-        """ The constructor for Carlsten2021RHalf is just a power law with 
-        log-normal scatter that lets yuo
+    def __init__(self, scatter=0.181, a=1.071, b=0.247):
+        """ The constructor for Carlsten2021RHalf is just a power law
         """
-        self.sigma_log_R = sigma_log_R
+        self.sigma_log_R = scatter
         self.a = a
         self.b = b
     
-    def r_half(self, rvir=None, cvir=None, z=None, no_scatter=False):
+    def r_half(self, rvir=None, cvir=None, z=None):
         """ r_half returns the half-mass radius of a a galaxy in physical kpc.
         Required keyword arguments:
          - rvir
@@ -524,12 +531,12 @@ class Carlsten2021RHalf(RHalfModel):
          - z
         """
         R = 10**(self.a + self.b*np.log10(0.247))
-        log_scatter = self.sigma_log_R*random.normal(0, 1, size=np.shape(rvir))
-        if not no_scatter:
+        if self.sigma_log_R > 0:
+            log_scatter = self.sigma_log_R*random.normal(
+                0, 1, size=np.shape(rvir))
             return 10**(np.log10(R) + log_scatter)
         else:
             return R
-
 
     def var_names(self):
         """ var_names returns the names of the variables this model requires.
@@ -561,15 +568,15 @@ class Kirby2013Metallicity(FeHMeanModel):
     z-agnostic fit in Kirby et al. 2013 (https://arxiv.org/pdf/1310.0814.pdf;
     Equation 4).
     """
-    def __init__(self, sigma_Fe_H=0.17):
+    def __init__(self, scatter=0.17):
         """ The constructor for Kirby2013Metallicity allows you to change the
         intrinsic scatter in the relation.
 
         That 0.17 comes from scraping the data points in Fig 9 with WPD.
         """
-        self.sigma_Fe_H = sigma_Fe_H
+        self.sigma_Fe_H = scatter
     
-    def Fe_H(self, mstar=None, no_scatter=False):
+    def Fe_H(self, mstar=None):
         """ Fe_H returns the metallicity of a given galaxy.
         Required keyword arguments:
          - mstar
@@ -577,7 +584,7 @@ class Kirby2013Metallicity(FeHMeanModel):
         if mstar is None: raise ValueError("mstar not supplied")
         
         Fe_H_mean = -1.69 + 0.30*np.log10(mstar/1e6)
-        if not no_scatter:
+        if self.sigma_Fe_H > 0.0:
             Fe_H_mean = random.normal(Fe_H_mean, self.sigma_Fe_H)
         return Fe_H_mean
 
@@ -636,12 +643,30 @@ class Kirby2013MDF(FeHMDFModel):
         return []
 
 class FlatFeHProfile(FeHProfileModel):
-    def Fe_H_profile(self, mdf, ranks):
-        return mdf.sample(len(ranks.ranks))
+    def Fe_H_profile(self, FeH, ranks):
+        return FeH
 
     def var_names(self):
         return []
 
+class Taibi2022FeHProfile(FeHProfileModel):
+    def __init__(self):
+        FeHProfileModel.__init__(self)
+        delta_Fe_H = [
+            -0.101, -0.23, -0.09, -0.14, -0.21, -0.04, -0.32, -0.15, -0.15,
+            -0.07,   0.00,  0.00,  0.00,  0.00, -0.20,  0.00,  0.00, -0.39,
+            -0.10,  -0.46, -0.06,  0.00, -0.12, -0.16, -0.29,  0.00, -0.10,
+            -0.08,  -0.35, -0.07
+        ]
+        self.mean_delta_Fe_H = np.mean(delta_Fe_H)
+        self.std_delta_Fe_H = np.std(delta_Fe_H)
+
+    def Fe_H_profile(self, FeH, ranks, r_half=None):
+        pass
+
+    def var_names(self):
+        return ["r_half"]
+    
 class GaussianCoupalaCorrelation(MetalCorrelationModel):
     """ GaussianCoupalaCorrelation connects ages to metallicities by assuming 
     that thjey can be represented by a Gaussian coupala.
@@ -663,7 +688,10 @@ class GaussianCoupalaCorrelation(MetalCorrelationModel):
         return out
 
 class UniverseMachineMStarFit(MStarModel):
-    def m_star(self, mpeak=None, z=None, no_scatter=False):
+    def __init__(self, scatter=0.2):
+        self.scatter = scatter
+    
+    def m_star(self, mpeak=None, z=None):
         """
          Required keyword arguments:
          - mpeak
@@ -720,8 +748,9 @@ class UniverseMachineMStarFit(MStarModel):
                        
         log10_Ms_Msun = log10_Ms_M1 + log10_M1_Msun
 
-        if not no_scatter:
-            log_scatter = 0.2*random.normal(0, 1, size=np.shape(mpeak))
+        if self.scatter > 0.0:
+            log_scatter = self.scatter*random.normal(
+                0, 1, size=np.shape(mpeak))
             log10_Ms_Msun += log_scatter
         
         Ms = 10**log10_Ms_Msun
@@ -735,7 +764,7 @@ class UniverseMachineMStarFit(MStarModel):
     
 
 class UniverseMachineMStar(MStarModel):
-    def m_star(self, um_mstar=None, no_scatter=False):
+    def m_star(self, um_mstar=None):
         return np.maximum(1, um_mstar)
 
     def var_names(self):
@@ -1056,7 +1085,8 @@ class GalaxyHaloModel(object):
         mdf = self.Fe_H_mdf_model.mdf(Fe_H_mean,
             **self.Fe_H_mdf_model.trim_kwargs(kwargs))
         sfh = self.sfh_model.sfh(**self.sfh_model.trim_kwargs(kwargs))
-        Fe_H = self.Fe_H_profile_model.Fe_H_profile(mdf, ranks,
+        Fe_H = self.Fe_H_profile_model.Fe_H_profile(
+            mdf.sample(len(mp_star)), ranks,
             **self.Fe_H_profile_model.trim_kwargs(kwargs))
         a_form = self.correlation_model.a_form(Fe_H, sfh,
             **self.correlation_model.trim_kwargs(kwargs))
