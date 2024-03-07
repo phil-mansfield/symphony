@@ -670,7 +670,6 @@ def get_subhalo_histories(s, idx, dir_name):
 def read_convergence_limits(sim_dir):
     file_name = path.join(sim_dir, "convergence_limits.dat")
     if not path.exists(file_name): return None, None, None, None, None, None
-
     try:
         with open(file_name, "rb") as fp:
             n_halo, = struct.unpack("q", fp.read(8))
@@ -1431,7 +1430,7 @@ def read_particles(part_info, base_dir, snap, var_name,
                 x_full[offset[i_halo]: offset[i_halo]+len(x_i)] = x_i
 
             f.close()
-            
+
         out = [None]*hd.n_halo
         for i_halo in range(hd.n_halo):
             idx = part_info.global_index[tags.id[i_halo] - 1]
