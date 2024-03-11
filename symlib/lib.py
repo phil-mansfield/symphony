@@ -696,7 +696,7 @@ def read_symfind(dir_name, suffix="fid3"):
     entries for this object).
     """
     h, hist = read_subhalos(dir_name)
-    c = read_cores(dir_name)
+    c = read_cores(dir_name, suffix=suffix)
 
     s = np.zeros(c.shape, dtype=SYMFIND_DTYPE)
     s["x"], s["v"] = c["x"], c["v"]
