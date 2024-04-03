@@ -1485,6 +1485,18 @@ def transform_smooth_particles(x, part_info, mode="all", ok=None):
 
     return out
 
+def find_particles(p_base, p_target):
+    orig_idx = np.arange(len(p_base))
+    order = np.argsort(p_base["id"])
+    id_sort, idx_sort = p_base["id"][order], orig_idx[order]
+
+    i = np.searchsorted(id_sort, p_target["id"])
+    ok = id_sort[i] == p_target["id"]
+    out = idx_sort[i]
+    out[~ok] = -1
+
+    return out
+
 def _dequantize_vector(qx, min, max):
     dx = max - min
     n = len(qx)//3
