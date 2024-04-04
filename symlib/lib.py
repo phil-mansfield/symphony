@@ -1491,6 +1491,8 @@ def find_particles(p_base, p_target):
     id_sort, idx_sort = p_base["id"][order], orig_idx[order]
 
     i = np.searchsorted(id_sort, p_target["id"])
+    i = np.minimum(len(id_sort)-1, i)
+    i = np.maximum(0, i)
     ok = id_sort[i] == p_target["id"]
     out = idx_sort[i]
     out[~ok] = -1
