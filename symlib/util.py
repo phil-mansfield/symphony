@@ -120,29 +120,15 @@ DEFAULT_HALO_NAMES = {
         "Halo188", "Halo327", "Halo415", "Halo490", "Halo606", "Halo738", "Halo829", "Halo926", "Halo9829",
         "Halo247", "Halo349", "Halo416", "Halo530", "Halo628", "Halo749", "Halo852", "Halo937", "Halo990",
     ]) + ["Halo119_m", "Halo364_m", "Halo460_m", "Halo416_m", "Halo530_m", "Halo675_m", "Halo800_m", "Halo829_m", "Halo852_m"],
-    "SymphonyMilkyWayDisk": sorted([
-        "Halo023", "Halo268", "Halo364", "Halo440", "Halo558", "Halo641", "Halo797", "Halo878", "Halo939",
-        "Halo088", "Halo270", "Halo374", "Halo460", "Halo567", "Halo675", "Halo800", "Halo881", "Halo967",
-        "Halo119", "Halo288", "Halo414", "Halo469", "Halo570", "Halo718", "Halo825", "Halo925", "Halo9749",
-        "Halo188", "Halo327", "Halo415", "Halo490", "Halo606", "Halo738", "Halo829", "Halo926", "Halo9829",
-        "Halo247", "Halo349", "Halo416", "Halo530", "Halo628", "Halo749", "Halo852", "Halo937", "Halo990"
+    "EDEN_MilkyWay_16K": sorted([
+        "Halo023", "Halo247", "Halo268", "Halo530", "Halo829"
     ]),
-    "SymphonyMilkyWayDiskDMO": sorted([
-        "Halo023", "Halo268", "Halo364", "Halo440", "Halo558", "Halo641", "Halo797", "Halo878", "Halo939",
-        "Halo088", "Halo270", "Halo374", "Halo460", "Halo567", "Halo675", "Halo800", "Halo881", "Halo967",
-        "Halo119", "Halo288", "Halo414", "Halo469", "Halo570", "Halo718", "Halo825", "Halo925", "Halo9749",
-        "Halo188", "Halo327", "Halo415", "Halo490", "Halo606", "Halo738", "Halo829", "Halo926", "Halo9829",
-        "Halo247", "Halo349", "Halo416", "Halo530", "Halo628", "Halo749", "Halo852", "Halo937", "Halo990"
-    ]),
-
     "SymphonyMilkyWayLR": sorted([
         "Halo023", "Halo247", "Halo268", "Halo530", "Halo829"
     ]),
-
     "SymphonyMilkyWayHR": sorted([
         "Halo023", "Halo247", "Halo268", "Halo530", "Halo829"
     ]),    
-
     "SymphonyGroup": sorted([
         "Halo015", "Halo175", "Halo313", "Halo352", "Halo470", "Halo579", "Halo755", "Halo806", "Halo985",
         "Halo024", "Halo183", "Halo331", "Halo383", "Halo496", "Halo581", "Halo759", "Halo834",
@@ -179,7 +165,7 @@ DEFAULT_HALO_NAMES = {
     ]),
 }
 
-SUITE_NAMES = ["SymphonyLMC", "SymphonyMilkyWay", "SymphonyMilkyWayLR", "SymphonyMilkyWayHR", "SymphonyGroup", "SymphonyLCluster", "SymphonyCluster", "SymphonyClusterCorrupted", "MWest", "EDEN_MilkyWay_8K"]
+SUITE_NAMES = ["SymphonyLMC", "SymphonyMilkyWay", "SymphonyMilkyWayLR", "SymphonyMilkyWayHR", "SymphonyGroup", "SymphonyLCluster", "SymphonyCluster", "SymphonyClusterCorrupted", "MWest", "EDEN_MilkyWay_8K", "EDEN_MilkyWay_16K"]
 
 def n_hosts(suite_name):
     """ n_halos returns the number of host halos in a given suite,
