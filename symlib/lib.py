@@ -297,6 +297,7 @@ parameter_table = {
     "SymphonyLMC": _chinchilla_cosmology.copy(),
     "SymphonyMilkyWay": _chinchilla_cosmology.copy(),
     "EDEN_MilkyWay_8K": _chinchilla_cosmology.copy(),
+    "EDEN_MilkyWay_16K": _chinchilla_cosmology.copy(),
     "SymphonyMilkyWayDisk": _chinchilla_cosmology.copy(),
     "SymphonyMilkyWayDiskDMO": _chinchilla_cosmology.copy(),
     "SymphonyMilkyWayLR": _chinchilla_cosmology.copy(),
@@ -311,6 +312,7 @@ parameter_table = {
 parameter_table["SymphonyLMC"]["eps"] = 0.080
 parameter_table["SymphonyMilkyWay"]["eps"] = 0.170
 parameter_table["EDEN_MilkyWay_8K"]["eps"] = 0.170
+parameter_table["EDEN_MilkyWay_8K"]["eps"] = 0.170/2
 parameter_table["SymphonyMilkyWayDisk"]["eps"] = 0.170*2
 parameter_table["SymphonyMilkyWayDiskDMO"]["eps"] = 0.170*2
 parameter_table["SymphonyMilkyWayLR"]["eps"] = 0.170
@@ -324,6 +326,7 @@ parameter_table["MWest"]["eps"] = 0.170
 parameter_table["SymphonyLMC"]["mp"] = 3.52476e4
 parameter_table["SymphonyMilkyWay"]["mp"] = 2.81981e5
 parameter_table["EDEN_MilkyWay_8K"]["mp"] = 2.81981e5
+parameter_table["EDEN_MilkyWay_16K"]["mp"] = 2.81981e5/8
 parameter_table["SymphonyMilkyWayDisk"]["mp"] = 2.81981e5*8
 parameter_table["SymphonyMilkyWayDiskDMO"]["mp"] = 2.81981e5*8
 parameter_table["SymphonyMilkyWayLR"]["mp"] = 2.81981e5
@@ -392,10 +395,12 @@ def scale_factors(dir_name):
     suite_name = halo_dir_to_suite_name(dir_name)
     if (suite_name in ["SymphonyLMC", "SymphonyGroup", "SymphonyMilkyWayDisk",
                        "SymphonyMilkyWayDiskDMO", "EDEN_MilkyWay_8K",
+                       "EDEN_MilkyWay_16K"
                       "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayLR",
                        "SymphonyMilkyWayHR"] or
         dir_name in ["SymphonyLMC", "SymphonyGroup", "SymphonyMilkyWayDisk",
                      "SymphonyMilkyWayDiskDMO", "EDEN_MilkyWay_8K",
+                     "EDEN_MilkyWay_16K",
                      "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayLR",
                      "SymphonyMilkyWayHR"]):
         default = 10**np.linspace(np.log10(0.05), np.log10(1), 236)
@@ -409,6 +414,7 @@ def scale_factors(dir_name):
     if dir_name in ["SymphonyLMC", "SymphonyGroup",
                     "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayLR",
                     "SymphonyMilkyWayHR",  "EDEN_MilkyWay_8K",
+                    "EDEN_MilkyWay_16K",
                     "SymphonyLCluster",  "SymphonyCluster", "SymphonyCluster"]:
         return default
 
