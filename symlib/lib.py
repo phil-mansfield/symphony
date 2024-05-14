@@ -395,7 +395,7 @@ def scale_factors(dir_name):
     suite_name = halo_dir_to_suite_name(dir_name)
     if (suite_name in ["SymphonyLMC", "SymphonyGroup", "SymphonyMilkyWayDisk",
                        "SymphonyMilkyWayDiskDMO", "EDEN_MilkyWay_8K",
-                       "EDEN_MilkyWay_16K"
+                       "EDEN_MilkyWay_16K",
                       "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayLR",
                        "SymphonyMilkyWayHR"] or
         dir_name in ["SymphonyLMC", "SymphonyGroup", "SymphonyMilkyWayDisk",
@@ -690,7 +690,7 @@ def read_convergence_limits(sim_dir):
     except:
         return None, None, None, None, None, None
 
-def read_symfind(dir_name, suffix="fid3"):
+def read_symfind(dir_name, suffix=None):
     """ read_symfind returns a pair of arrays representing each symfind
     subhalo. dir_name is the simulation's directory. The first is a 2D array
     of type SYMFIND_DTYPE where halos[i,j] is subhalo i at snapshot j.
@@ -700,6 +700,11 @@ def read_symfind(dir_name, suffix="fid3"):
     pre-infall Mpeak, and the first element corresponds to the host halo.
     (Because the host is not a subhalo by definition, symfind does not have
     entries for this object).
+
+    Suffix determines which symfind run will be used if multiple exist in the
+    same directory. The default behavior is to search for files with the
+    "fid4" suffix, to search for files with the "fid3" suffix if those can't
+    be found, and to crash otherwise.
     """
     h, hist = read_subhalos(dir_name)
     c = read_cores(dir_name, suffix=suffix)
@@ -732,13 +737,17 @@ def monotonic_m(m_in, ok):
 
     return m_out
 
-def read_cores(dir_name, include_false_selections=False, suffix="fid3"):
+def read_cores(dir_name, include_false_selections=False, suffix=None):
     """ read_cores read the particle-tracked halo cores of the halo in the
     given directory. The returned array is a structured array of type
     CORE_DTYPE with shape (n_halos, n_snaps).
     """
     if suffix == "":
         file_name = path.join(dir_name, "halos", "cores.dat")
+    elif suffix is None:
+        file_name = path.join(dir_name, "halos", "cores_fid4.dat")
+        if not path.isfile(file_name):
+            file_name = path.join(dir_name, "halos", "cores_fid3.dat")
     else:
         file_name = path.join(dir_name, "halos", "cores_%s.dat" % suffix)
 
