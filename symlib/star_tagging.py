@@ -198,7 +198,7 @@ class FeHProfileModel(abc.ABC):
     distirbution funciton of [Fe/H]. 
     """
     @abc.abstractmethod
-    def Fe_H_profile(self, FeH, ranks, **kwargs):
+    def Fe_H_profile(self, r_half, FeH, ranks, **kwargs):
         """ FeH_profile returns the indices that a given set of particle
         metallicities would need to have in order to obey the target
         metallicity profile. Also returns the target metallicity gradient.
@@ -643,8 +643,8 @@ class Kirby2013MDF(FeHMDFModel):
         return []
 
 class FlatFeHProfile(FeHProfileModel):
-    def Fe_H_profile(self, FeH, ranks):
-        return FeH
+    def Fe_H_profile(self, r_half, FeH, ranks):
+        return FeH, 0.0
 
     def var_names(self):
         return []
@@ -661,11 +661,15 @@ class Taibi2022FeHProfile(FeHProfileModel):
         self.mean_delta_Fe_H = np.mean(delta_Fe_H)
         self.std_delta_Fe_H = np.std(delta_Fe_H)
 
-    def Fe_H_profile(self, FeH, ranks, r_half=None):
-        pass
+    def Fe_H_profile(self, r_half, FeH, ranks):
+        delta_Fe_H = random.randn()*self.std_delta_Fe_H + self.mean_delta_Fe_H
+        print(ranks.r)
+        print(ranks.mp_star)
+        print(delta_Fe_H)
+        exit(0)
 
     def var_names(self):
-        return ["r_half"]
+        return []
     
 class GaussianCoupalaCorrelation(MetalCorrelationModel):
     """ GaussianCoupalaCorrelation connects ages to metallicities by assuming 
@@ -1085,8 +1089,9 @@ class GalaxyHaloModel(object):
         mdf = self.Fe_H_mdf_model.mdf(Fe_H_mean,
             **self.Fe_H_mdf_model.trim_kwargs(kwargs))
         sfh = self.sfh_model.sfh(**self.sfh_model.trim_kwargs(kwargs))
-        Fe_H = self.Fe_H_profile_model.Fe_H_profile(
-            mdf.sample(len(mp_star)), ranks,
+        Fe_H = mdf.sample(len(mp_star))
+        Fe_H, delta_Fe_H = self.Fe_H_profile_model.Fe_H_profile(
+            r_half, Fe_H, ranks,
             **self.Fe_H_profile_model.trim_kwargs(kwargs))
         a_form = self.correlation_model.a_form(Fe_H, sfh,
             **self.correlation_model.trim_kwargs(kwargs))
@@ -1371,6 +1376,7 @@ DWARF_GALAXY_HALO_MODEL = GalaxyHaloModel(
         Kirby2013Metallicity(),
         Kirby2013MDF(model_type="gaussian"),
         #Kirby2013MDF(model_type="leaky box"),
+        #Taibi2022FeHProfile(),
         FlatFeHProfile(),
         GaussianCoupalaCorrelation()
     )
@@ -1389,6 +1395,7 @@ DWARF_GALAXY_HALO_MODEL_NO_UM = GalaxyHaloModel(
         Kirby2013Metallicity(),
         Kirby2013MDF(model_type="gaussian"),
         #Kirby2013MDF(model_type="leaky box"),
+        #Taibi2022FeHProfile(),
         FlatFeHProfile(),
         GaussianCoupalaCorrelation()
     )
