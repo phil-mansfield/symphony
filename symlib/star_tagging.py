@@ -414,7 +414,31 @@ class PlummerProfile(ProfileShapeModel):
     
     def var_names(self):
         return []
+    
+class HerquistProfile(ProfileShapeModel):
+    """ HernquistProfile models a galaxy's mass distribution as a Hernquist sphere.
+    """
+    def m_enc(self, m_star, r_half, r, **kwargs):
+        """ m_enc returns the enclosed mass profile as a function of 3D radius,
+        r. m_star is the asymptotic stellar mass of the galaxy, r_half is the 2D
+        half-light radius of the galaxy. Returned masses will be in the same
+        units as m_star.
+        """
+        a = r_half
+        return m_star*r**2 /(r+a)**2.
+    
+    def density(self, m_star, r_half, r, **kwargs):
+        """ density returns the local density as a function of 3D radius, r.
+        m_star is the asymptotic stellas mass of the galaxy, r_hald is the 2D
+        half-light radius of the galaxy. Returned masses will be in the same
+        units of m_star.
+        """
+        a = r_half
+        return m_star/(2*np.pi*a**3) * (a**4/(r*(r+a)**3))
 
+    def var_names(self):
+        return []
+    
 class Nadler2020RHalf(RHalfModel):
     """ Nadler20202RHalf models galaxies according to the z=0 size-mass relation
     in Nadler et al. 2020. (https://arxiv.org/abs/1912.03303)
@@ -595,6 +619,36 @@ class Kirby2013Metallicity(FeHMeanModel):
         """ var_names returns the names of the variables this model requires.
         """
         return ["mstar"]
+
+class Kirby2013MetallicityVariable(FeHMeanModel):
+    """ 
+    """
+    def __init__(self, offset = -1.69, sigma_Fe_H=0.17, mass_slope=0.3, z_slope=-0.11):
+        """
+
+        """
+        self.sigma_Fe_H = sigma_Fe_H
+        self.offset = offset 
+        self.slope = z_slope 
+        self.mass_slope = mass_slope
+        
+    def Fe_H(self, mstar=None, z=None, no_scatter=False):
+        """ Fe_H returns the metallicity of a given galaxy.
+        Required keyword arguments:
+         - mstar
+        """
+        if mstar is None: raise ValueError("mstar not supplied")
+        if z is None: raise ValueError("z not supplied")
+
+        Fe_H_mean = self.offset + self.mass_slope*np.log10(mstar/1e6) + self.slope*z 
+        if not no_scatter:
+            Fe_H_mean = random.normal(Fe_H_mean, self.sigma_Fe_H)
+        return Fe_H_mean
+       
+    def var_names(self):
+        """ var_names returns the names of the variables this model requires.
+        """
+        return ["mstar", "z"]
     
 class Kirby2013MDF(FeHMDFModel):
     def __init__(self, model_type="gaussian"):
@@ -763,6 +817,93 @@ class UniverseMachineMStarFit(MStarModel):
         return ["mpeak", "z"]
     
 
+class UniverseMachineMScatterGrowing(MStarModel):
+    
+    def __init__(self, slope=1.963, mpivot=10, gamma=0.0, scatter=0.2):
+        self.gamma = gamma #rate of growth 
+        self.scatter = scatter #high mass scatter
+        self.slope = slope #z=0 slope, rescaled at higher redshifts by UM relation
+        self.mpivot = mpivot #pivot mass below which scatter grows 
+
+    def m_star(self, mpeak=None, z=None, no_scatter=False):
+        """
+         Required keyword arguments:
+         - rvir
+         - cvir
+         - z
+        """
+
+        if mpeak is None: raise ValueError("mpeak not supplied")
+        if z is None: raise ValueError("z not supplied")
+        
+        mpeak = mpeak
+        
+        a = 1/(1 + z)
+
+        e0 = -1.435
+        al_lna = -1.732
+
+        ea = 1.831
+        alz = 0.178
+
+        e_lna = 1.368
+        b0 = 0.482
+
+        ez = -0.217
+        ba = -0.841
+
+        m0 = 12.035
+        bz = -0.471
+
+        ma = 4.556
+        d0 = 0.411
+
+        m_lna = 4.417
+        g0 = -1.034
+
+        mz = -0.731
+        ga = -3.100
+
+        al0 = 1.963
+        gz = -1.055
+
+        ala = -2.316
+        
+        log10_M1_Msun = m0 + ma*(a-1) - m_lna*np.log(a) + mz*z
+        e = e0 + ea*(a - 1) - e_lna*np.log(a) + ez*z
+        al = al0 + ala*(a - 1) - al_lna*np.log(a) + alz*z
+        
+        al = al*self.slope/al0 
+
+
+        b = b0 + ba*(a - 1) + bz*z
+        d = d0
+        g = 10**(g0 + ga*(a - 1) + gz*z)
+
+        x = np.log10(mpeak/10**log10_M1_Msun)
+      
+        log10_Ms_M1 = (e - np.log10(10**(-al*x) + 10**(-b*x)) +
+                       g*np.exp(-0.5*(x/d)**2))
+                       
+        log10_Ms_Msun = log10_Ms_M1 + log10_M1_Msun
+        
+        if(np.log10(mpeak))>self.mpivot:
+            growing_scatter = self.scatter
+        else:
+            growing_scatter = self.scatter + self.gamma*(np.log10(mpeak)-self.mpivot)
+        
+        log_scatter = growing_scatter*random.normal(0, 1, size=np.shape(mpeak))
+        log10_Ms_Msun += log_scatter
+        
+        Ms = 10**log10_Ms_Msun
+        
+        return Ms
+    
+    def var_names(self):
+        """ var_names returns the names of the variables this model requires.
+        """
+        return ["mpeak", "z"]
+    
 class UniverseMachineMStar(MStarModel):
     def m_star(self, um_mstar=None):
         return np.maximum(1, um_mstar)
