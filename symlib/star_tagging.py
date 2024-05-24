@@ -327,6 +327,7 @@ class AbstractRanking(abc.ABC):
         res = optimize.lsq_linear(
             M, dm_star_enc_target, bounds=(np.zeros(n), np.inf*np.ones(n))
         )
+
         self.mp_star_table = res.x
 
         self.mp_star[self.idx] = self.mp_star_table[self.ranks[self.idx]]
@@ -717,9 +718,6 @@ class Taibi2022FeHProfile(FeHProfileModel):
 
     def Fe_H_profile(self, r_half, FeH, ranks):
         delta_Fe_H = random.randn()*self.std_delta_Fe_H + self.mean_delta_Fe_H
-        print(ranks.r)
-        print(ranks.mp_star)
-        print(delta_Fe_H)
         exit(0)
 
     def var_names(self):
@@ -992,7 +990,7 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
             else:
                 E_snap[i] = look_back_orbital_time(
                     param, scale, star_snap[i], 0.125, h[i,:], 0.5)
-
+                
     # Set up buffers and shared information for I/O.
 
     # Total number of particles in each snapshot
@@ -1302,9 +1300,20 @@ class GalaxyHaloModel(object):
                 x[0,:] = scale
                 x[1,:] = running_mpeak(halo["mvir"])
             elif var_names[i] == "um_sfh":
+                col_param = lib.colossus_parameters(params)
+                cosmo = cosmology.setCosmology("",
+                    lib.colossus_parameters(params))
+                age = cosmo.age(1/scale - 1)
+                dt = age[1:] - age[:-1]
+                avg_dt = np.zeros(age.shape)
+                avg_dt[0], avg_dt[-1] = dt[0], dt[-1]
+                avg_dt[1:-1] = (dt[1:]+dt[:-1]) / 2
+
+                dm = um["sfr"]*avg_dt
+                
                 x = np.zeros((2, len(scale)))
                 x[0,:] = scale
-                x[1,:] = np.cumsum(um["sfr"]) / np.sum(um["sfr"]) * np.max(um["m_star"])
+                x[1,:] = np.cumsum(dm) / np.sum(dm) * np.max(um["m_star"])
             else:
                 x = halo[snap][var_names[i]]
             
