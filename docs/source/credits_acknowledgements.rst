@@ -22,7 +22,7 @@ Contributors
 Citing Symphony
 ---------------
 
-Symphony and its data products have been collected from a number of distinct research efforts, some of which predate Symphony. Because of this, appropriate citation depends on which data is used. We ask that all works which use Symphony data cite `Nadler et al. (in press) <https://ui.adsabs.harvard.edu/abs/2022arXiv220902675N/abstract>`_ and add the following to to their acknowledgements:
+Symphony and its data products have been collected from a number of distinct research efforts, some of which predate Symphony. Because of this, appropriate citation depends on which data is used. We ask that all works which use Symphony data cite `Nadler et al. (2024) <https://iopscience.iop.org/article/10.3847/1538-4357/acb68c>`_ and add the following to to their acknowledgements:
 
      This work used data from the Symphony suite of simulations (`http://web.stanford.edu/group/gfc/symphony/ <http://web.stanford.edu/group/gfc/symphony/>`_), which was supported by the Kavli Institute for Particle Astrophysics and Cosmology at Stanford University and SLAC National Accelerator Laboratory, and by the U.S. Department of Energy under contract number DE-AC02-76SF00515 to SLAC National Accelerator Laboratory.
 
