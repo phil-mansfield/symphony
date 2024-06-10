@@ -17,12 +17,12 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'Symphony'
-copyright = '2022, Symphony, lead developer Phil Mansfield'
-author = 'Phil Mansfield'
+project = 'GFC Simulations' # Symphony
+copyright = '2024, GFC Simulations, lead developer Phil Mansfield' #'2022, Symphony, lead developer Phil Mansfield'
+author = 'Phil Mansfield, Deveshi Buch' #'Phil Mansfield'
 
 # The full version, including alpha/beta/rc tags
-release = '1.3'
+release = '2.0' #'1.3'
 
 
 # -- General configuration ---------------------------------------------------
@@ -32,7 +32,8 @@ release = '1.3'
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary"
+    "sphinx.ext.autosummary",
+    "sphinx_design"
 ]
 
 # Add any paths that contain templates here, relative to this directory.
