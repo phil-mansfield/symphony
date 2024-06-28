@@ -1,5 +1,7 @@
-Simulations
-===========
+Symphony Simulation Suite
+===========================
+
+The Symphony simulation suite is a publicly-accessible collection of 262 simulated dark matter halos, the massive dark matter structures that all galaxies grow within. These halos span a wide range of sizes: the smallest would be home to dwarf galaxies similar to the Large Magellanic Cloud, while the largest would be host massive galaxy clusters, containing hundreds of Milky Way-like galaxies.
 
 About the Simulations
 ---------------------
@@ -16,7 +18,7 @@ The image below shows five host halos from each Symphony suite. Each row corresp
 Technical Details
 -----------------
 
-Please refer to E. O. Nadler et al. (2022, in preparation) for complete technical details regarding the five Symphony simulation suites, including the simulations' numerical and cosmological parameters, convergence properties, host and subhalo population properties, and so on. The table below summarizes the relevant properties of each simulation suite. Note that the Milky Way, L-Cluster, and Cluster suites were originally presented in `Mao et al 2015 <https://iopscience.iop.org/article/10.1088/0004-637X/810/1/21>`_, `Bhattacharyya et al 2022 <https://iopscience.iop.org/article/10.3847/1538-4357/ac68e9>`_, and `Wu et al 2013a <https://iopscience.iop.org/article/10.1088/0004-637X/763/2/70>`_, `2013b <https://iopscience.iop.org/article/10.1088/0004-637X/767/1/23>`_, respectively. In addition to citing E. O. Nadler et al. (2022, in preparation), studies that use any of these suites should also cite these original papers.
+Please refer to `E. O. Nadler et al. (2023) <https://iopscience.iop.org/article/10.3847/1538-4357/acb68c>`_ for complete technical details regarding the five Symphony simulation suites, including the simulations' numerical and cosmological parameters, convergence properties, host and subhalo population properties, and so on. The table below summarizes the relevant properties of each simulation suite. Note that the Milky Way, L-Cluster, and Cluster suites were originally presented in `Mao et al 2015 <https://iopscience.iop.org/article/10.1088/0004-637X/810/1/21>`_, `Bhattacharyya et al 2022 <https://iopscience.iop.org/article/10.3847/1538-4357/ac68e9>`_, and `Wu et al 2013a <https://iopscience.iop.org/article/10.1088/0004-637X/763/2/70>`_, `2013b <https://iopscience.iop.org/article/10.1088/0004-637X/767/1/23>`_, respectively. In addition to citing `E. O. Nadler et al. (2023) <https://iopscience.iop.org/article/10.3847/1538-4357/acb68c>`_, studies that use any of these suites should also cite these original papers.
 
 .. image:: symphony_table.png
    :width: 1000
@@ -24,4 +26,12 @@ Please refer to E. O. Nadler et al. (2022, in preparation) for complete technica
 Publications
 ------------
 
-* **SYMPHONY: Cosmological Zoom-in Simulation Suites over Four Decades of Host Halo Mass** --- *E. O. Nadler et al. (in preparation)* --- This paper presents the Symphony compilation and studies the corresponding host and subhalo population properties, comparisons between Symphony simulations and semi-analytic structure formation predictions, galaxy--halo connection modeling using Symphony, and Symphony simulations' convergence properties.
+* **SYMPHONY: Cosmological Zoom-in Simulation Suites over Four Decades of Host Halo Mass** --- `E. O. Nadler et al. (2023) <https://iopscience.iop.org/article/10.3847/1538-4357/acb68c>`_ --- This paper presents the Symphony compilation and studies the corresponding host and subhalo population properties, comparisons between Symphony simulations and semi-analytic structure formation predictions, galaxy--halo connection modeling using Symphony, and Symphony simulations' convergence properties.
+
+Symphony Subpages
+-----------------
+.. toctree::
+   
+   symphony_datainfo
+   quickstart
+   credits_acknowledgements
