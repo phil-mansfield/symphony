@@ -29,10 +29,11 @@ FAQs
 
    We usually refer to Milky Way-est by its full name for clarity, but if you really really need to abbreviate (e.g., if you are making a very small plot with very little space for labels), you can use "MW-est"! (It is also valid to use "MWest" but we caution that readers unfamiliar with the suite might misread this as "M West" instead of "MW est"!)
    
-Milky Way-est Subpages
------------------------
+.. Milky Way-est Subpages
+.. -----------------------
 .. toctree::
-   
+   :hidden:
+	  
    mwest_datainfo
    mwest_analysis
    mwest_credits

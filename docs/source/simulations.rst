@@ -28,10 +28,11 @@ Publications
 
 * **SYMPHONY: Cosmological Zoom-in Simulation Suites over Four Decades of Host Halo Mass** --- `E. O. Nadler et al. (2023) <https://iopscience.iop.org/article/10.3847/1538-4357/acb68c>`_ --- This paper presents the Symphony compilation and studies the corresponding host and subhalo population properties, comparisons between Symphony simulations and semi-analytic structure formation predictions, galaxy--halo connection modeling using Symphony, and Symphony simulations' convergence properties.
 
-Symphony Subpages
------------------
+.. Symphony Subpages
+.. -----------------
 .. toctree::
-   
+   :hidden:
+
    symphony_datainfo
    quickstart
    credits_acknowledgements

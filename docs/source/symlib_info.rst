@@ -6,6 +6,7 @@
 ``symlib`` Subpages
 -----------------------
 .. toctree::
-
+   :hidden:
+	  
    symlib_documentation
    symlib_tutorials
