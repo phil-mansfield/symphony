@@ -35,4 +35,4 @@ Publications
 
    symphony_datainfo
    quickstart
-   credits_acknowledgements
+   symphony_credits
