@@ -4,7 +4,7 @@ Symphony Data
 Available data
 --------------
 
-As discussed in the :doc:`Simulations <simulations>` page, Symphony is organized into several suites of zoom-in simulations that respectively correspond to host halos containing the following solar masses (:math:`M_\odot`): the LMC (:math:`10^{11}`), Milky Way (:math:`10^{12}`), Group (:math:`10^{13}`), LCluster (:math:`4\times 10^{14}`), and Cluster (:math:`10^{15}`) suites.
+As discussed in the :doc:`Simulations <symphony_overview>` page, Symphony is organized into several suites of zoom-in simulations that respectively correspond to host halos containing the following solar masses (:math:`M_\odot`): the LMC (:math:`10^{11}`), Milky Way (:math:`10^{12}`), Group (:math:`10^{13}`), LCluster (:math:`4\times 10^{14}`), and Cluster (:math:`10^{15}`) suites.
 
 Each halo in these suites has several processed datasets describing its subhalos and particles. (More detailed descriptions of each dataset for experts can be found below.)
 
@@ -90,5 +90,5 @@ Data is stored as a series of ``.tar`` files at the password-protected `s3df.sla
    Get data access
 
 
-If you're comfortable working with halo data already, you'll want to see the :doc:`Quickstart <quickstart>` page! Otherwise, check out the :doc:`Library Info pages <symlib_info>` to learn how to use the data.
+If you're comfortable working with halo data already, you'll want to see the :doc:`Quickstart <quickstart>` page! Otherwise, check out the :doc:`Library Info pages <symlib>` to learn how to use the data.
    
