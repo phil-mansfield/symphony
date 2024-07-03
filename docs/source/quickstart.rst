@@ -1,9 +1,9 @@
 Quickstart & FAQs
 =================
 
-This page is designed for experienced users who have worked with halo data before and don't mind a bit of jargon. It also contains FAQs outlining several convenience functions. You can find a more detailed explanation in the :doc:`Data Access <data_access>` page and in the :doc:`Data Analysis Tutorial <getting_started>`.
+This page is designed for experienced users who have worked with halo data before and don't mind a bit of jargon. It also contains FAQs outlining several convenience functions. You can find a more detailed explanation in the :doc:`Data Access <data_access>` page and in the the full tutorials on data analysis, the :doc:`Subalo Tutorial <working_with_subhalos>`, :doc:`Particle Tutorial <working_with_particles>`, and :doc:`Merger Tree Tutorial <working_with_trees>`.
 
-First, install/update the Python 3 analysis library, symlib, using pip:
+First, install/update the Python 3 analysis library, ``symlib``, using pip:
 
 .. code-block:: console
 
@@ -90,4 +90,4 @@ The default "halos" dataset (i.e. the data read in by :func:`symlib.read_subhalo
 - The halo is not a subhalo during its first snapshot.
 - If the halo disrupts, consistent-trees merges it with any other halo.
 
-If you want other objects, you will need to analyze the full merger tree. This must be :doc:`downloaded separately <data_access>`. Symphony's merger trees use a different format than consistent-trees, so it would be best to read through the :doc:`full tutorial <intro_to_merger_trees>`. The full merger tree also contains `additional variables <merger_tree_variables>` not included in the standard halo dataset.
+If you want other objects, you will need to analyze the full merger tree. This must be :doc:`downloaded separately <data_access>`. Symphony's merger trees use a different format than consistent-trees, so it would be best to read through the :doc:`full tutorial <working_with_trees>`. The full merger tree also contains `additional variables <merger_tree_variables>` not included in the standard halo dataset.

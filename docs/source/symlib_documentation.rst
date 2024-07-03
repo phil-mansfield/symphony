@@ -126,7 +126,7 @@ The following variables can be read in from merger trees with the :func:`symlib.
 
 * ``"snap"`` -  This halo's snapshot.
 
-* ``"next_co_prog"`` - The depth-first ID (``dfid``, not ``id``) of this halo's co-progenitor, if it exists. If this halo doesn't have a co-progenitor, this variable is -1. See :doc:`Intro to Merger Trees <intro_to_merger_trees>` for a description of what this is.
+* ``"next_co_prog"`` - The depth-first ID (``dfid``, not ``id``) of this halo's co-progenitor, if it exists. If this halo doesn't have a co-progenitor, this variable is -1. See :doc:`Intro to Merger Trees <working_with_trees>` for a description of what this is.
 
 * ``"mvir"`` -  The mass of the halo, :math:`M_{\rm vir}`. When isolated, this an overdensity mass from the Bryan & Norman (1998) definition of the virial overdensity. When deep in a host halo, this is the bound mass. The transition between these two definitions is ill-defined.
 
@@ -280,7 +280,7 @@ Halo Functions
 
    The user supplies a list of variable names and a single, 1D array is returned for each variable. Each element of each array is a halo at a specific snapshot, and these arrays are ordered in a way that encodes which halos evolve and merge into which other halos. To decode this structure, you will need to use the results of :func:`symlib.read_branches`, which breaks the tree into smaller structures, or "branches."
 
-   The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found on the :doc:`Intro to Merger Trees <intro_to_merger_trees>` page.
+   The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found on the :doc:`Intro to Merger Trees <working_with_trees>` page.
 	      
    :param str sim_dir: The directory of the target host halo.
    :param str list var_names: The names of variables.
@@ -291,7 +291,7 @@ Halo Functions
 	      	      
    Reads information about the time-independent properties of every halo in the simulation, not just the subhalos of target host. Each element corresonds to a single branch in the tree (i.e. the evolution of a single halo over time) and gives information on the properties and location of the branch.
 
-   The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found on the :doc:`Intro to Merger Trees <intro_to_merger_trees>` page.
+   The full strucutre of this merger tree is too large of a topic to be covered here. A writeup can be found on the :doc:`Intro to Merger Trees <working_with_trees>` page.
    
    :param str sim_dir: The directory of the target host halo.
    :rtype: :data:`symlib.BRANCH_DTYPE` ``np.array`` 
@@ -309,7 +309,7 @@ Halo Functions
    
 .. function:: symlib.find_merger_branch(lookup_table, co_prog)
 
-   Searches for the index of the branch corresponding of a given merging subhalo. The subhalo is identified by a "co-progenitor" ID. See the writeup in :doc:`Intro to Merger Trees <intro_to_merger_trees>` for more discussion on what this means.
+   Searches for the index of the branch corresponding of a given merging subhalo. The subhalo is identified by a "co-progenitor" ID. See the writeup in :doc:`Intro to Merger Trees <working_with_trees>` for more discussion on what this means.
 
    In practice, most users will want to use :func:`symlib.find_all_merger_branches`.
 

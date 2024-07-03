@@ -1,7 +1,7 @@
 Data Access
 ===========
 
-This page consists of data access instructions for the :doc:`Symphony <simulations>` and :doc:`Milky Way-est <mwest_overview>` suites.
+This page consists of data access instructions for the :doc:`Symphony <symphony_overview>` and :doc:`Milky Way-est <mwest_overview>` suites.
 
 Accessing Data
 --------------
