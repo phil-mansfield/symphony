@@ -28,11 +28,9 @@ Publications
 
 * **SYMPHONY: Cosmological Zoom-in Simulation Suites over Four Decades of Host Halo Mass** --- `E. O. Nadler et al. (2023) <https://iopscience.iop.org/article/10.3847/1538-4357/acb68c>`_ --- This paper presents the Symphony compilation and studies the corresponding host and subhalo population properties, comparisons between Symphony simulations and semi-analytic structure formation predictions, galaxy--halo connection modeling using Symphony, and Symphony simulations' convergence properties.
 
-- **Symfind: Addressing the Fragility of Subhalo Finders and Revealing the Durability of Subhalos ** --- `Mansfield et al. (2024) <https://ui.adsabs.harvard.edu/abs/2023arXiv230810926M/abstract>` --- This paper describes the Symfind subhalo finder, which is used heavily in the data hosted on this website. It also makes the case that Symfind does a better job tracking subhalos than subhalo finders like Rockstar and lays out a new, comprehensive system for quantifying subhalo finder errors.
+* **Symfind: Addressing the Fragility of Subhalo Finders and Revealing the Durability of Subhalos** --- `Mansfield et al. (2024) <https://ui.adsabs.harvard.edu/abs/2023arXiv230810926M/abstract>` --- This paper describes the Symfind subhalo finder, which is used heavily in the data hosted on this website. It also makes the case that Symfind does a better job tracking subhalos than subhalo finders like Rockstar and lays out a new, comprehensive system for quantifying subhalo finder errors.
   
 .. toctree::
    :hidden:
 
-   symphony_datainfo
-   quickstart
    symphony_credits

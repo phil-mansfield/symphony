@@ -1,17 +1,17 @@
-Symphony Data
-================
+Data Specifications
+===================
 
 Available data
 --------------
 
-As discussed in the :doc:`Simulations <symphony_overview>` page, Symphony is organized into several suites of zoom-in simulations that respectively correspond to host halos containing the following solar masses (:math:`M_\odot`): the LMC (:math:`10^{11}`), Milky Way (:math:`10^{12}`), Group (:math:`10^{13}`), LCluster (:math:`4\times 10^{14}`), and Cluster (:math:`10^{15}`) suites.
+The data hosted here is split into across six suites, five from :doc:`Symphony <symphony_overview>` and one from :doc:`Milky Way-est <mwest_overview>`. 
 
-Each halo in these suites has several processed datasets describing its subhalos and particles. (More detailed descriptions of each dataset for experts can be found below.)
+Each halo in these suites has several processed datasets describing its subhalos and particles. Some suites have additional, unique data products. More detailed descriptions of each dataset for experts can be found below. 
 
 * ``halos`` - Lightweight dataset giving the evolution of subhalos over time according to the Rockstar and Symgind halo finders. *This is the main dataset that most users will be interested in. It is light-weight enough to use on a personal computer.*
+  * ``particles`` - Particles of the halo and all its subhalos, tracked over time.
 * ``trees`` - Full Rockstar + consistent-trees merger treees for the entire high-resolution region around the halo.
-* ``particles`` - Particles of the halo and all its subhalos, tracked over time.
-* ``full_snapshots`` - Full Gadget-2 snapshots for the entire zoom-in simulation
+* ``full_snapshots`` - Full Gadget-2 snapshots for the entire zoom-in simulation. These are only provided at a few snapshots.
 
 .. list-table::
 	:header-rows: 1

@@ -1,5 +1,5 @@
-Working With Merger Trees
-=========================
+Merger Tree Tutorial
+====================
 
 What Are Merger Trees?
 ----------------------

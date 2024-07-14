@@ -37,7 +37,7 @@ How would you like to make use of the Milky Way-est suite?
 
       .. dropdown:: Use ``symlib`` functionality with Milky Way-est
 
-         This is a great option for folks who already use ``symlib`` tools for their existing data analysis pipeline, want to make use of the functions and documentation that ``symlib`` offers, or otherwise want a more guided/abstracted approach to working with these halos. See :doc:`quickstart` and :doc:`symlib_documentation` for more!
+         This is a great option for folks who already use ``symlib`` tools for their existing data analysis pipeline, want to make use of the functions and documentation that ``symlib`` offers, or otherwise want a more guided/abstracted approach to working with these halos. See the :doc:`symlib` page for more information.
 
    .. grid-item-card::
 

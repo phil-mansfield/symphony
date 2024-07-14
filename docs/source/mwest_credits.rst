@@ -8,7 +8,7 @@ Citing Milky Way-est
 
 We ask that all works making use of Milky Way-est cite `Buch et al. (2024) <https://arxiv.org/abs/2404.08043>`_ and add the following to their acknowledgements:
 
-     This work used data from the Milky Way-est suite of simulations (`https://web.stanford.edu/group/gfc/symphony <https://web.stanford.edu/group/gfc/symphony/>`_), which was supported by the Kavli Institute for Particle Astrophysics and Cosmology at Stanford University, SLAC National Accelerator Laboratory, and the U.S. Department of Energy under contract number DE-AC02-76SF00515 to SLAC National Accelerator Laboratory.
+     This work used data from the Milky Way-est suite of simulations, hosted at `web.stanford.edu/group/gfc/gfcsims <https://web.stanford.edu/group/gfc/gfcsims/>`_. This work was supported by the Kavli Institute for Particle Astrophysics and Cosmology at Stanford University, SLAC National Accelerator Laboratory, and the U.S. Department of Energy under contract number DE-AC02-76SF00515 to SLAC National Accelerator Laboratory.
 
 
 Acknowledgements

@@ -1,5 +1,5 @@
-Quickstart & FAQs
-=================
+Quickstart Instructions
+=======================
 
 This page is designed for experienced users who have worked with halo data before and don't mind a bit of jargon. It also contains FAQs outlining several convenience functions. You can find a more detailed explanation in the :doc:`Data Access <data_access>` page and in the the full tutorials on data analysis, the :doc:`Subalo Tutorial <working_with_subhalos>`, :doc:`Particle Tutorial <working_with_particles>`, and :doc:`Merger Tree Tutorial <working_with_trees>`.
 
@@ -34,60 +34,62 @@ A full list of the values in ``h`` can be found :data:`here <symlib.SUBHALO_DTYP
 
 One ``h`` variable requires special note, ``h["ok"]``, which is true when a subhalo exists and false when it doesn't exist. For example, if you want to analyze all the subhalos in snapshot 200, you should only analyze halos where ``h["ok"][:,200]`` is true. Symfind does not track subhalos prior to infall.
 
-Below this point are some FAQs about working with this data.
+Quickstart FAQs
+---------------
 
-Where can I find example code?
-------------------------------
+.. dropdown:: Where can I find example code?
+	:animate: fade-in
+			  
+			  
+	The tutorial has example code that plots :ref:`subhalo locations <halo_position_example>`, looks at the :ref:`mass accretion history <mah_example>` of subhalos, and constructs a :ref:`subhalo mass function <shmf_example>` from all the hosts in a suite.
 
-The tutorial has example code that plots :ref:`subhalo locations <halo_position_example>`, looks at the :ref:`mass accretion history <mah_example>` of subhalos, and constructs a :ref:`subhalo mass function <shmf_example>` from all the hosts in a suite.
+.. dropdown:: How do I loop over all the hosts in a suite?
+	:animate: fade-in
+			  
+	.. code-block:: python
 
-How do I loop over all the hosts in a suite?
---------------------------------------------
+		symlib.get_host_directory("my/base/directory", "SymphonyMilkyWay", 3)
 
-.. code-block:: python
+	returns the directory of host 3 in the Milky Way-mass suite. Use a for loop ranging from 0 to ``symlib.n_hosts("SymphonyMilkyWay")`` to access all the directories.
 
-	symlib.get_host_directory("my/base/directory", "SymphonyMilkyWay", 3)
+.. dropdown:: How do I get scale factors?
+	:animate: fade-in
+		  
+	.. code-block:: python
 
-returns the directory of host 3 in the Milky Way-mass suite. Use a for loop ranging from 0 to ``symlib.n_hosts("SymphonyMilkyWay")`` to access all the directories.
+		symlib.scale_factors("SymphonyMilkyWay")
 
-How do I get scale factors?
----------------------------
+.. dropdown:: How do I get simulation parameters?
+	:animate: fade-in
 
-.. code-block:: python
+	.. code-block:: python
 
-	symlib.scale_factors("SymphonyMilkyWay")
+		param = symlib.simulation_parameters("path/to/HaloXXX")
 
-How do I get simulation parameters?
------------------------------------
+	``params`` is a dictionary with various cosmological and numerical parameters
 
-.. code-block:: python
+	.. code-block:: python
 
-        param = symlib.simulation_parameters("path/to/HaloXXX")
+		{'flat': True, 'H0': 70.0, 'Om0': 0.286, 'Ob0': 0.049,
+		 'sigma8': 0.82, 'ns': 0.95, 'eps': 0.17, 'mp': 281981.0,
+		 'h100': 0.7}
 
-``params`` is a dictionary with various cosmological and numerical parameters
+	Note that ``eps`` is in comoving :math:`h^{-1}\,{\rm kpc}` and ``mp`` is in :math:`h^{-1}M_\odot`.
 
-.. code-block:: python
+.. dropdown:: How do I get halo properties in comoving units?
+    :animate: fade-in
+			  
+	.. code-block:: python
 
-    {'flat': True, 'H0': 70.0, 'Om0': 0.286, 'Ob0': 0.049,
-     'sigma8': 0.82, 'ns': 0.95, 'eps': 0.17, 'mp': 281981.0,
-     'h100': 0.7}
+		h, hist = symlib.read_subhalos("path/to/HaloXXX", comoving=True)
 
-Note that ``eps`` is in comoving :math:`h^{-1}\,{\rm kpc}` and ``mp`` is in :math:`h^{-1}M_\odot`.
+.. dropdown:: How do I get halos/properties not included in the "halos" dataset?
+    :animate: fade-in
+			  
+	The default "halos" dataset (i.e. the data read in by :func:`symlib.read_subhalos`) contains the main branches of every object that has ever been a subhalo of the host as long as the three following conditions are met:
 
-How do I get halo properties in comoving units?
------------------------------------------------
+	- :math:`N_{\rm peak} > 300`, where :math:`N_{\rm peak}` is measured prior to the subhalo's first infall. First infall includes halos other than the host and does not include temporary Rockstar errors caused by major mergers.
+	- The halo is not a subhalo during its first snapshot.
+	- If the halo disrupts, consistent-trees merges it with any other halo.
 
-.. code-block:: python
-
-	h, hist = symlib.read_subhalos("path/to/HaloXXX", comoving=True)
-
-How do I get halos/properties not included in the "halos" dataset?
-------------------------------------------------------------------
-
-The default "halos" dataset (i.e. the data read in by :func:`symlib.read_subhalos`) contains the main branches of every object that has ever been a subhalo of the host as long as the three following conditions are met:
-
-- :math:`N_{\rm peak} > 300`, where :math:`N_{\rm peak}` is measured prior to the subhalo's first infall. First infall includes halos other than the host and does not include temporary Rockstar errors caused by major mergers.
-- The halo is not a subhalo during its first snapshot.
-- If the halo disrupts, consistent-trees merges it with any other halo.
-
-If you want other objects, you will need to analyze the full merger tree. This must be :doc:`downloaded separately <data_access>`. Symphony's merger trees use a different format than consistent-trees, so it would be best to read through the :doc:`full tutorial <working_with_trees>`. The full merger tree also contains `additional variables <merger_tree_variables>` not included in the standard halo dataset.
+	If you want other objects, you will need to analyze the full merger tree. This must be :doc:`downloaded separately <data_access>`. Symphony's merger trees use a different format than consistent-trees, so it would be best to read through the :doc:`full tutorial <working_with_trees>`. The full merger tree also contains `additional variables <merger_tree_variables>` not included in the standard halo dataset.

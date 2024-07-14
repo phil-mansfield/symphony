@@ -1,5 +1,5 @@
-Working with Particles
-======================
+Particle Tutorial
+=================
 
 Symphony gives you access to all particles associated with the host halo and its subhalos, as well as the trajectories of those particles over time. This page contains tutorials and example code showing how to use these particles through ``symlib``. A complete, detailed reference for the library can be found :doc:`here <symlib_documentation>`.
 

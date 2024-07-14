@@ -22,12 +22,12 @@ FAQs
 .. dropdown:: Is this suite part of Symphony?
    :animate: fade-in
 
-   Nope! But, they are somewhat related. Milky Way-est halos and Symphony MW-mass halos are run using the same cosmological parameters, initial conditions code, simulation code, and post-processing code. This makes them great candidates for comparative studies, and the Milky Way-est paper goes into detail about analyses done on Milky Way-est compared to Symphony MW. However, halos in Symphony MW have a different mass and concentration distribution than Milky Way-est halos, and unlike Milky Way-est, they are not explicitly selected to include LMC and GSE analogs.
+   No. But they are somewhat related. Milky Way-est halos and SymphonyMilkyWay halos are run using the same cosmological parameters, initial conditions code, simulation code, and post-processing code. This makes them great candidates for comparative studies, and the Milky Way-est paper goes into detail about analyses done on Milky Way-est compared to SymphonyMilkyWay. Halos in SymphonyMilkyWay have a different mass and concentration distribution than Milky Way-est halos, and were not explicitly selected to include LMC and GSE analogs.
 
 .. dropdown:: If I need to abbreviate Milky Way-est while referring to it, what should I do?
    :animate: fade-in
 
-   We usually refer to Milky Way-est by its full name for clarity, but if you really really need to abbreviate (e.g., if you are making a very small plot with very little space for labels), you can use "MW-est"! (It is also valid to use "MWest" but we caution that readers unfamiliar with the suite might misread this as "M West" instead of "MW est"!)
+We recommend referring to Milky Way-est by its full name for clarity, but both “MW-est” and “MWest” are acceptable abbreviations.
    
 .. Milky Way-est Subpages
 .. -----------------------

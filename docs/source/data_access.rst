@@ -1,10 +1,7 @@
-Data Access
-===========
+Data Access Instructions
+========================
 
-This page consists of data access instructions for the :doc:`Symphony <symphony_overview>` and :doc:`Milky Way-est <mwest_overview>` suites.
-
-Accessing Data
---------------
+This page consists of data access instructions for the :doc:`Symphony <symphony_overview>` and :doc:`Milky Way-est <mwest_overview>` suites. The Milky Way-est suite also contains some specialized data products. A Jupyter notebook walking through how to use these data products is hosted :doc:`here <mwest_analysis>` under the "Getting Started" tab.
 
 Data is stored as a series of ``.tar`` files at the password-protected `s3df.slac.stanford.edu/data/kipac/symphony <s3df.slac.stanford.edu/data/kipac/symphony>`__. If you fill out `this form <https://docs.google.com/forms/d/e/1FAIpQLSdud6b4i51AP13glVibkzyLAtT9b2ctVx516_hvy5nm76uq1Q/viewform?usp=sf_link>`__, a username and password will be emailed to you. Once you have access, any method for downloading these ``.tar`` files will work, although we have several suggested methods below.
 
