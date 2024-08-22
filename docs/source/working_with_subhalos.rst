@@ -1,5 +1,5 @@
-Working With Subhalos
-=====================
+Subhalo Tutorial
+================
 
 Symphony data is stored in cutsom data formats and must be read with its analysis library, ``symlib``. This page contains tutorials and example code showing how to use this library. A complete, detailed reference for this library can be found :doc:`here <symlib_documentation>`.
 
