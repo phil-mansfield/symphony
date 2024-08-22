@@ -18,7 +18,7 @@ def pack_files(suite, halo_name, base_out_dir, target="halos",
     
     if suite is None:
         for suite in ["SymphonyLMC", "SymphonyMilkyWay", "SymphonyGroup",
-                      "SymphonyLCluster", "SymphonyCluster"]:
+                      "SymphonyLCluster", "SymphonyCluster", "MWest"]:
             pack_files(suite, halo_name, base_out_dir, target=target)
 
     if halo_name is None:
