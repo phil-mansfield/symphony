@@ -728,7 +728,7 @@ class GaussianCoupalaCorrelation(MetalCorrelationModel):
     that thjey can be represented by a Gaussian coupala.
     """
 
-    def __init__(self, rho=0.76):
+    def __init__(self, rho=0.75):
         self.rho = rho
 
     def a_form(self, Fe_H, sfh):

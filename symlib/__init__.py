@@ -8,6 +8,9 @@ from .lib import simulation_parameters, parameter_table, scale_factors, pristine
 # TODO: better names for pristine_merger_indices and propagate_parent_indices
 from .match import match_subhalos, plot_matched_subhalos
 
+# Validation
+from .validate import validate_symfind
+
 # Abstract models
 from .star_tagging import ProfileShapeModel, RHalfModel, MStarModel, AbstractRanking, FeHMeanModel, FeHMDFModel, FeHProfileModel, MetalCorrelationModel, SFHModel
 # ProfileShape models

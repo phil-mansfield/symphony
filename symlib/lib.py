@@ -789,7 +789,12 @@ def read_cores(dir_name, include_false_selections=False, suffix=None):
 
     return out
 
-def read_um(dir_name):
+def read_um(dir_name, file_name=None):
+    """ if you specify file_name, that allows you to use the simulation in
+    dir_name, but to use any specific UM file instance that you want instead.
+    This is useful if you're, say trying to look at a bunch of specific UM
+    instances sampled from some posterior.
+    """
     fname = path.join(dir_name, "um", "um.dat")
     h, hist = read_subhalos(dir_name)
     h_cmov, hist_cmov = read_subhalos(dir_name, comoving=True)
@@ -819,7 +824,7 @@ def read_um(dir_name):
     return out
 
 def read_galaxies(dir_name, model="um"):
-    fname = path.join(dir_name, "galaxies", "%s.dat" % model)
+    fname = path.join(dir_name, "galaxies", "gal_cat_%s.dat" % model)
 
     h, _ = read_rockstar(dir_name)
     n_halo, n_snap = h.shape
@@ -829,9 +834,11 @@ def read_galaxies(dir_name, model="um"):
     gal_hist = np.zeros(n_halo, dtype=GALAXY_HISTORY_DTYPE)
 
     with open(fname) as fp:
-        gal_hist["m_star_i"] = np.fromfile(fp, np.float32, n_halo)
-        gal_hist["r_half_i"] = np.fromfile(fp, np.float32, n_halo)
+        gal_hist["m_star_i"] = np.fromfile(fp, np.float64, n_halo)
+        gal_hist["r_half_3d_i"] = np.fromfile(fp, np.float64, n_halo)
 
+        print(gal_hist["m_star_i"])
+        
         gal["m_star"] = np.fromfile(fp, np.float32, n)
         gal["r_half"] = np.fromfile(fp, np.float32, n)
         gal["m_dyn"] = np.fromfile(fp, np.float32, n)
@@ -1079,7 +1086,7 @@ class ParticleTags(object):
                 self.flag[i] = np.fromfile(f, np.uint8, part_hd.sizes[i])
 
             f.close()
-
+            
         self.n0 = part_hd.n0
         self.n_file = part_hd.n_file
         self.n_halo =  part_hd.n_halo
@@ -1357,6 +1364,7 @@ def read_particles(part_info, base_dir, snap, var_name,
         false_remapping = h_idx
     else:
         false_remapping = h_idx[~part_info.hist_false["false_selection"]]
+
     if owner is not None and not include_false_selections:
         owner = false_remapping[owner]
 
@@ -1387,7 +1395,8 @@ def read_particles(part_info, base_dir, snap, var_name,
     elif var_name in ["x", "v"]:
         snap_name = "snap_%03d" % snap
         if owner is not None:
-            first_snap = np.min(np.where(part_info.h_false["ok"][owner,:])[0])
+            first_snap = np.min(tags.snap[owner])
+            
             if snap < first_snap:
                 num = int(np.sum(tags.flag[owner] == 0))
                 return np.ones((num, 3)) * np.nan
@@ -1530,7 +1539,8 @@ def _expand_vector(tags, x, i, snap):
     ok = tags.snap[i][tags.flag[i] == 0] <= snap
     out = np.ones((len(ok), 3)) * np.nan
     if np.sum(ok) != len(x):
-        print("   ", np.sum(ok), len(x))
+        print("i == %d, np.sum(ok) == %d, but len(x) == %d" %
+              (i, np.sum(ok), len(x)))
     assert(np.sum(ok) == len(x))
     out[ok] = x
     return out
