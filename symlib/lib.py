@@ -789,13 +789,14 @@ def read_cores(dir_name, include_false_selections=False, suffix=None):
 
     return out
 
-def read_um(dir_name, file_name=None):
+def read_um(dir_name, fname=None):
     """ if you specify file_name, that allows you to use the simulation in
     dir_name, but to use any specific UM file instance that you want instead.
     This is useful if you're, say trying to look at a bunch of specific UM
     instances sampled from some posterior.
     """
-    fname = path.join(dir_name, "um", "um.dat")
+    if fname is None:
+        fname = path.join(dir_name, "um", "um.dat")
     h, hist = read_subhalos(dir_name)
     h_cmov, hist_cmov = read_subhalos(dir_name, comoving=True)
     n_halo, n_snap = h.shape
