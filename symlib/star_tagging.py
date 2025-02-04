@@ -6,6 +6,7 @@ import abc
 import scipy.optimize as optimize
 import scipy.integrate as integrate
 import scipy.interpolate as interpolate
+import scipy.special as special
 from . import lib
 from . import util
 from . import sampling
@@ -30,6 +31,8 @@ NIL_RANK = -1
 
 DEFAULT_QUANTILE_EDGES = np.zeros(13)
 DEFAULT_QUANTILE_EDGES[1:] = 10**np.linspace(-4, 0, 12)
+#DEFAULT_QUANTILE_EDGES = np.zeros(25)
+#DEFAULT_QUANTILE_EDGES[1:] = 10**np.linspace(-4, 0, 24)
 
 DEFAULT_R_BINS = np.zeros(102)
 DEFAULT_R_BINS[1:] = 10**np.linspace(-2.5, 0, 101)
@@ -238,6 +241,10 @@ class MetalCorrelationModel(abc.ABC):
             out[key] = kwargs[key]
         return out
 
+############################
+# Particle ranking classes #
+############################
+    
 class AbstractRanking(abc.ABC):
     """ AbstractRanking is an abstract base class for various models that 
     rank particles.
@@ -257,9 +264,13 @@ class AbstractRanking(abc.ABC):
         quantile_edges[i] < q < quantile_edges[i+1]).
         """
         self.ranks = ranks
-        self.n_max = np.max(ranks)
         self.core_idx = core_idx
-        self.mp_star = np.zeros(len(ranks))
+        if len(ranks) == 0:
+            self.n_max = 0
+            self.mp_star = np.empty(0)
+        else:
+            self.n_max = np.max(ranks)
+            self.mp_star = np.zeros(len(ranks))
         
         self.idx = None
         self.x = None
@@ -277,9 +288,10 @@ class AbstractRanking(abc.ABC):
         None unless you call a later method which works with velocities (i.e.
         core_v)
         """
-        self.x = np.copy(x)
+        # Initially, this did a shallow copy of the arrays. 
+        self.x = np.array(x)
         if v is not None:
-            self.v = np.copy(v)
+            self.v = np.array(v)
         else:
             self.v = None
         self.idx = idx
@@ -300,8 +312,11 @@ class AbstractRanking(abc.ABC):
         load_particles() first.
         """
         if self.x is None: raise ValueError("x not set")
-        core = self.x[np.searchsorted(self.idx, self.core_idx)]
-        return np.median(core, axis=0)
+
+        core = self.x[np.searchsorted(self.idx, self.core_idx[:-1])]
+        # I'm extremely confused by something that I think is a bug in
+        # np.median here???
+        return np.median(core[:-1], axis=0)
         
     def core_v(self):
         """ core_v returns the velocity of the halo core. You must have called
@@ -386,12 +401,54 @@ class AbstractRanking(abc.ABC):
             mean_t_relax[i] = np.mean(t_relax[self.ranks[self.idx] == i])
         
         return mean_t_relax
+
+class RadialEnergyRanking(AbstractRanking):
+    def __init__(self, params, x, v, idx, n_max, rvir,
+                 core_particles=DEFAULT_CORE_PARTICLES,
+                 quantile_edges=DEFAULT_QUANTILE_EDGES):
+        """ Takes mp (Msun; may be a scalar), x (pkpc), v (pkm/s), idx (the
+        index into the full particle array), and n_max (the number of particles
+        in the full particle arrays).
+        
+        only_tag may be set so that only a subset of particles may be tagged
+        (e.g. early-accreted particles).
+        """
+
+        if len(x) == 0:
+            self.rmax, self.vmax = 0, 0
+            self.ke_vmax, self.E_vmax2 = np.empty(0), np.empty(0)
+            self.E_idx, self.E_edges = np.empty(0), np.empty(0)
+            super(RadialEnergyRanking, self).__init__(
+                np.empty(0), np.empty(0), 0)
+            return
+            
+        
+        (self.rmax, self.vmax,
+         self.pe_vmax2, self.order) = profile_info(params, x)
+        
+        self.ke_vmax2 = 0.5*np.sum(v**2, axis=1) / self.vmax**2
+        self.E_vmax2 = self.ke_vmax2 + self.pe_vmax2
+        self.E_idx = idx
+        
+        core_q = min(core_particles / len(self.E_vmax2), 1)
+        core_E_vmax2 = np.quantile(self.E_vmax2, core_q)
+        
+        core_idx = idx[self.E_vmax2 <= core_E_vmax2]
+
+        #E_edges = np.linspace(-10, 0, 41)
+        E_edges = np.linspace(-15, 0, 61)
+        quantile_edges = [np.sum(self.E_vmax2< E_edges[i])/
+                          len(self.E_vmax2) for i in range(len(E_edges))]
+
+        ranks, self.E_edges = rank_by_quantile(
+            quantile_edges, self.E_vmax2, idx, n_max)
+        
+        super(RadialEnergyRanking, self).__init__(ranks, core_idx, rvir)
     
 ##################################
 # Specific Model Implementations #
 ##################################
 
-    
 class PlummerProfile(ProfileShapeModel):
     """ PlummerProfile models a galaxy's mass distribution as a Plummer sphere.
     """
@@ -437,6 +494,52 @@ class HerquistProfile(ProfileShapeModel):
         a = r_half
         return m_star/(2*np.pi*a**3) * (a**4/(r*(r+a)**3))
 
+    def var_names(self):
+        return []
+
+class EinastoProfile(ProfileShapeModel):
+    """ EinastoProfile is is a profile following an Einasto profile. This
+    can be a somewhat reasonable approximation of a de-projected Sersic profile
+    and more generally is just a clean way to carve out a range of profile
+    shapes. (See Cardone et al. 2005 for a bunch of analytical Einasto math,
+    although note that Cardone used gamma as the index)
+
+    rho = rho_s * exp(-2/alpha * ((r/rs)^alpha - 1))
+
+    M(r) = Mtot*Gamma(3/alpha, 2*(r/rs)^alpha/alpha)
+
+    (here, Gamma is the normalized lower incomplete gamma function and rs
+    is the radius where the log slope = -2.)
+    """
+    def __init__(self, alpha):
+        self.alpha = alpha
+        def f(x):
+            return special.gammainc(3/alpha, 2*x**alpha/alpha) - 0.5
+        self.r_half_rs = optimize.root_scalar(f, x0=1, x1=2).root
+    
+    def m_enc(self, m_star, r_half, r, **kwargs):
+        """ m_enc returns the enclosed mass profile as a function of 3D radius,
+        r. m_star is the asymptotic stellar mass of the galaxy, r_half is the 2D
+        half-light radius of the galaxy. Returned masses will be in the same
+        units as m_star.
+        """
+
+        rs = r_half/self.r_half_rs
+        x = r/rs
+        return special.gammainc(
+            3/self.alpha, 2*x**self.alpha/self.alpha)*m_star
+    
+    def density(self, m_star, r_half, r, **kwargs):
+        """ density returns the local density as a function of 3D radius, r.
+        m_star is the asymptotic stellas mass of the galaxy, r_hald is the 2D
+        half-light radius of the galaxy. Returned masses will be in the same
+        units of m_star.
+        """
+        rs = r_half/self.r_half_rs
+        rho_s = (m_star*(2/self.alpha)**(3/self.alpha) *
+                 (self.alpha/(4*np.pi*rs**3)))
+        return rho_s * np.exp(-2/self.alpha * ((r/rs)**self.alpha - 1))
+        
     def var_names(self):
         return []
     
@@ -705,7 +808,9 @@ class FlatFeHProfile(FeHProfileModel):
         return []
 
 class Taibi2022FeHProfile(FeHProfileModel):
-    def __init__(self):
+    """ Requires that you're using RadialEnergyRanking
+    """
+    def __init__(self, r_r50_max=6):
         FeHProfileModel.__init__(self)
         delta_Fe_H = [
             -0.101, -0.23, -0.09, -0.14, -0.21, -0.04, -0.32, -0.15, -0.15,
@@ -715,14 +820,128 @@ class Taibi2022FeHProfile(FeHProfileModel):
         ]
         self.mean_delta_Fe_H = np.mean(delta_Fe_H)
         self.std_delta_Fe_H = np.std(delta_Fe_H)
+        self.r_r50_max = r_r50_max
 
-    def Fe_H_profile(self, r_half, FeH, ranks):
+    def Fe_H_profile(self, r_half, Fe_H, ranks):
         delta_Fe_H = random.randn()*self.std_delta_Fe_H + self.mean_delta_Fe_H
-        exit(0)
 
+        def f_Fe_H(r):
+            out = delta_Fe_H*(r/r_half)
+            min_Fe_H = np.abs(delta_Fe_H*self.r_r50_max)
+            out[out < -min_Fe_H] = -min_Fe_H
+            out[out > min_Fe_H] = min_Fe_H
+            return out
+
+        """
+        # You need to be unusually careful here since you're using both
+        # information from the energy and star snapshots. I've appended E or
+        # star to each variable based on the length/indexing of the underlyng
+        # array.
+        
+        idx_star, idx_E = ranks.idx, ranks.E_idx
+        
+        x_star = ranks.x
+        x_all = np.zeros((len(ranks.ranks),3))
+        x_all[idx_star] = x_star
+        x_E = x_all[idx_E]
+        
+        r_E = np.sqrt(np.sum(x_E**2, axis=1))
+        order_E = ranks.order
+        mp_E = ranks.mp_star[idx_E]
+        is_bound_E = (ranks.ranks != NIL_RANK)[idx_E]
+        
+        # f_Fe_H is the metallicity gradient of the galaxy with an arbitary
+        # offset. [Fe/H] is kept constant outside r_r50_max.t
+        
+        r_E_sort = r_E[order_E]
+        mp_E_sort = ranks.mp_star[ranks.order]
+        
+        # The idea here is that you want to evaluate the metallicity at a
+        # radius corresponding to a random particle with a similar energy
+        # to remove biases where particles are pericenter are given higher
+        # metallicities. You don't want this because correlations with orbital
+        # phase lead to immediate time evolution after tagging.
+
+        window = 10 # This number can be whatever, it just can't be large
+        idx = np.arange(len(r_E_sort), dtype=int)
+        min_idx = np.maximum(idx - window, 0)
+        max_idx = np.minimum(idx + window, len(r_E_sort)-1)
+        idx = random.randint(min_idx, max_idx)
+        r_eval = r_E_sort[idx]
+
+        Fe_H_i = f_Fe_H(r_eval) # intial Fe/H before transforms/scatter
+        input_std = np.std(Fe_H)
+        w_std = weighted_std(Fe_H_i, mp_E_sort)
+
+        target_std = np.sqrt(max(input_std**2 - w_std**2, 0))
+        # This std/5 comes from basically nowhere: I don't think the
+        # literature has much guidance on what this should be, but I don't
+        # want it to be a delta function.
+        scatter = min(input_std/5, target_std)
+        Fe_H_i += random.randn(len(Fe_H_i)) * scatter
+
+        avg = np.average(Fe_H_i, weights=mp_E_sort)
+        Fe_H_i = Fe_H_i - avg + np.mean(Fe_H)
+
+        Fe_H_i = weighted_abundance_match(Fe_H, Fe_H_i, mp_E_sort)
+        
+        # Unsort Fe/H back into the orignal order
+        idx_sort = np.arange(len(Fe_H_i), dtype=int)[ranks.order]
+        Fe_H_0 = np.zeros(len(Fe_H_i))
+        Fe_H_0[idx_sort] = Fe_H_i
+
+        out = f_Fe_H()
+
+        out = np.zeros(len(ranks.ranks))
+        out[idx_E] = Fe_H_0
+        """        
+
+        out = np.zeros(len(ranks.ranks))
+        r = np.sqrt(np.sum(ranks.x**2, axis=1))
+        out[ranks.idx] = f_Fe_H(r)
+        
+        return out, delta_Fe_H
+    
     def var_names(self):
         return []
+
+def weighted_std(x, w):
+    avg = np.average(x, weights=w)
+    var = np.average((x - avg)**2, weights=w)
+    return np.sqrt(var)
+
+def weighted_abundance_match(x, y, wy):
+    x = np.sort(x)
+
+    order = np.argsort(y)
+    orig_idx = np.arange(len(y))[order]
+    sy, swy = y[order], wy[order]
+
+    sy = np.asarray(sy, dtype=np.float64)
+    swy = np.asarray(swy, dtype=np.float64)
+
+    P = np.cumsum(swy) / np.sum(swy)
+    f_idx = P*(len(x) - 1)
+
+    prev_idx = np.array(np.floor(f_idx), dtype=int)
+    frac = f_idx - prev_idx
+
+    # This stuff here is needed due to floating point numbers not being real
+    # numbers
+    prev_idx[prev_idx >= len(x)] = len(x) - 1
+    prev_idx[prev_idx < 0] = 0
+    frac[frac > 1] = 1
     
+    next_idx = prev_idx + 1
+    next_idx[next_idx >= len(x)] = len(x) - 1
+
+    dx = x[next_idx] - x[prev_idx]
+    zero_dx = dx <= 0
+    dx[zero_dx], frac[zero_dx] = 1, 0
+    out = np.zeros(len(y))
+    out[orig_idx] = (x[prev_idx] + dx*frac)
+    return out
+
 class GaussianCoupalaCorrelation(MetalCorrelationModel):
     """ GaussianCoupalaCorrelation connects ages to metallicities by assuming 
     that thjey can be represented by a Gaussian coupala.
@@ -912,38 +1131,6 @@ class UniverseMachineMStar(MStarModel):
 
     def var_names(self):
         return ["um_mstar"]
-
-class RadialEnergyRanking(AbstractRanking):
-    def __init__(self, params, x, v, idx, n_max, rvir,
-                 core_particles=DEFAULT_CORE_PARTICLES,
-                 quantile_edges=DEFAULT_QUANTILE_EDGES):
-        """ Takes mp (Msun; may be a scalar), x (pkpc), v (pkm/s), idx (the
-        index into the full particle array), and n_max (the number of particles
-        in the full particle arrays).
-        
-        only_tag may be set so that only a subset of particles may be tagged
-        (e.g. early-accreted particles).
-        """        
-        (self.rmax, self.vmax,
-         self.pe_vmax2, self.order) = profile_info(params, x)
-
-        self.ke_vmax2 = 0.5*np.sum(v**2, axis=1) / self.vmax**2
-        self.E_vmax2 = self.ke_vmax2 + self.pe_vmax2
-
-        core_q = min(core_particles / len(self.E_vmax2), 1)
-        core_E_vmax2 = np.quantile(self.E_vmax2, core_q)
-        
-        core_idx = idx[self.E_vmax2 <= core_E_vmax2]
-
-        #E_edges = np.linspace(-10, 0, 41)
-        E_edges = np.linspace(-15, 0, 61)
-        quantile_edges = [np.sum(self.E_vmax2< E_edges[i])/
-                          len(self.E_vmax2) for i in range(len(E_edges))]
-
-        ranks, self.E_edges = rank_by_quantile(
-            quantile_edges, self.E_vmax2, idx, n_max)
-    
-        super(RadialEnergyRanking, self).__init__(ranks, core_idx, rvir)
         
 #################################
 # General classes and functions #
@@ -1027,12 +1214,13 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
                 part_info, sim_dir, snap, "x", owner=i)
             v = lib.read_particles(
                 part_info, sim_dir, snap, "v", owner=i)
-
+            
             idx_star[i] = np.where(ok)[0]
             sx = h[i,snap]["x"]
             x_star[i] = util.set_units_x(x[ok], host, a_z, param) - sx
-            n_max[i] = len(x)
 
+            n_max[i] = len(x)
+            
         # Add information at the snapshot energies are measured
         for i in i_E:
             ok = lib.read_particles(
@@ -1044,10 +1232,10 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
 
             idx_E[i] = np.where(ok)[0]
             sx, sv = h[i,snap]["x"], h[i,snap]["v"]
-
+            
             x_E[i] = util.set_units_x(x[ok], host, a_z, param) - sx
             v_E[i] = util.set_units_v(v[ok], host, a_z, param) - sv
-
+            
     # Finally, assign stellar masses and create ranking objects for each halo.
     mp_star, ranks = [None]*len(h), [None]*len(h)
 
@@ -1063,6 +1251,8 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
         ranks[i] = RadialEnergyRanking(
             param, x_E[i], v_E[i], idx_E[i], n_max[i],
             h["rvir"][i, star_snap[i]])
+        if len(x_E[i]) == 0: continue
+        
         ranks[i].load_particles(x_star[i], None, idx_star[i])
 
         # It's some tiny subhalo that Rockstar made a mistake on. Doesn't have
@@ -1119,7 +1309,7 @@ def retag_stars(sim_dir, galaxy_halo_model, ranks,
     for i in target_subs:
         # It's some tiny subhalo that Rockstar made a mistake on. Doesn't have
         # any bins with more than 10 particles in them.
-        if np.max(ranks[i].ranks) == -1: continue
+        if len(ranks[i].ranks) == 0 or  np.max(ranks[i].ranks) == -1: continue
 
         kwargs = galaxy_halo_model.get_kwargs(
             param, scale, h[i], um[i], star_snap[i])
@@ -1237,6 +1427,7 @@ class GalaxyHaloModel(object):
 
         gal_hist["sigma_Fe_H_i"] = np.std(Fe_H)
         gal_hist["Fe_H_i"] = Fe_H_mean
+        gal_hist["delta_Fe_H_i"] = delta_Fe_H
         gal_hist["a50"] = sfh[0,np.searchsorted(sfh[1,:], sfh[1,-1]*0.5)]
         gal_hist["a90"] = sfh[0,np.searchsorted(sfh[1,:], sfh[1,-1]*0.9)]
         

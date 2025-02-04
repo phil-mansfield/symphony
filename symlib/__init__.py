@@ -14,11 +14,11 @@ from .validate import validate_symfind
 # Abstract models
 from .star_tagging import ProfileShapeModel, RHalfModel, MStarModel, AbstractRanking, FeHMeanModel, FeHMDFModel, FeHProfileModel, MetalCorrelationModel, SFHModel
 # ProfileShape models
-from .star_tagging import PlummerProfile
+from .star_tagging import PlummerProfile, EinastoProfile
 # R_half models
 from .star_tagging import Nadler2020RHalf, Jiang2019RHalf, FixedRHalf
 # Metallicity models
-from .star_tagging import Kirby2013Metallicity, Kirby2013MDF, FlatFeHProfile
+from .star_tagging import Kirby2013Metallicity, Kirby2013MDF, FlatFeHProfile, Taibi2022FeHProfile
 # M_star models
 from .star_tagging import UniverseMachineMStarFit, UniverseMachineMStar
 # SFH models

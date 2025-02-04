@@ -218,6 +218,7 @@ r_half_3d_i - initial projected 3D half-mass radius (kpc)
 Fe_H_i - initial mass-weighted mean [Fe/H] of stars
 sigma_Fe_H_i - the initial 1-sigma scatter in the metallicity distribution
                funciton in dex.
+delta_Fe_H_i - the initial metallicitiy gradient in units of [Fe/H]/Rhalf
 t_50 - the half-mass formation time of stars in Gyr
 t_90 - the 90% formation time of stars in Gyr
 """
@@ -225,6 +226,7 @@ GALAXY_HISTORY_DTYPE = [("m_star_i", "f4"), ("r_half_2d_i", "f4"),
                         ("r_half_3d_i", "f4"),
                         ("Fe_H_i", "f4"), 
                         ("sigma_Fe_H_i", "f4"),
+                        ("delta_Fe_H_i", "f4"),
                         ("a50", "f4"), ("a90", "f4")]
 
 """ STAR_DTYPE gives the properites of an individual star particle.
@@ -837,8 +839,6 @@ def read_galaxies(dir_name, model="um"):
     with open(fname) as fp:
         gal_hist["m_star_i"] = np.fromfile(fp, np.float64, n_halo)
         gal_hist["r_half_3d_i"] = np.fromfile(fp, np.float64, n_halo)
-
-        print(gal_hist["m_star_i"])
         
         gal["m_star"] = np.fromfile(fp, np.float32, n)
         gal["r_half"] = np.fromfile(fp, np.float32, n)
