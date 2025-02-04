@@ -119,7 +119,7 @@ DEFAULT_HALO_NAMES = {
         "Halo119", "Halo288", "Halo414", "Halo469", "Halo570", "Halo718", "Halo825", "Halo925", "Halo9749",
         "Halo188", "Halo327", "Halo415", "Halo490", "Halo606", "Halo738", "Halo829", "Halo926", "Halo9829",
         "Halo247", "Halo349", "Halo416", "Halo530", "Halo628", "Halo749", "Halo852", "Halo937", "Halo990",
-    ]) + ["Halo119_m", "Halo364_m", "Halo460_m", "Halo416_m", "Halo530_m", "Halo675_m", "Halo800_m", "Halo829_m", "Halo852_m"],
+    ]) + ["Halo119_m", "Halo364_m", "Halo416_m", "Halo460_m", "Halo530_m", "Halo675_m", "Halo800_m", "Halo829_m", "Halo852_m"] + ["Halo119_gas", "Halo364_gas", "Halo416_gas"],
     "EDEN_MilkyWay_16K": sorted([
         "Halo023", "Halo247", "Halo268", "Halo530", "Halo829"
     ]),
