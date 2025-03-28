@@ -298,6 +298,7 @@ the number of snapshots in the suite.
 parameter_table = {
     "SymphonyLMC": _chinchilla_cosmology.copy(),
     "SymphonyMilkyWay": _chinchilla_cosmology.copy(),
+    "SymphonyMilkyWayFineCadence": _chinchilla_cosmology.copy(),
     "EDEN_MilkyWay_8K": _chinchilla_cosmology.copy(),
     "EDEN_MilkyWay_16K": _chinchilla_cosmology.copy(),
     "SymphonyMilkyWayDisk": _chinchilla_cosmology.copy(),
@@ -313,6 +314,7 @@ parameter_table = {
 
 parameter_table["SymphonyLMC"]["eps"] = 0.080
 parameter_table["SymphonyMilkyWay"]["eps"] = 0.170
+parameter_table["SymphonyMilkyWayFineCadence"]["eps"] = 0.170*2
 parameter_table["EDEN_MilkyWay_8K"]["eps"] = 0.170
 parameter_table["EDEN_MilkyWay_8K"]["eps"] = 0.170/2
 parameter_table["SymphonyMilkyWayDisk"]["eps"] = 0.170*2
@@ -327,6 +329,7 @@ parameter_table["MWest"]["eps"] = 0.170
 
 parameter_table["SymphonyLMC"]["mp"] = 3.52476e4
 parameter_table["SymphonyMilkyWay"]["mp"] = 2.81981e5
+parameter_table["SymphonyMilkyWayFineCadence"]["mp"] = 2.81981e5*8
 parameter_table["EDEN_MilkyWay_8K"]["mp"] = 2.81981e5
 parameter_table["EDEN_MilkyWay_16K"]["mp"] = 2.81981e5/8
 parameter_table["SymphonyMilkyWayDisk"]["mp"] = 2.81981e5*8
@@ -409,6 +412,8 @@ def scale_factors(dir_name):
     elif (suite_name in ["SymphonyLCluster",  "SymphonyCluster", "SymphonyClusterCorrupted"] or
           dir_name in ["SymphonyLCluster",  "SymphonyCluster", "SymphonyClusterCorrupted"]):
         default = 10**np.linspace(np.log10(0.075), np.log10(1), 200)
+    elif suite_name in ["SymphonyMilkyWayHighCadence"]:
+        default = 10**np.linspace(np.log10(0.01), np.log10(1), 4098)
     else:
         raise ValueError(("The halo in %s does not belong to a " + 
                           "recognized suite.") % dir_name)
@@ -1145,14 +1150,34 @@ def is_real_confirmed(part_info, h, i_sub):
     return np.sum(ok) > 0
 
 class Particles(object):
-    """ A wrapper for accessing particle data associated with the desired halo suite."""
-    def __init__(self, sim_dir):
+    """Particles is an object representing the particles of a simulation. It
+    only contains particles within the main halo and its subhalos and only
+    tracks those particles after accretion.
+    """
+    def __init__(self, sim_dir, include=[]):
+        """ The Particles constructor takes the simulation's base directory
+        as an input along with an optional list of non-standard variables that
+        will be included in the output of read().
+
+        The user can allow any variables they'd like to be attached to read()
+        outputs with include by writing those variables to their local
+        directory with write_include_varaible().
+
+        Several such variables are included in the default
+        """
         self.sim_dir = sim_dir
         self.part_info = ParticleInfo(sim_dir)
         self.params = simulation_parameters(sim_dir)
         self.scale = scale_factors(sim_dir)
         self.h_cmov, _ = read_subhalos(sim_dir, comoving=True)
 
+        self.include = include
+        self.include_readers = [
+            _IncludeReader(sim_dir, name) for name in include]
+
+        include_dtype = [(name, "f4") for name in include]
+        self.particle_dtype = PARTICLE_DTYPE + include_dtype
+        
     def read(self, snap, halo=-1, mode="current", comoving=False):
         """ read returns a list of 1D arrays containing frequently used
         variables stored in the particle data for a given subhalo. 
@@ -1232,7 +1257,7 @@ class Particles(object):
         p = [None]*len(x)
         for i in range(len(x)):
             if halo == -1 or i == halo:
-                p[i] = np.zeros(len(x[i]), dtype=PARTICLE_DTYPE)
+                p[i] = np.zeros(len(x[i]), dtype=self.particle_dtype)
                 p[i]["id"] = idp[i]
                 p[i]["x"] = x[i]
                 p[i]["v"] = v[i]
@@ -1240,6 +1265,34 @@ class Particles(object):
                 p[i]["ok"] = valid[i]
                 p[i]["smooth"] = smooth[i] == 0
 
+
+        if mode == "current":
+            # These are cached at this point, so they aren't actually re-reads
+            valid = read_particles(part_info, sim_dir, snap, "valid")
+            smooth = read_particles(part_info, sim_dir, snap, "ownership")
+                
+        for j, name in enumerate(self.include):
+            print(j, name)
+            inc = self.include_readers[j].read(snap, halo=halo)
+            if halo != -1:
+                dummy = [None]*len(p)
+                dummy[halo] = inc
+                inc = dummy
+
+            print(inc[0])
+            for i in range(len(p)):
+                if halo != -1 and halo != i: continue
+                if mode == "current":
+                    p[i][name] = inc[i]
+                elif mode in ["smooth", "stars"]:
+                    is_smooth = smooth[i][valid[i]]
+                    p[i][name] = inc[i][is_smooth]
+                elif mode == "all":
+                    p[i][name][p[i]["ok"]] = inc[i]
+                else:
+                    raise ValueError(
+                        "Unrecognized/unhandled read mode, '%s'" % mode)
+            
         if halo == -1:
             return p 
         else:
@@ -1586,6 +1639,106 @@ def vmax_to_cvir_nfw(vmax, mvir, rvir):
     cv = vmax/vvir
     cv[cv < 1] = 1
     return cv_to_c_nfw(cv)    
+
+def write_include_variable(sim_dir, snap, var_name, x):
+    """ write_include_variable writes a non-standard variable to the
+    simulation's particle directory, allowing it to be added to the structured
+    array returned by Particles().read() if var_name is included within the
+    list of include varaibles in the Particles() constructor (see Particles
+    documentation). sim_dir is the base directory of the simulation, snap is
+    the snapshot, var_name is the name of the variable, and x is a list
+    containing the variable's values for each particle. It should have the same
+    format as the return value of Particles().read(mode="current"), i.e. it's
+    a list with one element for every halo in the simulation and each list
+    element is a scalar array containing one value for each current particle.
+    """
+
+    n_tot = sum(map(len, x))
+    x_all = np.zeros(n_tot, dtype=np.float32)
+    i_start, i_end = 0, 0
+    for i in range(len(x)):
+        i_end = i_start + len(x[i])
+        x_all[i_start: i_end] = x[i]
+        i_start = i_end
+
+    fname = path.join(
+        sim_dir, "particles", "snap_%03d" % snap, "%s.dat" % var_name
+    )
+
+    with open(fname, "wb+") as fp:
+        x_all.tofile(fp)
+
+def write_include_header(sim_dir):
+    """ write_include_header writes the header file needed for include files.
+    It's the same for all variables. A normal user  never needs to
+    call this because it will already be in the distributed files.
+    """
+
+    n_snap = len(scale_factors(sim_dir))
+    part = Particles(sim_dir)
+    hd = None
+    
+    p = part.read(n_snap-1, mode="all")
+
+    hd = np.zeros((len(p), n_snap), dtype=int)
+
+    for i in range(len(p)):
+        for snap in range(n_snap):
+            hd[i,snap] = np.sum(p[i]["snap"] <= snap)
+
+    hd = hd.flatten()
+
+    fname = path.join(sim_dir, "particles", "include_header.dat")
+    with open(fname, "wb+") as fp:
+        hd.tofile(fp)
+        
+class _IncludeReader(object):
+    """ _IncludeReader is a class which reads a single type of include file.
+    It is only intended for internal use.
+    """
+    def __init__(self, sim_dir, var_name):
+        self.sim_dir = sim_dir
+        self.var_name = var_name
+
+        n_snap = len(scale_factors(sim_dir))
+        fname = path.join(sim_dir, "particles", "include_header.dat")
+        with open(fname, "rb") as fp:
+            hd = np.fromfile(fp, dtype=int)
+        n_halo = len(hd) // n_snap
+        counts = hd.reshape(n_halo, n_snap)
+        
+        self.counts = counts
+        
+    def read(self, snap, halo=-1):
+        """ if halo=-1, read returns a list of values for each halo in the
+        simulation, otherwise it returns only the value for the target halo
+        (i.e. the same sort of return value as Particles.read()). The returned
+        values will always be in "current" mode and will be shifted around
+        as needed by public wrapper functions.
+        """
+
+        fname = path.join(
+            self.sim_dir, "particles", "snap_%03d" % snap,
+            "%s.dat" % self.var_name
+        )
+
+        with open(fname, "rb") as fp:
+            if halo == -1:
+                x_all = np.fromfile(fp, dtype=np.float32)
+            else:
+                offset = np.sum(self.counts[:halo,snap])
+                # NOTE: Change offset if you change the dtype!!
+                return np.fromfile(fp, offset=offset*4, dtype=np.float32,
+                                   count=self.counts[halo,snap])
+
+        out = [None]*self.counts.shape[0]
+        i_start, i_end = 0, 0
+        for i in range(len(out)):
+            i_end = i_start + self.counts[i,snap]
+            out[i] = x_all[i_start:i_end]
+            i_start = i_end
+
+        return out
 
 def main():
     base_dir = "/oak/stanford/orgs/kipac/users/phil1/simulations/ZoomIns"
