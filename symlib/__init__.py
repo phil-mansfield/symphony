@@ -5,6 +5,8 @@ from .lib import read_subhalos, read_cores, read_branches, read_tree, read_parti
 from .lib import Particles
 # Utilities
 from .lib import simulation_parameters, parameter_table, scale_factors, pristine_merger_indices, merger_stats, propagate_parent_indices, colossus_parameters, suite_names, merger_lookup_table, find_merger_branch, find_all_merger_branches, is_real_confirmed, read_symfind, read_rockstar, pre_infall_host, transform_smooth_particles, find_particles
+from .lib import write_include_variable, write_include_header, _IncludeReader
+
 # TODO: better names for pristine_merger_indices and propagate_parent_indices
 from .match import match_subhalos, plot_matched_subhalos
 
@@ -14,11 +16,11 @@ from .validate import validate_symfind
 # Abstract models
 from .star_tagging import ProfileShapeModel, RHalfModel, MStarModel, AbstractRanking, FeHMeanModel, FeHMDFModel, FeHProfileModel, MetalCorrelationModel, SFHModel
 # ProfileShape models
-from .star_tagging import PlummerProfile
+from .star_tagging import PlummerProfile, EinastoProfile, DeprojectedSersicProfile
 # R_half models
 from .star_tagging import Nadler2020RHalf, Jiang2019RHalf, FixedRHalf
 # Metallicity models
-from .star_tagging import Kirby2013Metallicity, Kirby2013MDF, FlatFeHProfile
+from .star_tagging import Kirby2013Metallicity, Kirby2013MDF, FlatFeHProfile, Taibi2022FeHProfile
 # M_star models
 from .star_tagging import UniverseMachineMStarFit, UniverseMachineMStar
 # SFH models
