@@ -542,6 +542,81 @@ class EinastoProfile(ProfileShapeModel):
         
     def var_names(self):
         return []
+
+class DeprojectedSersicProfile(ProfileShapeModel):
+    def __init__(self, n_sersic="mansfield25"):
+        """ n_sersic can be one of two different values:
+        - float: this will be the n_sersic value used
+        - string: the name of an sersic index relation. Curently, only 
+        "mansfield25" is supported.
+        """
+        self.n_sersic = n_sersic
+        self.previous_n_sersic_sample = None
+        
+    def density(self, m_star, r_half_2d, r, **kwargs):
+        raise ValueError("Not yet implemented")
+            
+    def m_enc(self, m_star, r_half_2d, r, **kwargs):
+        if type(self.n_sersic) == str:
+            if self.n_sersic == "mansfield25":
+                n_sersic = self._mansfield25_sample(m_star)
+            else:
+                raise ValueError(
+                    "Unrecognized sersic model, '%s'" % self.n_sersic)
+        else:
+            n_sersic = self.n_sersic
+
+        self.previous_n_sersic_sample = n_sersic
+            
+        # Use Lima+ (1999) fit to n.
+        # According to Vitral & Mamon (2020), this runs into problems for
+        # n ~< 2 and r ~< Re/10. This is fine for us. (I would have used
+        # Vitral & Mamon's fit, but it's much harder to use.)
+        pn = 1 - 0.6097/n_sersic + 0.055/n_sersic**2
+
+        # From Ciotti & Bertin
+        a = 2*n_sersic
+        bn = a - 1/3 + 8/(405*a) + 184/(25515*a**2) + 1048/(1148175*a**3) - 17557576/(15345358875*a**4)
+        
+        return m_star*special.gammainc(
+            (3 - pn)*n_sersic, bn*(r/r_half_2d)**(1/n_sersic))
+    
+
+    def _mansfield25_sample(self, mstar):
+        # Fits to the 16th, 50th, and 84th quantiles
+        x = np.log10(mstar)
+        q16 = -0.18 + 0.35*(1 + special.erf(1.65*(x - 10.95)))
+        q50 = -0.07 + 0.35*(1 + special.erf(1.44*(x - 10.56)))
+        q84 = +0.08 + 0.35*(1 + special.erf(1.10*(x - 10.15)))
+        
+        # 68% skew parameter
+        s68_signed = np.abs((q16 + q84 - 2*q50)/(q84 - q16))
+        s68 = np.abs(s68_signed)
+
+        # fit to ln(kappa)
+        z = -np.log(1 - s68)
+        a = 0.6332
+        b = 0.3734
+        c = -0.008641
+        d = 0.003886
+        log_k = b*np.log(z/a) + c*np.log(z/a)**2 + d*z/a
+        k = 10**log_k * np.sign(s68_signed)
+        # fit to alpha/(Q_84 - Q_16)
+        a = 0.5029
+        b = 1.986
+        c = 0.3789
+        d = 1.289
+        alpha_qq = a*(1 - s68**(b + c*s68))**2
+        alpha = alpha_qq * (q84 - q16)
+
+        mu = q50
+        q = random.random()
+        # inverse transfer sampling
+        log_n = mu + (alpha/k)*(np.exp(k*np.sqrt(2)*special.erfinv(2*q - 1)) - 1)
+        return 10**log_n
+    
+    def var_names(self):
+        return []
     
 class Nadler2020RHalf(RHalfModel):
     """ Nadler20202RHalf models galaxies according to the z=0 size-mass relation
@@ -1711,7 +1786,7 @@ DWARF_GALAXY_HALO_MODEL = GalaxyHaloModel(
     ),
     ProfileModel(
         Jiang2019RHalf(),
-        PlummerProfile()
+        DeprojectedSersicProfile()
     ),
     MetalModel(
         Kirby2013Metallicity(),
@@ -1730,7 +1805,7 @@ DWARF_GALAXY_HALO_MODEL_NO_UM = GalaxyHaloModel(
     ),
     ProfileModel(
         Jiang2019RHalf(),
-        PlummerProfile()
+        DeprojectedSersicProfile()
     ),
     MetalModel(
         Kirby2013Metallicity(),

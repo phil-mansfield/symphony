@@ -1272,14 +1272,12 @@ class Particles(object):
             smooth = read_particles(part_info, sim_dir, snap, "ownership")
                 
         for j, name in enumerate(self.include):
-            print(j, name)
             inc = self.include_readers[j].read(snap, halo=halo)
             if halo != -1:
                 dummy = [None]*len(p)
                 dummy[halo] = inc
                 inc = dummy
 
-            print(inc[0])
             for i in range(len(p)):
                 if halo != -1 and halo != i: continue
                 if mode == "current":
