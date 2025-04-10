@@ -49,23 +49,42 @@ class ProfileShapeModel(abc.ABC):
     """ AbstractProfile is an abstract base class for galaxy profile models. It
     allows you to convert a half-light radius into an enclosed stellar mass
     profile.
-    """
+    """ 
     
     @abc.abstractmethod
     def m_enc(self, m_star, r_half, r, **kwargs):
         """ m_enc returns the enclosed mass profile as a function of 3D radius,
-        r. m_star is the asymptotic stellar mass of the galaxy, r_half is the 2D
-        half-light radius of the galaxy. Returned masses will be in the same
-        units as m_star.
+        r. m_star is the asymptotic stellar mass of the galaxy, r_half is 3D
+        half-light radius of the galaxy. is_2d is True if the input radius is
+        a projected 2d radius and false otherwise. Returned masses will be in
+        the same units as m_star.
         """
         pass
-        
+
+
+    @abc.abstractmethod
+    def set_r_half_is_2d(self, r_half_is_2d):
+        """ set_rhalf_is_2d sets the variable r_half_is_2d, which determines
+        how the r_half value in the m_enc function is interpreted. This
+        variable should be set to True.
+        """
+        pass
+
+    @abc.abstractmethod
+    def r2d_r3d(self):
+        """ returns the ratio of r2d/r3d for whatever internally generated
+        parameters were used int he previous call to m_enc().
+        """
+        pass
+    
     @abc.abstractmethod
     def density(self, m_star, r_half, r, **kwargs):
-        """ density returns the local density as a function of 3D radius, r.
+        """  DEPRECATED
+
+        density returns the local density as a function of 3D radius, r.
         m_star is the asymptotic stellas mass of the galaxy, r_hald is the 2D
         half-light radius of the galaxy. Returned masses will be in the same
-        units of m_star.
+        units of m_star. Only the r input will be vecotrized.
         """
         pass
 
@@ -93,6 +112,13 @@ class RHalfModel(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
+    def r_half_is_2d(self):
+        """ r_half_is_2d returns True if the model returns 2D radii or 3D
+        radii.
+        """
+        pass
+    
     @abc.abstractmethod
     def var_names(self):
         """ var_names returns the names of the variables this model requires.
@@ -333,7 +359,8 @@ class AbstractRanking(abc.ABC):
 
         profile_kwargs = profile_model.trim_kwargs(kwargs)
         m_star_enc_target = profile_model.m_enc(
-            m_star, r_half, self.r_bins[1:]*self.rvir, **profile_kwargs)
+            m_star, r_half, self.r_bins[1:]*self.rvir,
+            **profile_kwargs)
         
         dm_star_enc_target = np.zeros(len(m_star_enc_target))
         dm_star_enc_target[1:] = m_star_enc_target[1:] - m_star_enc_target[:-1]
@@ -452,14 +479,28 @@ class RadialEnergyRanking(AbstractRanking):
 class PlummerProfile(ProfileShapeModel):
     """ PlummerProfile models a galaxy's mass distribution as a Plummer sphere.
     """
+
+    def __init__(self, r_half_is_2d=False):
+        self.r_half_is_2d = r_half_is_2d
+
+    def set_r_half_is_2d(self, r_half_is_2d):
+        self.r_half_is_2d = r_half_is_2d
+        
     def m_enc(self, m_star, r_half, r, **kwargs):
         """ m_enc returns the enclosed mass profile as a function of 3D radius,
         r. m_star is the asymptotic stellar mass of the galaxy, r_half is the 2D
         half-light radius of the galaxy. Returned masses will be in the same
         units as m_star.
         """
+
+        if not self.r_half_is_2d:
+            r_half *= self.r2d_r3d()
+
         a = r_half
         return m_star*r**3 /(r**2 + a**2)**1.5
+
+    def r2d_r3d(self):
+        return (2**(2/3) - 1)**0.5
     
     def density(self, m_star, r_half, r, **kwargs):
         """ density returns the local density as a function of 3D radius, r.
@@ -473,16 +514,25 @@ class PlummerProfile(ProfileShapeModel):
     def var_names(self):
         return []
     
-class HerquistProfile(ProfileShapeModel):
+class HernquistProfile(ProfileShapeModel):
     """ HernquistProfile models a galaxy's mass distribution as a Hernquist sphere.
     """
+    def __init__(self, r_half_is_2d=False):
+        self.r_half_is_2d = r_half_is_2d
+
+    def set_r_half_is_2d(self, r_half_is_2d):
+        self.r_half_is_2d = r_half_is_2d
+    
     def m_enc(self, m_star, r_half, r, **kwargs):
         """ m_enc returns the enclosed mass profile as a function of 3D radius,
         r. m_star is the asymptotic stellar mass of the galaxy, r_half is the 2D
         half-light radius of the galaxy. Returned masses will be in the same
         units as m_star.
         """
-        a = r_half
+        if not self.r_half_is_2d:
+            r_half *= self.r2d_r3d()
+        
+        a = r_half/1.8153
         return m_star*r**2 /(r+a)**2.
     
     def density(self, m_star, r_half, r, **kwargs):
@@ -494,6 +544,9 @@ class HerquistProfile(ProfileShapeModel):
         a = r_half
         return m_star/(2*np.pi*a**3) * (a**4/(r*(r+a)**3))
 
+    def r2d_r3d(self):
+        return 1/1.33#1/(1 + np.sqrt(2))
+    
     def var_names(self):
         return []
 
@@ -516,7 +569,10 @@ class EinastoProfile(ProfileShapeModel):
         def f(x):
             return special.gammainc(3/alpha, 2*x**alpha/alpha) - 0.5
         self.r_half_rs = optimize.root_scalar(f, x0=1, x1=2).root
-    
+
+    def set_r_half_is_2d(self, r_half_is_2d):
+        self.r_half_is_2d = r_half_is_2d
+        
     def m_enc(self, m_star, r_half, r, **kwargs):
         """ m_enc returns the enclosed mass profile as a function of 3D radius,
         r. m_star is the asymptotic stellar mass of the galaxy, r_half is the 2D
@@ -524,10 +580,16 @@ class EinastoProfile(ProfileShapeModel):
         units as m_star.
         """
 
+        if self.r_half_is_2d:
+            r_half /= self.r2d_r3d()
+        
         rs = r_half/self.r_half_rs
         x = r/rs
         return special.gammainc(
             3/self.alpha, 2*x**self.alpha/self.alpha)*m_star
+
+    def r2d_r3d(self):
+        return (special.gammaincinv(3/self.alpha, 0.5)*self.alpha/2)**(1/self.alpha)
     
     def density(self, m_star, r_half, r, **kwargs):
         """ density returns the local density as a function of 3D radius, r.
@@ -544,14 +606,19 @@ class EinastoProfile(ProfileShapeModel):
         return []
 
 class DeprojectedSersicProfile(ProfileShapeModel):
-    def __init__(self, n_sersic="mansfield25"):
+    def __init__(self, n_sersic="mansfield25", r_half_is_2d=False):
         """ n_sersic can be one of two different values:
         - float: this will be the n_sersic value used
         - string: the name of an sersic index relation. Curently, only 
         "mansfield25" is supported.
+        - r_half_is_2d determines whether the r_half input to
         """
         self.n_sersic = n_sersic
         self.previous_n_sersic_sample = None
+        self.r_half_is_2d = r_half_is_2d
+
+    def set_r_half_is_2d(self, r_half_is_2d):
+        self.r_half_is_2d = r_half_is_2d
         
     def density(self, m_star, r_half_2d, r, **kwargs):
         raise ValueError("Not yet implemented")
@@ -567,21 +634,32 @@ class DeprojectedSersicProfile(ProfileShapeModel):
             n_sersic = self.n_sersic
 
         self.previous_n_sersic_sample = n_sersic
+
+        if not self.r_half_is_2d:
+            r_half_2d = self.r2d_r3d()*r_half_2d
             
-        # Use Lima+ (1999) fit to n.
+        # Use Lima Neto+ (1999) fit to n.
         # According to Vitral & Mamon (2020), this runs into problems for
-        # n ~< 2 and r ~< Re/10. This is fine for us. (I would have used
+        # n ~< 2 /and/ r ~< Re/10. This is fine for us. (I would have used
         # Vitral & Mamon's fit, but it's much harder to use.)
-        pn = 1 - 0.6097/n_sersic + 0.055/n_sersic**2
-
-        # From Ciotti & Bertin
-        a = 2*n_sersic
-        bn = a - 1/3 + 8/(405*a) + 184/(25515*a**2) + 1048/(1148175*a**3) - 17557576/(15345358875*a**4)
+        pn = 1 - 0.6097/n_sersic + 0.05463/n_sersic**2
         
-        return m_star*special.gammainc(
-            (3 - pn)*n_sersic, bn*(r/r_half_2d)**(1/n_sersic))
-    
+        a = 2*n_sersic
+        bn = special.gammaincinv((3-pn)*n_sersic, 0.5)
+        
+        r_eff_a = np.exp((0.6950 - np.log(1/n_sersic))/n_sersic - 0.1789)
+        a = r_half_2d/r_eff_a
+        r3d_a = r_eff_a / self.r2d_r3d() * 10
 
+        r_half_3d = r_half_2d / self.r2d_r3d()
+        return special.gammainc((3-pn)*n_sersic, bn*(r/r_half_3d)**(1/n_sersic))*m_star
+    
+    def r2d_r3d(self):
+        # From Lima & Neto
+        nu = 1/self.previous_n_sersic_sample
+        return 1.356 - 0.0293*nu + 0.0023*nu**2
+    
+    
     def _mansfield25_sample(self, mstar):
         # Fits to the 16th, 50th, and 84th quantiles
         x = np.log10(mstar)
@@ -650,6 +728,9 @@ class Nadler2020RHalf(RHalfModel):
                 0, 1, size=np.shape(rvir))
             return 10**(log_R + log_scatter)
 
+    def r_half_is_2d(self):
+        return True
+        
     def var_names(self):
         """ var_names returns the names of the variables this model requires.
         """
@@ -669,6 +750,9 @@ class FixedRHalf(RHalfModel):
                 0, 1, size=np.shape(rvir))
             return rvir*self.ratio * 10**(log_scatter)
 
+    def r_half_is_2d(self):
+        return False
+        
     def var_names(self):
         return ["rvir"]
 
@@ -709,6 +793,9 @@ class Jiang2019RHalf(RHalfModel):
         else:
             return R
 
+    def r_half_is_2d(self):
+        return False
+        
     def var_names(self):
         """ var_names returns the names of the variables this model requires.
         """
@@ -741,6 +828,9 @@ class Carlsten2021RHalf(RHalfModel):
         else:
             return R
 
+    def r_half_is_2d(self):
+        return True
+        
     def var_names(self):
         """ var_names returns the names of the variables this model requires.
         """
@@ -1480,7 +1570,11 @@ class GalaxyHaloModel(object):
             check_var_names(kwargs, self.r_half_model)
             r_half = self.r_half_model.r_half(
                 **self.r_half_model.trim_kwargs(kwargs))
-  
+
+        self.profile_shape_model.set_r_half_is_2d(
+            self.r_half_model.r_half_is_2d()
+        )
+            
         mp_star = ranks.set_mp_star(kwargs, self.profile_shape_model,
                                     r_half, m_star)
         gal_hist = np.zeros(1, dtype=lib.GALAXY_HISTORY_DTYPE)[0]
@@ -1512,7 +1606,14 @@ class GalaxyHaloModel(object):
         stars["a_form"] = a_form
 
         gal_hist["m_star_i"] = m_star
-        gal_hist["r_half_2d_i"] = r_half
+
+        r2d_r3d = self.profile_shape_model.r2d_r3d()
+        if self.r_half_model.r_half_is_2d():
+            gal_hist["r_half_2d_i"] = r_half
+            gal_hist["r_half_3d_i"] = r_half/r2d_r3d
+        else:
+            gal_hist["r_half_2d_i"] = r_half*r2d_r3d
+            gal_hist["r_half_3d_i"] = r_half
         
         return stars, gal_hist
     

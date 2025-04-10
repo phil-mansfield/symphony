@@ -16,7 +16,7 @@ from .validate import validate_symfind
 # Abstract models
 from .star_tagging import ProfileShapeModel, RHalfModel, MStarModel, AbstractRanking, FeHMeanModel, FeHMDFModel, FeHProfileModel, MetalCorrelationModel, SFHModel
 # ProfileShape models
-from .star_tagging import PlummerProfile, EinastoProfile, DeprojectedSersicProfile
+from .star_tagging import PlummerProfile, EinastoProfile, DeprojectedSersicProfile, HernquistProfile
 # R_half models
 from .star_tagging import Nadler2020RHalf, Jiang2019RHalf, FixedRHalf
 # Metallicity models
