@@ -740,10 +740,10 @@ class Nadler2020RHalf(RHalfModel):
 class FixedRHalf(RHalfModel):
     def __init__(self, ratio=0.015, scatter=0.0):
         self.ratio = ratio
-        self.scatter = scatter
+        self.sigma_log_R = scatter
 
     def r_half(self, rvir=None):
-        if self.scatter <= 0.0:
+        if self.sigma_log_R <= 0.0:
             return rvir*self.ratio
         else:
             log_scatter = self.sigma_log_R*random.normal(
@@ -1302,7 +1302,10 @@ class UniverseMachineMStar(MStarModel):
 #################################
 
 def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
-              target_subs=None):
+              target_subs=None, seed=None):
+    if seed is not None:
+        random.seed(seed)
+    
     # Basic simulation information
     param = lib.simulation_parameters(sim_dir)
     h, hist = lib.read_subhalos(sim_dir)
@@ -1450,7 +1453,9 @@ class RetagStarsState(object):
 
 def retag_stars(sim_dir, galaxy_halo_model, ranks,
                 state=None, star_snap=None,
-                target_subs=None):
+                target_subs=None, seed=None):
+    if seed is not None:
+        random.seed(seed)
     # Basic simulation information
 
     if state is None:
