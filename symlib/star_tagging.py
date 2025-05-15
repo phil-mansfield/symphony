@@ -73,7 +73,7 @@ class ProfileShapeModel(abc.ABC):
     @abc.abstractmethod
     def r2d_r3d(self):
         """ returns the ratio of r2d/r3d for whatever internally generated
-        parameters were used int he previous call to m_enc().
+        parameters were used in the previous call to m_enc().
         """
         pass
     
@@ -494,7 +494,7 @@ class PlummerProfile(ProfileShapeModel):
         """
 
         if not self.r_half_is_2d:
-            r_half *= self.r2d_r3d()
+            r_half *= self.r2d_r3d() # For plummer you want 2d
 
         a = r_half
         return m_star*r**3 /(r**2 + a**2)**1.5
@@ -508,6 +508,9 @@ class PlummerProfile(ProfileShapeModel):
         half-light radius of the galaxy. Returned masses will be in the same
         units of m_star.
         """
+        if not self.r_half_is_2d:
+            r_half *= self.r2d_r3d() # For plummer you want 2d
+
         a = r_half
         return 3*m_star/(4*np.pi*a**3) * (1 + r**2/a**2)**(-5/2)
     
@@ -532,7 +535,7 @@ class HernquistProfile(ProfileShapeModel):
         if not self.r_half_is_2d:
             r_half *= self.r2d_r3d()
         
-        a = r_half/1.8153
+        a = r_half/1.8153   # This is from a = r_1/2_3d/(1+sqrt(2)) = r_1/2_2d/1.8153 since conversion. See Hernquist 1990
         return m_star*r**2 /(r+a)**2.
     
     def density(self, m_star, r_half, r, **kwargs):
@@ -541,7 +544,10 @@ class HernquistProfile(ProfileShapeModel):
         half-light radius of the galaxy. Returned masses will be in the same
         units of m_star.
         """
-        a = r_half
+        if not self.r_half_is_2d:
+            r_half *= self.r2d_r3d()
+
+        a = r_half/1.8153   # This is from a = r_1/2_3d/(1+sqrt(2)) = r_1/2_2d/1.8153 since conversion. See Hernquist 1990
         return m_star/(2*np.pi*a**3) * (a**4/(r*(r+a)**3))
 
     def r2d_r3d(self):
@@ -564,7 +570,7 @@ class EinastoProfile(ProfileShapeModel):
     (here, Gamma is the normalized lower incomplete gamma function and rs
     is the radius where the log slope = -2.)
     """
-    def __init__(self, alpha):
+    def __init__(self, alpha, r_half_is_2d=False):
         self.alpha = alpha
         def f(x):
             return special.gammainc(3/alpha, 2*x**alpha/alpha) - 0.5
@@ -581,7 +587,7 @@ class EinastoProfile(ProfileShapeModel):
         """
 
         if self.r_half_is_2d:
-            r_half /= self.r2d_r3d()
+            r_half /= self.r2d_r3d() # Want 3d radius
         
         rs = r_half/self.r_half_rs
         x = r/rs
@@ -597,6 +603,8 @@ class EinastoProfile(ProfileShapeModel):
         half-light radius of the galaxy. Returned masses will be in the same
         units of m_star.
         """
+        if self.r_half_is_2d:
+            r_half /= self.r2d_r3d() # Want 3d radius
         rs = r_half/self.r_half_rs
         rho_s = (m_star*(2/self.alpha)**(3/self.alpha) *
                  (self.alpha/(4*np.pi*rs**3)))
@@ -623,7 +631,7 @@ class DeprojectedSersicProfile(ProfileShapeModel):
     def density(self, m_star, r_half_2d, r, **kwargs):
         raise ValueError("Not yet implemented")
             
-    def m_enc(self, m_star, r_half_2d, r, **kwargs):
+    def m_enc(self, m_star, r_half, r, **kwargs):
         if type(self.n_sersic) == str:
             if self.n_sersic == "mansfield25":
                 n_sersic = self._mansfield25_sample(m_star)
@@ -634,9 +642,13 @@ class DeprojectedSersicProfile(ProfileShapeModel):
             n_sersic = self.n_sersic
 
         self.previous_n_sersic_sample = n_sersic
-
-        if not self.r_half_is_2d:
-            r_half_2d = self.r2d_r3d()*r_half_2d
+        
+        # If r_half is 2d, convert to 3d:
+        if self.r_half_is_2d:
+            r_half_3d = r_half/self.r2d_r3d()
+        # If r_half is 3d, keep as is:
+        else:
+            r_half_3d = r_half
             
         # Use Lima Neto+ (1999) fit to n.
         # According to Vitral & Mamon (2020), this runs into problems for
@@ -644,20 +656,16 @@ class DeprojectedSersicProfile(ProfileShapeModel):
         # Vitral & Mamon's fit, but it's much harder to use.)
         pn = 1 - 0.6097/n_sersic + 0.05463/n_sersic**2
         
-        a = 2*n_sersic
-        bn = special.gammaincinv((3-pn)*n_sersic, 0.5)
-        
-        r_eff_a = np.exp((0.6950 - np.log(1/n_sersic))/n_sersic - 0.1789)
-        a = r_half_2d/r_eff_a
-        r3d_a = r_eff_a / self.r2d_r3d() * 10
+        # This bn_prime is NOT the same as bn in Lima Neto+ or Vitral & Mamon 2020. It accounts for the shift from r_eff_2d to r_1/2_3d in the Menc equation
+        bn_prime = special.gammaincinv((3-pn)*n_sersic, 0.5) 
 
-        r_half_3d = r_half_2d / self.r2d_r3d()
-        return special.gammainc((3-pn)*n_sersic, bn*(r/r_half_3d)**(1/n_sersic))*m_star
+        return special.gammainc((3-pn)*n_sersic, bn_prime*(r/r_half_3d)**(1/n_sersic))*m_star
     
     def r2d_r3d(self):
-        # From Lima & Neto
+        # From Lima & Neto: returns ratio of r_2d/r_3d 
         nu = 1/self.previous_n_sersic_sample
-        return 1.356 - 0.0293*nu + 0.0023*nu**2
+        r3d_r2d = 1.356 - 0.0293*nu + 0.0023*nu**2
+        return 1/r3d_r2d
     
     
     def _mansfield25_sample(self, mstar):
