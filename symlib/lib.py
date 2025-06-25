@@ -1283,7 +1283,7 @@ class Particles(object):
                 if mode == "current":
                     p[i][name] = inc[i]
                 elif mode in ["smooth", "stars"]:
-                    is_smooth = smooth[i][valid[i]]
+                    is_smooth = smooth[i] == 0
                     p[i][name] = inc[i][is_smooth]
                 elif mode == "all":
                     p[i][name][p[i]["ok"]] = inc[i]
