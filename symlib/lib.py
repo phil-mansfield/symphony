@@ -1254,6 +1254,7 @@ class Particles(object):
                                            "valid", owner=sh)
                 smooth[sh] = read_particles(part_info, sim_dir, snap,
                                             "ownership", owner=sh)
+
         p = [None]*len(x)
         for i in range(len(x)):
             if halo == -1 or i == halo:
@@ -1266,7 +1267,7 @@ class Particles(object):
                 p[i]["smooth"] = smooth[i] == 0
 
 
-        if mode == "current":
+        if mode in ["smooth", "stars"]:
             # These are cached at this point, so they aren't actually re-reads
             valid = read_particles(part_info, sim_dir, snap, "valid")
             smooth = read_particles(part_info, sim_dir, snap, "ownership")
@@ -1284,7 +1285,9 @@ class Particles(object):
                     p[i][name] = inc[i]
                 elif mode in ["smooth", "stars"]:
                     is_smooth = smooth[i] == 0
-                    p[i][name] = inc[i][is_smooth]
+                    inc_all = np.zeros(valid[i].shape)
+                    inc_all[valid[i]] = inc[i]
+                    p[i][name] = inc_all[is_smooth]
                 elif mode == "all":
                     p[i][name][p[i]["ok"]] = inc[i]
                 else:
