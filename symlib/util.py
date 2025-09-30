@@ -164,9 +164,10 @@ DEFAULT_HALO_NAMES = {
         "Halo113", "Halo222", "Halo327", "Halo453", "Halo719", "Halo788",
         "Halo169", "Halo229", "Halo349", "Halo476", "Halo659", "Halo747", "Halo975"
     ]),
+    "TestSIDM": ["Halo416-CDM"]
 }
 
-SUITE_NAMES = ["SymphonyLMC", "SymphonyMilkyWay", "SymphonyMilkyWayHighCadence", "SymphonyMilkyWayLR", "SymphonyMilkyWayHR", "SymphonyGroup", "SymphonyLCluster", "SymphonyCluster", "SymphonyClusterCorrupted", "MWest", "EDEN_MilkyWay_8K", "EDEN_MilkyWay_16K"]
+SUITE_NAMES = ["SymphonyLMC", "SymphonyMilkyWay", "SymphonyMilkyWayHighCadence", "SymphonyMilkyWayLR", "SymphonyMilkyWayHR", "SymphonyGroup", "SymphonyLCluster", "SymphonyCluster", "SymphonyClusterCorrupted", "MWest", "EDEN_MilkyWay_8K", "EDEN_MilkyWay_16K", "TestSIDM"]
 
 def n_hosts(suite_name):
     """ n_halos returns the number of host halos in a given suite,

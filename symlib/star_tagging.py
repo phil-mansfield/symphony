@@ -314,6 +314,7 @@ class AbstractRanking(abc.ABC):
         None unless you call a later method which works with velocities (i.e.
         core_v)
         """
+        
         # Initially, this did a shallow copy of the arrays. 
         self.x = np.array(x)
         if v is not None:
@@ -338,11 +339,11 @@ class AbstractRanking(abc.ABC):
         load_particles() first.
         """
         if self.x is None: raise ValueError("x not set")
-
-        core = self.x[np.searchsorted(self.idx, self.core_idx[:-1])]
+ 
+        core = self.x[np.searchsorted(self.idx, self.core_idx)]
         # I'm extremely confused by something that I think is a bug in
         # np.median here???
-        return np.median(core[:-1], axis=0)
+        return np.median(core, axis=0)
         
     def core_v(self):
         """ core_v returns the velocity of the halo core. You must have called
@@ -355,6 +356,12 @@ class AbstractRanking(abc.ABC):
         
     def set_mp_star(self, kwargs, profile_model, r_half, m_star):
         M = self.M
+
+        # This is some sort of crazy error caused by Rockstar problems.
+        if M is None:
+            self.mp_star[:] = m_star/len(self.mp_star)
+            return self.mp_star
+        
         n = M.shape[1]
 
         profile_kwargs = profile_model.trim_kwargs(kwargs)
@@ -429,48 +436,43 @@ class AbstractRanking(abc.ABC):
         
         return mean_t_relax
 
-class RadialEnergyRanking(AbstractRanking):
-    def __init__(self, params, x, v, idx, n_max, rvir,
+class EnergyRanking(AbstractRanking):
+    def __init__(self, p, E, rvir, vmax,
                  core_particles=DEFAULT_CORE_PARTICLES,
                  quantile_edges=DEFAULT_QUANTILE_EDGES):
-        """ Takes mp (Msun; may be a scalar), x (pkpc), v (pkm/s), idx (the
-        index into the full particle array), and n_max (the number of particles
-        in the full particle arrays).
-        
-        only_tag may be set so that only a subset of particles may be tagged
-        (e.g. early-accreted particles).
+        """ Takes a set of particles read in "smooth" mode, their corresponding
+        energies, and ok, a boolean flag indicating which particles have valid
+        energy values. Regardless of what ok is set to, 
         """
 
-        if len(x) == 0:
-            self.rmax, self.vmax = 0, 0
-            self.ke_vmax, self.E_vmax2 = np.empty(0), np.empty(0)
-            self.E_idx, self.E_edges = np.empty(0), np.empty(0)
-            super(RadialEnergyRanking, self).__init__(
-                np.empty(0), np.empty(0), 0)
+        if len(p) == 0:
+            self.E_edges = np.empty(0)
+            super(EnergyRanking, self).__init__(np.empty(0), np.empty(0), 0)
             return
-            
-        
-        (self.rmax, self.vmax,
-         self.pe_vmax2, self.order) = profile_info(params, x)
-        
-        self.ke_vmax2 = 0.5*np.sum(v**2, axis=1) / self.vmax**2
-        self.E_vmax2 = self.ke_vmax2 + self.pe_vmax2
-        self.E_idx = idx
-        
-        core_q = min(core_particles / len(self.E_vmax2), 1)
-        core_E_vmax2 = np.quantile(self.E_vmax2, core_q)
-        
-        core_idx = idx[self.E_vmax2 <= core_E_vmax2]
 
-        #E_edges = np.linspace(-10, 0, 41)
+        ok = p["ok"]
+        idx = np.arange(len(ok), dtype=int)[ok]
+
+        # This can happen if there are rockstar errors which screw up the
+        # particle tagging. It's rare but happens ever few-thousand halos.
+        if len(E) <= core_particles:
+            core_idx = np.arange(len(E), dtype=int)
+            ranks = np.zeros(len(E), dtype=int)
+            super(EnergyRanking, self).__init__(ranks, core_idx, rvir)
+            return
+        
+        core_q = core_particles / len(E)
+        core_E = np.quantile(E, core_q)
+        core_idx = np.where(E <= core_E)[0]
+
         E_edges = np.linspace(-15, 0, 61)
-        quantile_edges = [np.sum(self.E_vmax2< E_edges[i])/
-                          len(self.E_vmax2) for i in range(len(E_edges))]
+        quantile_edges = [np.sum(E/vmax**2 < E_edges[i])/ len(E)
+                          for i in range(len(E_edges))]
 
         ranks, self.E_edges = rank_by_quantile(
-            quantile_edges, self.E_vmax2, idx, n_max)
+            quantile_edges, E[idx]/vmax**2, idx, len(p))
         
-        super(RadialEnergyRanking, self).__init__(ranks, core_idx, rvir)
+        super(EnergyRanking, self).__init__(ranks, core_idx, rvir)
     
 ##################################
 # Specific Model Implementations #
@@ -614,7 +616,7 @@ class DeprojectedSersicProfile(ProfileShapeModel):
         - r_half_is_2d determines whether the r_half input to
         """
         self.n_sersic = n_sersic
-        self.previous_n_sersic_sample = None
+        self.previous_n_sersic_sample = 2.0 # just to prevent crashes
         self.r_half_is_2d = r_half_is_2d
 
     def set_r_half_is_2d(self, r_half_is_2d):
@@ -973,7 +975,7 @@ class FlatFeHProfile(FeHProfileModel):
         return []
 
 class Taibi2022FeHProfile(FeHProfileModel):
-    """ Requires that you're using RadialEnergyRanking
+    """ Requires that you're using EnergyRanking
     """
     def __init__(self, r_r50_max=6):
         FeHProfileModel.__init__(self)
@@ -1302,14 +1304,14 @@ class UniverseMachineMStar(MStarModel):
 #################################
 
 def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
-              target_subs=None, seed=None):
+              target_subs=None, seed=None, energy_method="E_sph"):
+    # energy_method can be E_sph, E, or smooth
     if seed is not None:
         random.seed(seed)
-    
+        
     # Basic simulation information
     param = lib.simulation_parameters(sim_dir)
     h, hist = lib.read_subhalos(sim_dir)
-    h_cmov, _ = lib.read_subhalos(sim_dir, comoving=True)
     scale = lib.scale_factors(sim_dir)
 
     # Not everyone is going to run UM on their zoom-ins, so don't force this
@@ -1346,83 +1348,88 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
                 E_snap[i] = look_back_orbital_time(
                     param, scale, star_snap[i], 0.125, h[i,:], 0.5)
                 
-    # Set up buffers and shared information for I/O.
 
-    # Total number of particles in each snapshot
-    n_max = np.zeros(len(h), dtype=int)
-    # The indices of the particles stored at the two stages. They get trimmed
-    # down to only the valid and self-owned particles.
-    idx_star, idx_E = [None]*len(h), [None]*len(h)
-    # Position and velocity information for the different particles.
-    x_star, x_E, v_E = [None]*len(h), [None]*len(h), [None]*len(h)
-    # Shared information across snapshots.
-    part_info = lib.ParticleInfo(sim_dir)
 
+    n_smooth = np.zeros(len(h), dtype=int)
+    # particles in "all" mode at the energy and tagging snapshots
+    p_E, p_star = [None]*len(h), [None]*len(h)
+
+    if energy_method in ["E", "E_sph"]:
+        part = lib.Particles(sim_dir, include=[energy_method])
+    elif energy_method == "smooth":
+        part = lib.Particles(sim_dir)
+    else:
+        raise ValueError("Unrecognized E_method, '%s'" % E_method)    
+    
     for snap in range(h.shape[1]):
         # If nobody needs this snapshot, don't read it in.
         if (snap not in E_snap[target_subs] and
             snap not in star_snap[target_subs]): continue
-
-        # Work out which objects we actually need to read in this snapshot.
+        
         star_ok = np.zeros(len(h), dtype=bool)
         E_ok = np.zeros(len(h), dtype=bool)
         star_ok[target_subs], E_ok[target_subs] = True, True
-        star_ok = star_ok & (star_snap == snap)
-        E_ok = E_ok & (E_snap == snap)
-        i_star, i_E = np.where(star_ok)[0], np.where(E_ok)[0]
-
+        i_star = np.where(star_ok & (star_snap == snap))[0]
+        i_E = np.where(E_ok & (E_snap == snap))[0]
+        
         # Read in data.
-        host, a_z = h_cmov[0,snap], scale[snap]
 
         # Add information at the snapshot stellar masses are assigned
         for i in i_star:
-            ok = lib.read_particles(
-                part_info, sim_dir, snap, "valid", owner=i)
-            x = lib.read_particles(
-                part_info, sim_dir, snap, "x", owner=i)
-            v = lib.read_particles(
-                part_info, sim_dir, snap, "v", owner=i)
+            p = part.read(snap, mode="smooth", halo=i)
+            n_smooth[i] = np.sum(p["smooth"])
             
-            idx_star[i] = np.where(ok)[0]
             sx = h[i,snap]["x"]
-            x_star[i] = util.set_units_x(x[ok], host, a_z, param) - sx
+            sv = h[i,snap]["v"]
+            p["x"] -= sx
+            p["v"] -= sv
+            p_star[i] = p
 
-            n_max[i] = len(x)
-            
-        # Add information at the snapshot energies are measured
+        # Add information at the snapshot energies are evaluated
         for i in i_E:
-            ok = lib.read_particles(
-                part_info, sim_dir, snap, "valid", owner=i)
-            x = lib.read_particles(
-                part_info, sim_dir, snap, "x", owner=i)
-            v = lib.read_particles(
-                part_info, sim_dir, snap, "v", owner=i)
-
-            idx_E[i] = np.where(ok)[0]
-            sx, sv = h[i,snap]["x"], h[i,snap]["v"]
+            p = part.read(snap, mode="smooth", halo=i)
             
-            x_E[i] = util.set_units_x(x[ok], host, a_z, param) - sx
-            v_E[i] = util.set_units_v(v[ok], host, a_z, param) - sv
+            sx = h[i,snap]["x"]
+            sv = h[i,snap]["v"]
+            p["x"] -= sx
+            p["v"] -= sv
+            p_E[i] = p
             
-    # Finally, assign stellar masses and create ranking objects for each halo.
+    # Initialize various arrays.
     mp_star, ranks = [None]*len(h), [None]*len(h)
-
     r_half, m_star = np.ones(len(h))*-1, np.ones(len(h))*-1
     Fe_H = [None]*len(h)
-
     gal_hists = np.zeros(len(h), dtype=lib.GALAXY_HISTORY_DTYPE)
+    
     stars = [None]*len(h)
     for i in target_subs:
-        stars[i] = np.zeros(n_max[i], dtype=lib.STAR_DTYPE)
-
+        stars[i] = np.zeros(n_smooth[i], dtype=lib.STAR_DTYPE)
+    
+    # Finally, assign stellar masses and create ranking objects for each halo.
     for i in target_subs:
-        ranks[i] = RadialEnergyRanking(
-            param, x_E[i], v_E[i], idx_E[i], n_max[i],
-            h["rvir"][i, star_snap[i]])
-        if len(x_E[i]) == 0: continue
-        
-        ranks[i].load_particles(x_star[i], None, idx_star[i])
+        if energy_method == "smooth":
+            ok = p_E[i]["ok"]
+            _, vmax, pe_vmax2 , _ = profile_info(param, p_E[i]["x"], ok=ok)
+            pe = pe_vmax2 * vmax**2
+            ke = np.sum(p_E[i]["v"]**2, axis=1)/2
+            E = pe + ke
+        elif energy_method in ["E", "E_sph"]:
+            E = p_E[i][energy_method]
+            vmax = h["vmax"][i,E_snap[i]]
+        else:
+            assert(0) # Already tested for.
 
+        rvir = h["rvir"][i,E_snap[i]]
+        E[~p_E[i]["ok"]] = np.inf
+        ranks[i] = EnergyRanking(p_E[i], E, rvir, vmax)
+        
+        if len(p_E[i]) == 0: continue
+
+        idx = np.where(p_E[i]["ok"])[0]
+        if len(idx) == 0 or len(idx) <= DEFAULT_CORE_PARTICLES: continue
+        
+        ranks[i].load_particles(p_star[i]["x"][idx], p_star[i]["v"][idx], idx)
+        
         # It's some tiny subhalo that Rockstar made a mistake on. Doesn't have
         # any bins with more than 10 particles in them.
         if np.max(ranks[i].ranks) == -1:
@@ -1836,7 +1843,7 @@ def profile_info(params, x, ok=None, order=None):
     return rmax, vmax, -out, order
 
 def rank_by_quantile(quantiles, x, idx, n_max):
-    """ rank_by_quantile breaks the paritcles represented by x (any value) and
+    """ rank_by_quantile breaks the particles represented by x (any value) and
     idx (index within the full set of particles, of length n_max). quantiles
     gives the upper and lower quantile edges for each rank.
     """

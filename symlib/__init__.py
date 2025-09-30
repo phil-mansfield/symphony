@@ -28,7 +28,7 @@ from.star_tagging import UniverseMachineSFH, DarkMatterSFH
 # Metal correlation models
 from .star_tagging import GaussianCoupalaCorrelation
 # Ranking schemes
-from .star_tagging import RadialEnergyRanking
+from .star_tagging import EnergyRanking
 # Galaxy-halo model components
 from .star_tagging import StellarMassModel, ProfileModel, MetalModel
 # Galaxy-halo models
