@@ -408,7 +408,7 @@ class PlummerProfile(ProfileShapeModel):
     
     def params(self, n, **kwargs):
         return np.zeros((n, lib.N_PROFILE_PARAM))
-    
+
     def var_names(self):
         return []
     
@@ -419,7 +419,7 @@ class HernquistProfile(ProfileShapeModel):
     def m_enc(self, m_star, r_half, r, r_half_is_2d=False):
         if not r_half_is_2d: r_half /= self.r2d_r3d()
         
-        a = r_half/1.8153
+        a = r_half/1.8153   # This is from a = r_1/2_3d/(1+sqrt(2)) = r_1/2_2d/1.8153 since conversion. See Hernquist 1990
         return m_star*r**2 /(r+a)**2.
     
     def r2d_r3d(self, params):
@@ -445,7 +445,7 @@ class EinastoProfile(ProfileShapeModel):
     (here, Gamma is the normalized lower incomplete gamma function and rs
     is the radius where the log slope = -2.)
     """
-    def __init__(self, alpha):
+    def __init__(self, alpha, r_half_is_2d=False):
         self.alpha = alpha
         def f(x):
             return special.gammainc(3/alpha, 2*x**alpha/alpha) - 0.5
