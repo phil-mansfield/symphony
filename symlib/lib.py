@@ -213,13 +213,13 @@ GALAXY_DTYPE = [("m_star", "f4"), ("r_half", "f4"), ("m_dyn", "f4"),
 N_PROFILE_PARAM = 16
 """ NIMBUS_GALAXY_DTYPE gives the propetis of the galaxy at the epoch of
 star tagging.
-m_star_i - initial M* of the galaxy in M_sun
-r_half_2d_i - initial projected 2d half-mass radius (kpc)
-r_half_3d_i - initial projected 3D half-mass radius (kpc)
-Fe_H_i - initial mass-weighted mean [Fe/H] of stars
-sigma_Fe_H_i - the initial 1-sigma scatter in the metallicity distribution
+m_star - initial M* of the galaxy in M_sun
+r_half_2d - initial projected 2d half-mass radius (kpc)
+r_half_3d - initial projected 3D half-mass radius (kpc)
+Fe_H - initial mass-weighted mean [Fe/H] of stars
+sigma_Fe_H - the initial 1-sigma scatter in the metallicity distribution
                funciton in dex.
-delta_Fe_H_i - the initial metallicitiy gradient in units of [Fe/H]/Rhalf
+delta_Fe_H - the initial metallicitiy gradient in units of [Fe/H]/Rhalf
 t_50 - the half-mass formation time of stars in Gyr
 t_90 - the 90% formation time of stars in Gyr
 profile_param - length-16 array of parameters describing the stellar density
