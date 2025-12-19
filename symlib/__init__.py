@@ -1,5 +1,5 @@
 # Data types
-from .lib import SUBHALO_DTYPE, HISTORY_DTYPE, BRANCH_DTYPE, CORE_DTYPE, UM_DTYPE, PARTICLE_DTYPE, GALAXY_DTYPE, GALAXY_HISTORY_DTYPE, STAR_DTYPE
+from .lib import SUBHALO_DTYPE, HISTORY_DTYPE, BRANCH_DTYPE, CORE_DTYPE, UM_DTYPE, PARTICLE_DTYPE, GALAXY_DTYPE, NIMBUS_GALAXY_DTYPE, STAR_DTYPE
 # I/O function
 from .lib import read_subhalos, read_cores, read_branches, read_tree, read_particles, read_um, read_galaxies, ParticleInfo
 from .lib import Particles
@@ -14,13 +14,13 @@ from .match import match_subhalos, plot_matched_subhalos
 from .validate import validate_symfind
 
 # Abstract models
-from .star_tagging import ProfileShapeModel, RHalfModel, MStarModel, AbstractRanking, FeHMeanModel, FeHMDFModel, FeHProfileModel, MetalCorrelationModel, SFHModel
+from .star_tagging import ProfileShapeModel, RHalfModel, MStarModel, AbstractRanking, FeHMeanModel, FeHMDFModel, MetalCorrelationModel, SFHModel
 # ProfileShape models
 from .star_tagging import PlummerProfile, EinastoProfile, DeprojectedSersicProfile, HernquistProfile
 # R_half models
-from .star_tagging import Nadler2020RHalf, Jiang2019RHalf, FixedRHalf
+from .star_tagging import Nadler2020RHalf, Jiang2019RHalf, FixedRHalf, Mansfield2025RHalf
 # Metallicity models
-from .star_tagging import Kirby2013Metallicity, Kirby2013MDF, FlatFeHProfile, Taibi2022FeHProfile
+from .star_tagging import Kirby2013Metallicity, Kirby2013MDF, Mansfield2025Metallicity
 # M_star models
 from .star_tagging import UniverseMachineMStarFit, UniverseMachineMStar
 # SFH models
@@ -37,6 +37,8 @@ from .star_tagging import GalaxyHaloModel
 from .star_tagging import clean_particles, tag_stars, look_back_orbital_time, profile_info, rmax_vmax, retag_stars
 
 # Default models:
+from .star_tagging import FIDUCIAL_MODEL, FIDUCIAL_MODEL_NO_UM
+# Provided for backwards compartibility
 from .star_tagging import DWARF_GALAXY_HALO_MODEL, DWARF_GALAXY_HALO_MODEL_NO_UM
 
 # Unit conversion

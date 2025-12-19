@@ -210,7 +210,8 @@ GALAXY_DTYPE = [("m_star", "f4"), ("r_half", "f4"), ("m_dyn", "f4"),
                 ("x", "f4", (3,)), ("v", "f4", (3,)), ("m23_weight", "f4"),
                 ("m23_m_conv", "?"), ("m23_v_conv", "?"), ("ok", "?")]
 
-""" GALAXY_HISTORY_DTYPE gives the propetis of the galaxy at the epoch of
+N_PROFILE_PARAM = 16
+""" NIMBUS_GALAXY_DTYPE gives the propetis of the galaxy at the epoch of
 star tagging.
 m_star_i - initial M* of the galaxy in M_sun
 r_half_2d_i - initial projected 2d half-mass radius (kpc)
@@ -221,13 +222,17 @@ sigma_Fe_H_i - the initial 1-sigma scatter in the metallicity distribution
 delta_Fe_H_i - the initial metallicitiy gradient in units of [Fe/H]/Rhalf
 t_50 - the half-mass formation time of stars in Gyr
 t_90 - the 90% formation time of stars in Gyr
+profile_param - length-16 array of parameters describing the stellar density
+                profile. Profiles generally don't use the full array.
 """
-GALAXY_HISTORY_DTYPE = [("m_star_i", "f4"), ("r_half_2d_i", "f4"),
-                        ("r_half_3d_i", "f4"),
-                        ("Fe_H_i", "f4"), 
-                        ("sigma_Fe_H_i", "f4"),
-                        ("delta_Fe_H_i", "f4"),
-                        ("a50", "f4"), ("a90", "f4")]
+NIMBUS_GALAXY_DTYPE = [("m_star", "f4"),
+                      ("r_half_2d", "f4"),
+                      ("r_half_3d", "f4"),
+                      ("Fe_H", "f4"), 
+                      ("sigma_Fe_H", "f4"),
+                      ("a50", "f4"),
+                      ("a90", "f4"),
+                      ("profile_params", "f4", (N_PROFILE_PARAM,))]
 
 """ STAR_DTYPE gives the properites of an individual star particle.
 mp - the stellar mass of the particle in M_sun
