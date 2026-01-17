@@ -1443,6 +1443,9 @@ class RetagStarsState(object):
         self.h_cmov, _ = lib.read_subhalos(sim_dir, comoving=True)
         self.scale = lib.scale_factors(sim_dir)
 
+        print(galaxy_halo_model)
+        print(galaxy_halo_model.var_names())
+
         if "um_mstar" in galaxy_halo_model.var_names():
             self.um = lib.read_um(sim_dir)
         else:
