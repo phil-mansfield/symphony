@@ -252,7 +252,7 @@ NIMBUS_GALAXY_DTYPE = [("m_star", "f4"),
                        ("sigma_Fe_H", "f4"),
                        ("a50", "f4"),
                        ("a90", "f4"),
-                       ("n50", "i4")
+                       ("n50", "i4"),
                        ("fit_flag", "i4"),
                        ("profile_params", "f4", (N_PROFILE_PARAM,))]
 
