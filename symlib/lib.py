@@ -214,25 +214,47 @@ N_PROFILE_PARAM = 16
 """ NIMBUS_GALAXY_DTYPE gives the propetis of the galaxy at the epoch of
 star tagging.
 m_star - initial M* of the galaxy in M_sun
-r_half_2d - initial projected 2d half-mass radius (kpc)
-r_half_3d - initial projected 3D half-mass radius (kpc)
+r50_2d - initial projected 2d half-mass radius (kpc)
+r50_3d - initial projected 3D half-mass radius (kpc)
 Fe_H - initial mass-weighted mean [Fe/H] of stars
 sigma_Fe_H - the initial 1-sigma scatter in the metallicity distribution
-               funciton in dex.
+             funciton in dex.
 delta_Fe_H - the initial metallicitiy gradient in units of [Fe/H]/Rhalf
-t_50 - the half-mass formation time of stars in Gyr
-t_90 - the 90% formation time of stars in Gyr
+a50 - the half-mass formation scale factor of stars
+a90 - the 90% formation scale factor of stars
 profile_param - length-16 array of parameters describing the stellar density
                 profile. Profiles generally don't use the full array.
+
+------
+
+n50 - The number of particles contained within r_50 at time of tagging. This
+       quantity is useful to determining convergence. See methods paper.
+fit_flag - An integer flag representing the expected quality of the fit.
+           0 - Underlying halo finder error led to particle-tracking failure.
+               Definitely do not use.
+           1 - Target galaxy size was larger than the subhalo at infall. This
+               is probably a halo finder error or an ingorrect galaxy model. Do
+               not use.
+           2 - Target galaxy was so small that even the few most-bound
+               particles are larger in extent. In this case, the 16-most-bound
+               particles are tagged as stars. Severely unresolved, do not use.
+           3 - Particle count is high enough to make a flat energy cut, but too
+               small to get a valid Nimbus fit. There isn't a fit-based problem
+               with using these galaxies, but you probably don't want to due
+               to numerical problems. Consult methods paper.
+           4 - Enough resoution for a successful Nimbus fit. This galaxy may
+               or may not be numerically converged. Consult methods paper.
 """
 NIMBUS_GALAXY_DTYPE = [("m_star", "f4"),
-                      ("r_half_2d", "f4"),
-                      ("r_half_3d", "f4"),
-                      ("Fe_H", "f4"), 
-                      ("sigma_Fe_H", "f4"),
-                      ("a50", "f4"),
-                      ("a90", "f4"),
-                      ("profile_params", "f4", (N_PROFILE_PARAM,))]
+                       ("r50_2d", "f4"),
+                       ("r50_3d", "f4"),
+                       ("Fe_H", "f4"), 
+                       ("sigma_Fe_H", "f4"),
+                       ("a50", "f4"),
+                       ("a90", "f4"),
+                       ("n50", "i4")
+                       ("fit_flag", "i4"),
+                       ("profile_params", "f4", (N_PROFILE_PARAM,))]
 
 """ STAR_DTYPE gives the properites of an individual star particle.
 mp - the stellar mass of the particle in M_sun
