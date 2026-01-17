@@ -337,6 +337,7 @@ parameter_table = {
     "SymphonyCluster": _carmen_cosmology.copy(),
     "SymphonyClusterCorrupted": _carmen_cosmology.copy(),
     "MWest": _chinchilla_cosmology.copy(),
+    "HighCadence": _chinchilla_cosmology.copy(),
 }
 
 parameter_table["SymphonyLMC"]["eps"] = 0.080
@@ -353,6 +354,7 @@ parameter_table["SymphonyLCluster"]["eps"] = 1.200
 parameter_table["SymphonyCluster"]["eps"] = 3.250
 parameter_table["SymphonyClusterCorrupted"]["eps"] = 3.250
 parameter_table["MWest"]["eps"] = 0.170
+parameter_table["HighCadence"]["eps"] = 0.170
 
 parameter_table["SymphonyLMC"]["mp"] = 3.52476e4
 parameter_table["SymphonyMilkyWay"]["mp"] = 2.81981e5
@@ -368,6 +370,7 @@ parameter_table["SymphonyLCluster"]["mp"] = 1.51441632e8
 parameter_table["SymphonyCluster"]["mp"] = 1.26201360e8
 parameter_table["SymphonyClusterCorrupted"]["mp"] = 1.26201360e8
 parameter_table["MWest"]["mp"] = 2.81981e5
+parameter_table["HighCadence"]["mp"] = 2.81981e5
 
 for sim in parameter_table:
     param = parameter_table[sim]
@@ -393,7 +396,7 @@ def simulation_parameters(suite_name):
         sim_dir = suite_name
         suite_name = halo_dir_to_suite_name(sim_dir)
         if suite_name not in parameter_table:
-            raise ValueError("'%s' is neither a recognized suite name nor a simulation direoctry containing a recognized suite name. Recognized suite names are: " + str(suite_names()))
+            raise ValueError(("'%s' is neither a recognized suite name nor a simulation direoctry containing a recognized suite name. Recognized suite names are: " % suite_name) + str(suite_names()))
         return parameter_table[suite_name]
 
 def colossus_parameters(param):
@@ -441,6 +444,8 @@ def scale_factors(dir_name):
         default = 10**np.linspace(np.log10(0.075), np.log10(1), 200)
     elif suite_name in ["SymphonyMilkyWayHighCadence"]:
         default = 10**np.linspace(np.log10(0.01), np.log10(1), 4098)
+    elif suite_name in ["HighCadence"]:
+        default = 10**np.linspace(np.log10(0.05), 0, 1000)
     else:
         raise ValueError(("The halo in %s does not belong to a " + 
                           "recognized suite.") % dir_name)
@@ -448,7 +453,7 @@ def scale_factors(dir_name):
     if dir_name in ["SymphonyLMC", "SymphonyGroup",
                     "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayLR",
                     "SymphonyMilkyWayHR",  "EDEN_MilkyWay_8K",
-                    "EDEN_MilkyWay_16K",
+                    "EDEN_MilkyWay_16K", "HighCadence",
                     "SymphonyLCluster",  "SymphonyCluster", "SymphonyCluster"]:
         return default
 
