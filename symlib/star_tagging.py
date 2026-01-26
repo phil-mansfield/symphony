@@ -11,6 +11,7 @@ from . import lib
 from . import util
 from . import sampling
 import time
+import heapq
 
 # cosmology information
 from colossus.cosmology import cosmology
@@ -29,11 +30,7 @@ Variables names:
 
 NIL_RANK = -1
 
-DEFAULT_QUANTILE_EDGES = np.zeros(13)
-DEFAULT_QUANTILE_EDGES[1:] = 10**np.linspace(-4, 0, 12)
-#DEFAULT_QUANTILE_EDGES = np.zeros(25)
-#DEFAULT_QUANTILE_EDGES[1:] = 10**np.linspace(-4, 0, 24)
-
+DEFAULT_E_EDGES = np.linspace(-15, 0, 61)
 DEFAULT_R_BINS = np.zeros(102)
 DEFAULT_R_BINS[1:] = 10**np.linspace(-4, 0, 101)
 
@@ -185,27 +182,25 @@ class MetalCorrelationModel(GalaxyModelComponent):
 ############################
 # Particle ranking classes #
 ############################
-    
+
 class AbstractRanking(abc.ABC):
     """ AbstractRanking is an abstract base class for various models that 
     rank particles.
     """
 
-    def __init__(self, ranks, core_idx, rvir, r_bins=DEFAULT_R_BINS):
+    def __init__(self, ranks, core_idx, order, rvir, r_bins=DEFAULT_R_BINS):
         """ ranks is an array of ranks for every particle in the halo. If that
         particle has been accreted by the time of tagging, it should have an
         non-negative integer rank. If the particle hasn't been accreted yet,
         it should be set to NIL_RANK
 
         core_idx is the index of the core particles of the halo according to
-        this ranking scheme.
-
-        quantile_edges are the upper and lower quantile bounds for the each rank
-        (i.e. the quantile, q, of a particle in rank i should be in the range
-        quantile_edges[i] < q < quantile_edges[i+1]).
+        this ranking scheme. order is the full ordering according to the
+        ranking scheme. Order is the indexing /after/ self.idx is applied.
         """
         self.ranks = ranks
         self.core_idx = core_idx
+        self.order = order
         if len(ranks) == 0:
             self.n_max = 0
             self.mp_star = np.empty(0)
@@ -214,14 +209,21 @@ class AbstractRanking(abc.ABC):
             self.mp_star = np.zeros(len(ranks))
         
         self.idx = None
+        self.order_idx = None
+        
         self.x = None
         self.v = None
         self.xc = None
         self.vc = None
         self.r_bins = r_bins
-        self.rvir=rvir
+        self.rvir = rvir
         self.M = None
         self.r = None
+
+        self.r_med = None
+
+        # This will make life easier for other checks.
+        self.is_error = len(ranks) == 0 or np.all(ranks == 0) or np.all(ranks == -1)
         
     def load_particles(self, x, v, idx):
         """ load_particles loads paritcle properties into the ranking. Must
@@ -236,8 +238,10 @@ class AbstractRanking(abc.ABC):
             self.v = np.array(v)
         else:
             self.v = None
+            
         self.idx = idx
-
+        self.order_idx = idx[self.order]
+        
         self.xc = self.core_x()
         for dim in range(3): self.x[:,dim] -= self.xc[dim]
         
@@ -270,17 +274,58 @@ class AbstractRanking(abc.ABC):
         return np.median(core, axis=0)
         
     def set_mp_star(self, kwargs, profile_model, gal):
-        M = self.M
+        np = len(self.idx)
+        n_core = 16
+        fit_cutoff = 50
+        
+        if self.is_error or np < n_core:
+            return self.set_mp_star_failure(gal)
+        elif gal["n50"] < n_core/2:
+            return self.set_mp_star_core(gal, n_core)
+        elif gal["n50"] < fit_cutoff:
+            return self.set_mp_star_energy_cut(gal)
+        else:
+            return self.set_mp_star_nimbus_fit(profile_model, gal)
+            
 
-        # This is some sort of crazy error caused by Rockstar problems.
-        if M is None:
-            self.mp_star[:] = gal["m_star"]/len(self.mp_star)
-            return self.mp_star
+    def set_mp_star_failure(self, gal):
+        self.mp_star[:] = gal["m_star"]/len(self.mp_star)
+        return self.mp_star, 0
+        
+    def set_mp_star_core(self, gal, n_core):
+        core_idx = self.order_idx[:n_core]
+        self.mp_star[core_idx] = gal["m_star"]/n_core
+        return self.mp_star, 2
+
+    def set_mp_star_energy_cut(self, gal):
+        if self.r_med is None:
+            r = self.x[self.order_idx]**2
+            self.r_med = running_median(r)
+    
+        too_small = self.r_med <= gal["r50_3d"]
+        too_big   = self.r_med > gal["r50_3d"]
+
+        candidates = np.where(too_small[:-1] & too_big[1:])[0]
+
+        # This is some weird edge cases where the galaxy wanted to have an
+        # enormours r50. Probably either an underlying merger tree failure
+        # or a mistake ont he user's part when specifying the galaxy size.
+        if len(candidates) == 0:
+            self.set_mp_star_failure(gal)
+            return self.mp_star, 1
+
+        n_core = candidates[-1]
+        self.set_mp_star_core(gal)
+        
+        return None, 3
+    
+    def set_mp_star_nimbus_fit(self, profile_model, gal):
+        M = self.M
         
         n = M.shape[1]
-
+        
         m_star_enc_target = profile_model.m_enc(
-            gal["m_star"], gal["r_half_3d"],
+            gal["m_star"], gal["r50_3d"],
             self.r_bins[1:]*self.rvir,
             np.array([gal["profile_params"]]))
         
@@ -306,8 +351,8 @@ class AbstractRanking(abc.ABC):
         self.mp_star *= correction_frac
         self.mp_star_table *= correction_frac
         
-        return self.mp_star
-
+        return self.mp_star, 4
+    
     def ranked_halfmass_radius(self):
         """ ranked_halfmass_radii returns an array of the current half-mass
         radii of each rank bin in pkpc.
@@ -354,7 +399,7 @@ class AbstractRanking(abc.ABC):
 class EnergyRanking(AbstractRanking):
     def __init__(self, p, E, rvir, vmax,
                  core_particles=DEFAULT_CORE_PARTICLES,
-                 quantile_edges=DEFAULT_QUANTILE_EDGES):
+                 E_edges=DEFAULT_E_EDGES):
         """ Takes a set of particles read in "smooth" mode, their corresponding
         energies, and ok, a boolean flag indicating which particles have valid
         energy values. Regardless of what ok is set to, 
@@ -362,7 +407,8 @@ class EnergyRanking(AbstractRanking):
 
         if len(p) == 0:
             self.E_edges = np.empty(0)
-            super(EnergyRanking, self).__init__(np.empty(0), np.empty(0), 0)
+            super(EnergyRanking, self).__init__(
+                np.empty(0), np.empty(0),  np.empty(0), 0)
             return
 
         ok = p["ok"]
@@ -373,7 +419,8 @@ class EnergyRanking(AbstractRanking):
         if len(E) <= core_particles:
             core_idx = np.arange(len(E), dtype=int)
             ranks = np.zeros(len(E), dtype=int)
-            super(EnergyRanking, self).__init__(ranks, core_idx, rvir)
+            order = np.arange(len(idx), dtype=int)
+            super(EnergyRanking, self).__init__(ranks, core_idx, order, rvir)
             return
         
         core_q = core_particles / len(E)
@@ -384,10 +431,11 @@ class EnergyRanking(AbstractRanking):
         quantile_edges = [np.sum(E/vmax**2 < E_edges[i])/ len(E)
                           for i in range(len(E_edges))]
 
+        order = np.argsort(E[idx])
         ranks, self.E_edges = rank_by_quantile(
             quantile_edges, E[idx]/vmax**2, idx, len(p))
         
-        super(EnergyRanking, self).__init__(ranks, core_idx, rvir)
+        super(EnergyRanking, self).__init__(ranks, core_idx, order, rvir)
     
 ##################################
 # Specific Model Implementations #
@@ -492,10 +540,10 @@ class DeprojectedSersicProfile(ProfileShapeModel):
         
         if r_half_is_2d:
             # If r_half is 2d, convert to 3d:
-            r_half_3d = r_half/self.r2d_r3d(params)
+            r50_3d = r_half/self.r2d_r3d(params)
         else:
             # If r_half is 3d, keep as is:
-            r_half_3d = r_half
+            r50_3d = r_half
             
         # Use Lima Neto+ (1999) fit to n.
         # According to Vitral & Mamon (2020), this runs into problems for
@@ -510,7 +558,7 @@ class DeprojectedSersicProfile(ProfileShapeModel):
 
         return special.gammainc(
             (3-pn)*n_sersic,
-            bn_prime*(r/r_half_3d)**(1/n_sersic)
+            bn_prime*(r/r50_3d)**(1/n_sersic)
         )*m_star
     
     def r2d_r3d(self, params):
@@ -1375,17 +1423,13 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
         if len(idx) == 0 or len(idx) <= DEFAULT_CORE_PARTICLES: continue
         
         ranks[i].load_particles(p_star[i]["x"][idx], p_star[i]["v"][idx], idx)
-        
-        # It's some tiny subhalo that Rockstar made a mistake on. Doesn't have
-        # any bins with more than 10 particles in them.
-        if np.max(ranks[i].ranks) == -1:
-            continue
 
         kwargs = galaxy_halo_model.get_kwargs(
             param, scale, h[i], um[i], star_snap[i])
         kwargs["m_star"] = gals[i]["m_star"]
         
-        stars[i] = galaxy_halo_model.star_properties(ranks[i], gals[i], kwargs)
+        stars[i], fit_flag = galaxy_halo_model.star_properties(
+            ranks[i], gals[i], kwargs)
 
     return stars, gals, ranks
 
@@ -1526,8 +1570,8 @@ class GalaxyHaloModel(object):
             kwargs = self._galaxy_properties(kwargs)
             
             gals[i]["m_star"] = kwargs["m_star"]
-            gals[i]["r_half_3d"] = kwargs["r_half_3d"]
-            gals[i]["r_half_2d"] = kwargs["r_half_2d"]
+            gals[i]["r50_3d"] = kwargs["r50_3d"]
+            gals[i]["r50_2d"] = kwargs["r50_2d"]
             gals[i]["Fe_H"] = kwargs["Fe_H"]
             gals[i]["sigma_Fe_H"] = kwargs["sigma_Fe_H"]
             # Not currently implemented
@@ -1595,11 +1639,11 @@ class GalaxyHaloModel(object):
         r_half_is_2d = self.r_half_model.r_half_is_2d()
         
         if r_half_is_2d:
-            kwargs["r_half_2d"] = kwargs["r_half"]
-            kwargs["r_half_3d"] = kwargs["r_half"] / r2d_r3d
+            kwargs["r50_2d"] = kwargs["r_half"]
+            kwargs["r50_3d"] = kwargs["r_half"] / r2d_r3d
         else:
-            kwargs["r_half_2d"] = kwargs["r_half"] * r2d_r3d
-            kwargs["r_half_3d"] = kwargs["r_half"]
+            kwargs["r50_2d"] = kwargs["r_half"] * r2d_r3d
+            kwargs["r50_3d"] = kwargs["r_half"]
 
         # Fe_H_*
         check_var_names(kwargs, self.Fe_H_model)
@@ -1615,7 +1659,8 @@ class GalaxyHaloModel(object):
         ranking, ranks (type: inherits from AbstractParticleRanking). The gals
         array is a NIMBUS_GALAXY_DTYPE element and specifies galaxy properties.
         """        
-        mp_star = ranks.set_mp_star(kwargs, self.profile_shape_model, gal)
+        mp_star, fit_flag = ranks.set_mp_star(
+            kwargs, self.profile_shape_model, gal)
 
         mdf = self.Fe_H_mdf_model.mdf(
             gal["Fe_H"], gal["sigma_Fe_H"],
@@ -1638,7 +1683,7 @@ class GalaxyHaloModel(object):
         stars["Fe_H"] = Fe_H
         stars["a_form"] = a_form
         
-        return stars
+        return stars, fit_flag
     
     def var_names(self):
         """ var_names returns the names of the variables this model requires.
@@ -1901,6 +1946,41 @@ def ranked_np_profile_matrix(ranks, idx, r, bins):
         M[:,i] = N
         
     return M
+
+def running_median(x):
+    if len(x) == 0: return np.array([], dtype=x.dtype)
+    med = np.zeros(len(x))
+
+    low, high = [], [x[0]]
+    
+    med[0] = x[0]
+
+    # This can be sped up with more conditionals that replace separate
+    # heappush and heappop calls with a combined heappushpop.
+    for i in range(1, len(x)):
+        # Grow the correct queue
+        if x[i] <= med[i-1]:
+            heapq.heappush(low, -x[i])
+        else:
+            heapq.heappush(high, x[i])
+
+        # If one queue is too big, equalise them.
+        if len(low) == len(high) + 2:
+            xx = heapq.heappop(low)
+            heapq.heappush(high, -xx)
+        elif len(high) == len(low) +2:
+            xx = heapq.heappop(high)
+            heapq.heappush(low, -xx)
+
+        # Evaluate median.
+        if len(low) == len(high):
+            med[i] = (-low[0] + high[0]) / 2
+        elif len(low) == len(high) + 1:
+            med[i] = -low[0]
+        elif len(high) == len(low) + 1:
+            med[i] = high[0]
+
+    return np.array(med)
 
 FIDUCIAL_MODEL = GalaxyHaloModel(
     StellarMassModel(
