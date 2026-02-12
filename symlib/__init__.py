@@ -1,5 +1,5 @@
 # Data types
-from .lib import SUBHALO_DTYPE, HISTORY_DTYPE, BRANCH_DTYPE, CORE_DTYPE, UM_DTYPE, PARTICLE_DTYPE, GALAXY_DTYPE, NIMBUS_GALAXY_DTYPE, STAR_DTYPE
+from .lib import SUBHALO_DTYPE, HISTORY_DTYPE, BRANCH_DTYPE, CORE_DTYPE, UM_DTYPE, PARTICLE_DTYPE, GALAXY_DTYPE, NIMBUS_GALAXY_DTYPE, STAR_DTYPE, ROCKSTAR_DTYPE, SYMFIND_DTYPE
 # I/O function
 from .lib import read_subhalos, read_cores, read_branches, read_tree, read_particles, read_um, read_galaxies, ParticleInfo
 from .lib import Particles

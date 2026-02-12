@@ -38,6 +38,26 @@ MIN_PARTICLES_PER_QUANTILE = 10
 
 DEFAULT_CORE_PARTICLES = 30
 
+DEFAULT_TAG_STRATEGY = {
+    # If the total number of particles is less than np_error_cutoff, the
+    # numbus fit considers it an error.
+    "np_error_cutoff": 16,
+    # If the number of particles within r50 is less than n50_fixed_cutoff,
+    # the 2*n50_fixed_cutoff most-bond particles will be tagged as uniform-mass
+    # stars. (This is also considered an error)
+    "n50_fixed_cutoff": 8,
+    # If the number of particles within r50 is less than n50_energy_cutoff,
+    # a fixed energy cutff is used. This is flagged for the user and they
+    # may choose whether or not to consider it an error.
+    "n50_energy_cutoff": 50,
+    # Only tag stars in fixed mode if fixed_ony is set to True.
+    "fixed_only": False,
+    # Only tag stars in energy cutoff mode if energy_only is set to True
+    "energy_only": False,
+    # Only tag stars with Nimbus fits if nimbus_only is set to True
+    "nimbus_only": False
+}
+
 #########################
 # Abstract base classes #
 #########################
@@ -188,7 +208,8 @@ class AbstractRanking(abc.ABC):
     rank particles.
     """
 
-    def __init__(self, ranks, core_idx, order, rvir, r_bins=DEFAULT_R_BINS):
+    def __init__(self, ranks, core_idx, order, rvir,
+                 r_bins=DEFAULT_R_BINS, tag_strategy=DEFAULT_TAG_STRATEGY):
         """ ranks is an array of ranks for every particle in the halo. If that
         particle has been accreted by the time of tagging, it should have an
         non-negative integer rank. If the particle hasn't been accreted yet,
@@ -224,6 +245,9 @@ class AbstractRanking(abc.ABC):
 
         # This will make life easier for other checks.
         self.is_error = len(ranks) == 0 or np.all(ranks == 0) or np.all(ranks == -1)
+
+        self.tag_strategy = tag_strategy
+        self.check_tag_strategy() # raises error if it fails
         
     def load_particles(self, x, v, idx):
         """ load_particles loads paritcle properties into the ranking. Must
@@ -274,32 +298,74 @@ class AbstractRanking(abc.ABC):
         return np.median(core, axis=0)
         
     def set_mp_star(self, kwargs, profile_model, gal):
-        np = len(self.idx)
-        n_core = 16
-        fit_cutoff = 50
-        
-        if self.is_error or np < n_core:
+        if self.is_error or self.idx is None:
             return self.set_mp_star_failure(gal)
-        elif gal["n50"] < n_core/2:
-            return self.set_mp_star_core(gal, n_core)
-        elif gal["n50"] < fit_cutoff:
+        
+        np = len(self.idx)
+        
+        (np_error_cutoff,
+         n50_fixed_cutoff,
+         n50_energy_cutoff) = self.parse_tag_strategy() 
+
+        if np < np_error_cutoff:
+            return self.set_mp_star_failure(gal)
+        elif gal["n50"] < n50_fixed_cutoff:
+            return self.set_mp_star_fixed(gal, 2*n50_fixed_cutoff)
+        elif gal["n50"] < n50_energy_cutoff:
             return self.set_mp_star_energy_cut(gal)
         else:
             return self.set_mp_star_nimbus_fit(profile_model, gal)
             
+    def parse_tag_strategy(self):
+        np_error_cutoff =   self.tag_strategy["np_error_cutoff"]
+        n50_fixed_cutoff =  self.tag_strategy["n50_fixed_cutoff"]
+        n50_energy_cutoff = self.tag_strategy["n50_energy_cutoff"]
 
+        if self.tag_strategy["fixed_only"]:
+            n50_fixed_cutoff = np.inf
+        elif self.tag_strategy["energy_only"]:
+            n50_fixed_cutoff = 0
+            n50_energy_cutoff = np.inf
+        elif self.tag_strategy["nimbus_only"]:
+            n50_fixed_cutoff = 0
+            n50_energy_cutoff = 0
+
+        return np_error_cutoff, n50_fixed_cutoff, n50_energy_cutoff
+
+
+    def check_tag_strategy(self):
+        keys = ["np_error_cutoff", "n50_fixed_cutoff", "n50_energy_cutoff",
+                "fixed_only", "energy_only", "nimbus_only"]
+
+        for key in keys:
+            if key not in self.tag_strategy:
+                raise ValueError("The tag_strategy dict does not contain the required key, '%s'" % key)
+
+        n_only_modes = (int(self.tag_strategy["fixed_only"]) + 
+                        int(self.tag_strategy["energy_only"]) +
+                        int(self.tag_strategy["nimbus_only"]))
+        if n_only_modes > 1:
+            raise ValueError("Within the tag_strategy dict, fixed_only = %s, energy_only = %s, nimbus_only = %s" %
+                             (self.tag_strategy["fixed_only"],
+                              self.tag_strategy["energy_only"],
+                              self.tag_strategy["nimbus_only"]))
+            
     def set_mp_star_failure(self, gal):
-        self.mp_star[:] = gal["m_star"]/len(self.mp_star)
-        return self.mp_star, 0
+        if len(self.mp_star) > 0:
+            self.mp_star[:] = gal["m_star"]/len(self.mp_star)
+        return 0
         
-    def set_mp_star_core(self, gal, n_core):
+    def set_mp_star_fixed(self, gal, n_core):
+        if n_core == 0:
+            return self.set_mp_star_failure(gal)
+        
         core_idx = self.order_idx[:n_core]
         self.mp_star[core_idx] = gal["m_star"]/n_core
-        return self.mp_star, 2
+        return 2
 
     def set_mp_star_energy_cut(self, gal):
         if self.r_med is None:
-            r = self.x[self.order_idx]**2
+            r = np.sqrt(np.sum(self.x[self.order]**2, axis=1))
             self.r_med = running_median(r)
     
         too_small = self.r_med <= gal["r50_3d"]
@@ -312,12 +378,12 @@ class AbstractRanking(abc.ABC):
         # or a mistake ont he user's part when specifying the galaxy size.
         if len(candidates) == 0:
             self.set_mp_star_failure(gal)
-            return self.mp_star, 1
+            return 1
 
         n_core = candidates[-1]
-        self.set_mp_star_core(gal)
+        self.set_mp_star_fixed(gal, n_core)
         
-        return None, 3
+        return 3
     
     def set_mp_star_nimbus_fit(self, profile_model, gal):
         M = self.M
@@ -351,7 +417,7 @@ class AbstractRanking(abc.ABC):
         self.mp_star *= correction_frac
         self.mp_star_table *= correction_frac
         
-        return self.mp_star, 4
+        return 4
     
     def ranked_halfmass_radius(self):
         """ ranked_halfmass_radii returns an array of the current half-mass
@@ -399,7 +465,8 @@ class AbstractRanking(abc.ABC):
 class EnergyRanking(AbstractRanking):
     def __init__(self, p, E, rvir, vmax,
                  core_particles=DEFAULT_CORE_PARTICLES,
-                 E_edges=DEFAULT_E_EDGES):
+                 E_edges=DEFAULT_E_EDGES,
+                 tag_strategy=DEFAULT_TAG_STRATEGY):
         """ Takes a set of particles read in "smooth" mode, their corresponding
         energies, and ok, a boolean flag indicating which particles have valid
         energy values. Regardless of what ok is set to, 
@@ -408,7 +475,9 @@ class EnergyRanking(AbstractRanking):
         if len(p) == 0:
             self.E_edges = np.empty(0)
             super(EnergyRanking, self).__init__(
-                np.empty(0), np.empty(0),  np.empty(0), 0)
+                np.empty(0), np.empty(0),  np.empty(0), 0,
+                tag_strategy=tag_strategy
+            )
             return
 
         ok = p["ok"]
@@ -420,7 +489,8 @@ class EnergyRanking(AbstractRanking):
             core_idx = np.arange(len(E), dtype=int)
             ranks = np.zeros(len(E), dtype=int)
             order = np.arange(len(idx), dtype=int)
-            super(EnergyRanking, self).__init__(ranks, core_idx, order, rvir)
+            super(EnergyRanking, self).__init__(ranks, core_idx, order, rvir,
+                                                tag_strategy=tag_strategy)
             return
         
         core_q = core_particles / len(E)
@@ -435,7 +505,8 @@ class EnergyRanking(AbstractRanking):
         ranks, self.E_edges = rank_by_quantile(
             quantile_edges, E[idx]/vmax**2, idx, len(p))
         
-        super(EnergyRanking, self).__init__(ranks, core_idx, order, rvir)
+        super(EnergyRanking, self).__init__(ranks, core_idx, order, rvir,
+                                            tag_strategy=tag_strategy)
     
 ##################################
 # Specific Model Implementations #
@@ -1298,7 +1369,8 @@ class UniverseMachineMStar(MStarModel):
 #################################
 
 def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
-              target_subs=None, seed=None, gals=None, energy_method="E_sph"):
+              target_subs=None, seed=None, gals=None, energy_method="E_sph",
+              tag_strategy=DEFAULT_TAG_STRATEGY):
     # energy_method can be E_sph, E, or smooth
     if seed is not None:
         random.seed(seed)
@@ -1415,7 +1487,8 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
 
         rvir = h["rvir"][i,E_snap[i]]
         E[~p_E[i]["ok"]] = np.inf
-        ranks[i] = EnergyRanking(p_E[i], E, rvir, vmax)
+        ranks[i] = EnergyRanking(p_E[i], E, rvir, vmax,
+                                 tag_strategy=tag_strategy)
         
         if len(p_E[i]) == 0: continue
 
@@ -1423,12 +1496,14 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
         if len(idx) == 0 or len(idx) <= DEFAULT_CORE_PARTICLES: continue
         
         ranks[i].load_particles(p_star[i]["x"][idx], p_star[i]["v"][idx], idx)
-
+        
         kwargs = galaxy_halo_model.get_kwargs(
             param, scale, h[i], um[i], star_snap[i])
         kwargs["m_star"] = gals[i]["m_star"]
+
+        gals[i]["n50"] = n_enc(ranks[i].x, gals[i]["r50_3d"])
         
-        stars[i], fit_flag = galaxy_halo_model.star_properties(
+        stars[i], gals[i]["fit_flag"] = galaxy_halo_model.star_properties(
             ranks[i], gals[i], kwargs)
 
     return stars, gals, ranks
@@ -1476,14 +1551,15 @@ def retag_stars(sim_dir, galaxy_halo_model, ranks,
         stars[i] = np.zeros(len(ranks[i].ranks), dtype=lib.STAR_DTYPE)
 
     for i in target_subs:
-        # It's some tiny subhalo that Rockstar made a mistake on. Doesn't have
-        # any bins with more than 10 particles in them.
-        if len(ranks[i].ranks) == 0 or  np.max(ranks[i].ranks) == -1: continue
+        if ranks[i].x is None: continue
 
         kwargs = galaxy_halo_model.get_kwargs(
             param, scale, h[i], um[i], star_snap[i])
 
-        stars[i] = galaxy_halo_model.star_properties(ranks[i], gals[i], kwargs)
+        gals[i]["n50"] = n_enc(ranks[i].x, gals[i]["r50_3d"])
+        
+        stars[i], gals[i]["fit_flag"] = galaxy_halo_model.star_properties(
+            ranks[i], gals[i], kwargs)
 
     return stars, gals, state
     
@@ -1659,9 +1735,9 @@ class GalaxyHaloModel(object):
         ranking, ranks (type: inherits from AbstractParticleRanking). The gals
         array is a NIMBUS_GALAXY_DTYPE element and specifies galaxy properties.
         """        
-        mp_star, fit_flag = ranks.set_mp_star(
-            kwargs, self.profile_shape_model, gal)
-
+        fit_flag = ranks.set_mp_star(kwargs, self.profile_shape_model, gal)
+        mp_star = ranks.mp_star
+        
         mdf = self.Fe_H_mdf_model.mdf(
             gal["Fe_H"], gal["sigma_Fe_H"],
             **self.Fe_H_mdf_model.trim_kwargs(kwargs))
@@ -1946,6 +2022,10 @@ def ranked_np_profile_matrix(ranks, idx, r, bins):
         M[:,i] = N
         
     return M
+
+def n_enc(x, r0):
+    r = np.sqrt(np.sum(x**2, axis=1))
+    return np.sum(r < r0)
 
 def running_median(x):
     if len(x) == 0: return np.array([], dtype=x.dtype)

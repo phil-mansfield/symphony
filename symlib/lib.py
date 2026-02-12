@@ -231,19 +231,23 @@ n50 - The number of particles contained within r_50 at time of tagging. This
        quantity is useful to determining convergence. See methods paper.
 fit_flag - An integer flag representing the expected quality of the fit.
            0 - Underlying halo finder error led to particle-tracking failure.
-               Definitely do not use.
-           1 - Target galaxy size was larger than the subhalo at infall. This
-               is probably a halo finder error or an ingorrect galaxy model. Do
-               not use.
+               /Definitely/ do not use.
+           1 - Target galaxy size was larger than the subhalo's infall virial
+               radius. This is probably a halo finder error or an icorrect
+               galaxy model. Do not use. If this is a halo finder issue, you
+               can safely ignore it. If this is a galaxy model issue, you
+               should fix it.
            2 - Target galaxy was so small that even the few most-bound
-               particles are larger in extent. In this case, the 16-most-bound
-               particles are tagged as stars. Severely unresolved, do not use.
+               particles are larger in extent than its r50. In this case, the
+               16-most-bound particles are tagged as stars. Severely
+               unresolved, do not use.
            3 - Particle count is high enough to make a flat energy cut, but too
                small to get a valid Nimbus fit. There isn't a fit-based problem
                with using these galaxies, but you probably don't want to due
                to numerical problems. Consult methods paper.
-           4 - Enough resoution for a successful Nimbus fit. This galaxy may
-               or may not be numerically converged. Consult methods paper.
+           4 - Enough resoution for a reasonably successful Nimbus fit. This
+               galaxy may or may not be numerically converged. Consult methods
+               paper.
 """
 NIMBUS_GALAXY_DTYPE = [("m_star", "f4"),
                        ("r50_2d", "f4"),
@@ -325,6 +329,7 @@ the number of snapshots in the suite.
 parameter_table = {
     "SymphonyLMC": _chinchilla_cosmology.copy(),
     "SymphonyMilkyWay": _chinchilla_cosmology.copy(),
+    "SymphonyMilkyWay_ns=1": _chinchilla_cosmology.copy(),
     "SymphonyMilkyWayFineCadence": _chinchilla_cosmology.copy(),
     "EDEN_MilkyWay_8K": _chinchilla_cosmology.copy(),
     "EDEN_MilkyWay_16K": _chinchilla_cosmology.copy(),
@@ -342,6 +347,7 @@ parameter_table = {
 
 parameter_table["SymphonyLMC"]["eps"] = 0.080
 parameter_table["SymphonyMilkyWay"]["eps"] = 0.170
+parameter_table["SymphonyMilkyWay_ns=1"]["eps"] = 0.170
 parameter_table["SymphonyMilkyWayFineCadence"]["eps"] = 0.170*2
 parameter_table["EDEN_MilkyWay_8K"]["eps"] = 0.170
 parameter_table["EDEN_MilkyWay_8K"]["eps"] = 0.170/2
@@ -358,6 +364,7 @@ parameter_table["HighCadence"]["eps"] = 0.170
 
 parameter_table["SymphonyLMC"]["mp"] = 3.52476e4
 parameter_table["SymphonyMilkyWay"]["mp"] = 2.81981e5
+parameter_table["SymphonyMilkyWay_ns=1"]["mp"] = 2.81981e5
 parameter_table["SymphonyMilkyWayFineCadence"]["mp"] = 2.81981e5*8
 parameter_table["EDEN_MilkyWay_8K"]["mp"] = 2.81981e5
 parameter_table["EDEN_MilkyWay_16K"]["mp"] = 2.81981e5/8
@@ -428,16 +435,12 @@ def scale_factors(dir_name):
 
     # TODO: individual halo-by-halo scale factors
     suite_name = halo_dir_to_suite_name(dir_name)
-    if (suite_name in ["SymphonyLMC", "SymphonyGroup", "SymphonyMilkyWayDisk",
+    suite_names_235 = ["SymphonyLMC", "SymphonyGroup", "SymphonyMilkyWayDisk",
                        "SymphonyMilkyWayDiskDMO", "EDEN_MilkyWay_8K",
-                       "EDEN_MilkyWay_16K",
-                      "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayLR",
-                       "SymphonyMilkyWayHR"] or
-        dir_name in ["SymphonyLMC", "SymphonyGroup", "SymphonyMilkyWayDisk",
-                     "SymphonyMilkyWayDiskDMO", "EDEN_MilkyWay_8K",
-                     "EDEN_MilkyWay_16K",
-                     "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayLR",
-                     "SymphonyMilkyWayHR"]):
+                       "EDEN_MilkyWay_16K", "SymphonyMilkyWay_ns=1",
+                       "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayLR",
+                       "SymphonyMilkyWayHR"]
+    if suite_name in suite_names_235 or dir_name in suite_names_235:
         default = 10**np.linspace(np.log10(0.05), np.log10(1), 236)
     elif (suite_name in ["SymphonyLCluster",  "SymphonyCluster", "SymphonyClusterCorrupted"] or
           dir_name in ["SymphonyLCluster",  "SymphonyCluster", "SymphonyClusterCorrupted"]):
@@ -450,7 +453,7 @@ def scale_factors(dir_name):
         raise ValueError(("The halo in %s does not belong to a " + 
                           "recognized suite.") % dir_name)
 
-    if dir_name in ["SymphonyLMC", "SymphonyGroup",
+    if dir_name in ["SymphonyLMC", "SymphonyGroup", "SymphonyMilkyWay_ns=1",
                     "SymphonyMilkyWay", "MWest", "SymphonyMilkyWayLR",
                     "SymphonyMilkyWayHR",  "EDEN_MilkyWay_8K",
                     "EDEN_MilkyWay_16K", "HighCadence",
@@ -1772,20 +1775,5 @@ class _IncludeReader(object):
             i_start = i_end
 
         return out
-
-def main():
-    base_dir = "/oak/stanford/orgs/kipac/users/phil1/simulations/ZoomIns"
-    suite = "SymphonyMilkyWay"
-    i_halo = 0
-    sim_dir = get_host_directory(base_dir, suite, i_halo)
-
-    param = simulation_parameters(suite)
-    h, hist = read_subhalos(param, sim_dir)
-    
-    info = ParticleInfo(sim_dir)
-
-    x = read_particles(info, sim_dir, 235, "x")
-    v = read_particles(info, sim_dir, 235, "v")
-    ok = read_particles(info, sim_dir, 235, "valid")
             
 if __name__ == "__main__": main()

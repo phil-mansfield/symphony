@@ -113,6 +113,7 @@ DEFAULT_HALO_NAMES = {
         "Halo188", "Halo327", "Halo415", "Halo490", "Halo606", "Halo738", "Halo829", "Halo926", "Halo9829",
         "Halo247", "Halo349", "Halo416", "Halo530", "Halo628", "Halo749", "Halo852", "Halo937", "Halo990"
     ]),
+    "SymphonyMilkyWay_ns=1": sorted(["Halo416", "Halo558"]),
     "SymphonyMilkyWayFineCadence": sorted(["Halo023"]),
     "EDEN_MilkyWay_8K": sorted([
         "Halo023", "Halo268", "Halo364", "Halo440", "Halo558", "Halo641", "Halo797", "Halo878", "Halo939",
