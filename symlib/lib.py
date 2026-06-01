@@ -16,7 +16,6 @@ SUBHALO_DTYPE = [("id", "i4"), ("mvir", "f4"), ("vmax", "f4"), ("rvmax", "f4"),
                  ("x", "f4", (3,)), ("v", "f4", (3,)), ("ok", "?"),
                  ("rvir", "f4"), ("cvir", "f4")]
 
-
 """ ROCKSTAR_DTYPE is the main numpy datatype returned by read_rockstar().
  - id: unique identifier for the halo.
  - m (Msun): mass of the subhalo.
@@ -1485,7 +1484,8 @@ def read_particles(part_info, base_dir, snap, var_name,
     elif var_name in ["x", "v"]:
         snap_name = "snap_%03d" % snap
         if owner is not None:
-            first_snap = np.min(tags.snap[owner])
+            snaps = tags.snap[owner]
+            first_snap = np.min(snaps) if len(snaps) > 0 else snap + 1
             
             if snap < first_snap:
                 num = int(np.sum(tags.flag[owner] == 0))

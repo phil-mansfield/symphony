@@ -18,7 +18,7 @@ from .star_tagging import ProfileShapeModel, RHalfModel, MStarModel, AbstractRan
 # ProfileShape models
 from .star_tagging import PlummerProfile, EinastoProfile, DeprojectedSersicProfile, HernquistProfile
 # R_half models
-from .star_tagging import Nadler2020RHalf, Jiang2019RHalf, FixedRHalf, Mansfield2025RHalf
+from .star_tagging import Nadler2020RHalf, Jiang2019RHalf, FixedRHalf, GeneralisedFixedRHalf, Mansfield2025RHalf, Mansfield2026RHalf
 # Metallicity models
 from .star_tagging import Kirby2013Metallicity, Kirby2013MDF, Mansfield2025Metallicity
 # M_star models

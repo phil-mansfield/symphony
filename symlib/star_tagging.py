@@ -41,7 +41,7 @@ DEFAULT_CORE_PARTICLES = 30
 DEFAULT_TAG_STRATEGY = {
     # If the total number of particles is less than np_error_cutoff, the
     # numbus fit considers it an error.
-    "np_error_cutoff": 16,
+    "n50_core": 8,
     # If the number of particles within r50 is less than n50_fixed_cutoff,
     # the 2*n50_fixed_cutoff most-bond particles will be tagged as uniform-mass
     # stars. (This is also considered an error)
@@ -246,7 +246,8 @@ class AbstractRanking(abc.ABC):
         # This will make life easier for other checks.
         self.is_error = len(ranks) == 0 or np.all(ranks == 0) or np.all(ranks == -1)
 
-        self.tag_strategy = tag_strategy
+        self.tag_strategy = tag_strategy.copy()
+        
         self.check_tag_strategy() # raises error if it fails
         
     def load_particles(self, x, v, idx):
@@ -303,21 +304,21 @@ class AbstractRanking(abc.ABC):
         
         np = len(self.idx)
         
-        (np_error_cutoff,
+        (n50_core,
          n50_fixed_cutoff,
          n50_energy_cutoff) = self.parse_tag_strategy() 
-
-        if np < np_error_cutoff:
+        
+        if np < 2*n50_core:
             return self.set_mp_star_failure(gal)
         elif gal["n50"] < n50_fixed_cutoff:
-            return self.set_mp_star_fixed(gal, 2*n50_fixed_cutoff)
+            return self.set_mp_star_fixed(gal, 2*n50_core)
         elif gal["n50"] < n50_energy_cutoff:
             return self.set_mp_star_energy_cut(gal)
         else:
             return self.set_mp_star_nimbus_fit(profile_model, gal)
             
     def parse_tag_strategy(self):
-        np_error_cutoff =   self.tag_strategy["np_error_cutoff"]
+        n50_core =   self.tag_strategy["n50_core"]
         n50_fixed_cutoff =  self.tag_strategy["n50_fixed_cutoff"]
         n50_energy_cutoff = self.tag_strategy["n50_energy_cutoff"]
 
@@ -330,11 +331,14 @@ class AbstractRanking(abc.ABC):
             n50_fixed_cutoff = 0
             n50_energy_cutoff = 0
 
-        return np_error_cutoff, n50_fixed_cutoff, n50_energy_cutoff
+        return n50_core, n50_fixed_cutoff, n50_energy_cutoff
 
 
     def check_tag_strategy(self):
-        keys = ["np_error_cutoff", "n50_fixed_cutoff", "n50_energy_cutoff",
+        if "np_error_cutoff" in self.tag_strategy:
+            self.tag_strategy["n50_core"] = self.tag_strategy["np_error_cutoff"]
+            
+        keys = ["n50_core", "n50_fixed_cutoff", "n50_energy_cutoff",
                 "fixed_only", "energy_only", "nimbus_only"]
 
         for key in keys:
@@ -358,8 +362,9 @@ class AbstractRanking(abc.ABC):
     def set_mp_star_fixed(self, gal, n_core):
         if n_core == 0:
             return self.set_mp_star_failure(gal)
-        
-        core_idx = self.order_idx[:n_core]
+
+        core_idx = self.order[:n_core]
+        r = np.sqrt(np.sum(self.x**2, axis=1))
         self.mp_star[core_idx] = gal["m_star"]/n_core
         return 2
 
@@ -367,15 +372,13 @@ class AbstractRanking(abc.ABC):
         if self.r_med is None:
             r = np.sqrt(np.sum(self.x[self.order]**2, axis=1))
             self.r_med = running_median(r)
-    
+
+            
         too_small = self.r_med <= gal["r50_3d"]
         too_big   = self.r_med > gal["r50_3d"]
 
         candidates = np.where(too_small[:-1] & too_big[1:])[0]
-
-        # This is some weird edge cases where the galaxy wanted to have an
-        # enormours r50. Probably either an underlying merger tree failure
-        # or a mistake ont he user's part when specifying the galaxy size.
+        
         if len(candidates) == 0:
             self.set_mp_star_failure(gal)
             return 1
@@ -472,7 +475,7 @@ class EnergyRanking(AbstractRanking):
         energy values. Regardless of what ok is set to, 
         """
 
-        if len(p) == 0:
+        if len(p) == 0 or np.sum(p["ok"]) == 0:
             self.E_edges = np.empty(0)
             super(EnergyRanking, self).__init__(
                 np.empty(0), np.empty(0),  np.empty(0), 0,
@@ -656,10 +659,8 @@ class DeprojectedSersicProfile(ProfileShapeModel):
             
     def _mansfield25_sample(self, m_star):
         # Fits to the 16th, 50th, and 84th quantiles
-        x = np.log10(m_star)
-        q16 = -0.18 + 0.35*(1 + special.erf(1.65*(x - 10.95)))
-        q50 = -0.07 + 0.35*(1 + special.erf(1.44*(x - 10.56)))
-        q84 = +0.08 + 0.35*(1 + special.erf(1.10*(x - 10.15)))
+        q16, q50, q84 = self._mansfield25_quantiles(m_star)
+        q16, q50, q84 = np.log10(q16), np.log10(q50), np.log10(q84)
         
         # 68% skew parameter
         s68_signed = np.abs((q16 + q84 - 2*q50)/(q84 - q16))
@@ -683,10 +684,18 @@ class DeprojectedSersicProfile(ProfileShapeModel):
 
         mu = q50
         q = random.random()
-        # inverse transfer sampling
+        # inverse transform sampling
         log_n = mu + (alpha/k)*(np.exp(k*np.sqrt(2)*special.erfinv(2*q - 1))-1)
         
         return 10**log_n
+
+    def _mansfield25_quantiles(self, m_star):
+        x = np.log10(m_star)
+        q16 = -0.18 + 0.35*(1 + special.erf(1.65*(x - 10.95)))
+        q50 = -0.07 + 0.35*(1 + special.erf(1.44*(x - 10.56)))
+        q84 = +0.08 + 0.35*(1 + special.erf(1.10*(x - 10.15)))
+        return 10**q16, 10**q50, 10**q84
+        
     
     def var_names(self):
         return ["m_star"]
@@ -739,11 +748,15 @@ class Nadler2020RHalf(RHalfModel):
 
 
 class FixedRHalf(RHalfModel):
-    def __init__(self, ratio=0.015, scatter=0.0):
+    def __init__(self, ratio=0.015, scatter=0.0, constant_delta_vir=True):
         self.ratio = ratio
         self.sigma_log_R = scatter
+        self.constant_delta_vir = constant_delta_vir
 
-    def r_half(self, rvir=None):
+    def r_half(self, rvir=None, z=None):
+        if self.constant_delta_vir:
+            rvir = rvir*(rho_vir(z)/rho_vir(0))**(1/3)
+        
         if self.sigma_log_R <= 0.0:
             return rvir*self.ratio
         else:
@@ -754,8 +767,35 @@ class FixedRHalf(RHalfModel):
         return False
         
     def var_names(self):
-        return ["rvir"]
+        return ["rvir", "z"]
 
+class GeneralisedFixedRHalf(RHalfModel):
+    def __init__(self, ratio=0.015, scatter=0.0, alpha_z=0.0,
+                 constant_delta_vir=True):
+        self.ratio = ratio
+        self.sigma_log_R = scatter
+        self.alpha_z = alpha_z
+        self.constant_delta_vir
+
+    def r_half(self, rvir=None, z=None):
+        if self.constant_delta_vir:
+            rvir = rvir*(rho_vir(z)/rho_vir(0))**(1/3)
+        
+        if self.sigma_log_R <= 0.0:
+            log_scatter = 0
+        else:
+            log_scatter = random.normal(0, self.sigma_log_R)
+
+        rho_ratio = (rho_vir(0)/rho_vir(z))**(-self.alpha_z/3)
+        
+        return rho_ratio*rvir*self.ratio * 10**(log_scatter)
+
+    def r_half_is_2d(self):
+        return False
+        
+    def var_names(self):
+        return ["rvir", "z"]
+        
 class Jiang2019RHalf(RHalfModel):
     """ Jiang2019Rhalf models galaxies according to the z-dependent size-mass
     relation in Jiang et al. 2019 (https://arxiv.org/abs/1804.07306; Appendix
@@ -876,6 +916,47 @@ class Mansfield2025RHalf(RHalfModel):
         """ var_names returns the names of the variables this model requires.
         """
         return ["rvir", "z", "m_star"]
+    
+class Mansfield2026RHalf(RHalfModel):
+    """ Mansfield2025RHalf implements Nimbus's fiducial size-mass relation.
+    This combines a new fit to Somerville et al. (2018)'s high-mass abundance
+    matching results with inferred halo masses applied to LVD M31/MW satellite
+    galaxies using an inverted UM DR1 relation.
+    """
+    def __init__(self, scatter=0.100):
+        self.sigma_log_R = scatter
+    
+    def r_half(self, rvir=None, z=None, m_star=None):
+        """ Required keyword arguments:
+         - rvir
+         - z
+         - m_star
+        """
+        if rvir is None: raise ValueError("rvir not supplied")
+        if m_star is None: raise ValueError("m_star not supplied")
+        if z is None: raise ValueError("z not supplied")
+
+        rvir = rvir*(rho_vir(z)/rho_vir(0))**(1/3)
+        
+        x = np.log10(m_star)
+        log10_R = -2.37084071 + 0.07849117*(x - 6)
+        log10_R *= (1 + 0.08450221*np.exp(-2.05423209*(x - 2.41019806)))
+        log10_R += np.log10(rvir)
+        
+        if self.sigma_log_R > 0.0:
+            log_scatter = random.normal(0, self.sigma_log_R, len(x))
+            log10_R += log_scatter
+            
+        return 10**log10_R
+            
+    def r_half_is_2d(self):
+        return False
+        
+    def var_names(self):
+        """ var_names returns the names of the variables this model requires.
+        """
+        return ["rvir", "z", "m_star"]
+
     
 class UniverseMachineSFH(SFHModel):
     """ SFHModel is an abstract base class for models that compute star
@@ -1195,52 +1276,117 @@ class GaussianCoupalaCorrelation(MetalCorrelationModel):
         return out
 
 class UniverseMachineMStarFit(MStarModel):
-    def __init__(self, scatter=0.2):
+    def __init__(self, scatter=0.2, alpha_z0=None, mode="cen",
+                 rng=random.default_rng()):
         self.scatter = scatter
-    
-    def m_star(self, mpeak=None, z=None):
-        """
-         Required keyword arguments:
-         - mpeak
-         - z
-        """
+        self.alpha_z0 = alpha_z0
+        self.mode = mode
+        self.rng = rng
 
-        if mpeak is None: raise ValueError("mpeak not supplied")
-        if z is None: raise ValueError("z not supplied")
+    def var_names(self):
+        """ var_names returns the names of the variables this model requires.
+        """
+        return ["mpeak", "z"]
+        
+    def m_star(self, mpeak, z, scatter=None):
+        if scatter is None: scatter = self.scatter
         
         mpeak = mpeak
         
         a = 1/(1 + z)
 
-        e0 = -1.435
-        al_lna = -1.732
+        if self.mode == "all":
+            e0 = -1.435
+            al_lna = -1.732
 
-        ea = 1.831
-        alz = 0.178
+            ea = 1.831
+            alz = 0.178
 
-        e_lna = 1.368
-        b0 = 0.482
+            e_lna = 1.368
+            b0 = 0.482
 
-        ez = -0.217
-        ba = -0.841
+            ez = -0.217
+            ba = -0.841
 
-        m0 = 12.035
-        bz = -0.471
+            m0 = 12.035
+            bz = -0.471
 
-        ma = 4.556
-        d0 = 0.411
+            ma = 4.556
+            d0 = 0.411
 
-        m_lna = 4.417
-        g0 = -1.034
+            m_lna = 4.417
+            g0 = -1.034
 
-        mz = -0.731
-        ga = -3.100
+            mz = -0.731
+            ga = -3.100
 
-        al0 = 1.963
-        gz = -1.055
+            if self.alpha_z0 is None:
+                al0 = 1.963
+            else:
+                al0 = self.alpha_z0
+            gz = -1.055
 
-        ala = -2.316
-        
+            ala = -2.316
+            
+        elif self.mode == "sat":
+            e0    = -1.449
+            ea    = -1.256
+            e_lna = -1.031
+            ez    =  0.108
+            
+            m0    = 11.896
+            ma    =  3.284
+            m_lna =  3.413
+            mz    = -0.580
+            
+            if self.alpha_z0 is None:
+                al0 = 1.949
+            else:
+                al0 = self.alpha_z0
+                
+            ala    = -4.096
+            al_lna = -3.226
+            alz    =  0.401
+            
+            b0    =  0.477
+            ba   =  0.046
+            bz = -0.214
+            
+            d0    =  0.357
+            
+            g0 = -0.755
+            ga =  0.461
+            gz =  0.025
+
+        elif self.mode == "cen":
+            e0 = -1.435
+            ea =  1.813
+            e_lna =  1.353
+            ez = -0.214
+            
+            m0 = 12.081
+            ma = 4.696
+            m_lna = 4.485
+            mz = -0.740
+
+            if self.alpha_z0 is None:
+                al0 = 1.957
+            else:
+                al0 = self.alpha_z0            
+            ala = -2.650
+            al_lna = -1.953
+            alz =  0.204
+ 
+            b0 = 0.474
+            ba = -0.903
+            bz = -0.492
+            
+            d0 = 0.386
+            
+            g0 = -1.065
+            ga = -3.243
+            gz = -1.107
+            
         log10_M1_Msun = m0 + ma*(a-1) - m_lna*np.log(a) + mz*z
         e = e0 + ea*(a - 1) - e_lna*np.log(a) + ez*z
         al = al0 + ala*(a - 1) - al_lna*np.log(a) + alz*z
@@ -1256,19 +1402,46 @@ class UniverseMachineMStarFit(MStarModel):
         log10_Ms_Msun = log10_Ms_M1 + log10_M1_Msun
 
         if self.scatter > 0.0:
-            log_scatter = self.scatter*random.normal(
+            log_scatter = scatter*self.rng.normal(
                 0, 1, size=np.shape(mpeak))
             log10_Ms_Msun += log_scatter
         
         Ms = 10**log10_Ms_Msun
         
         return Ms
-    
-    def var_names(self):
-        """ var_names returns the names of the variables this model requires.
-        """
-        return ["mpeak", "z"]
-    
+
+    def m_halo(self, m_star, z):
+        m_star = np.array(m_star) # Fixes issue with masked arrays
+        mh_0 = 10**np.linspace(4, 17, 200)
+        ms_0 = self.m_star(mh_0, z, scatter=0)
+
+        lim = np.argmax(ms_0)
+        mh_0 = mh_0[:lim]
+        ms_0 = ms_0[:lim]
+        
+        dln_ms_dln_mh_0 = np.zeros(len(mh_0))
+        dln_ms_dln_mh_0[1:-1] = ((np.log(ms_0[2:]) - np.log(ms_0[:-2])) /
+                                 (np.log(mh_0[2:]) - np.log(mh_0[:-2])))
+        dln_ms_dln_mh_0[0]  = dln_ms_dln_mh_0[1]
+        dln_ms_dln_mh_0[-1] = dln_ms_dln_mh_0[-2]
+        
+        f_beta = interpolate.interp1d(np.log10(ms_0), dln_ms_dln_mh_0)
+        f_ms = interpolate.interp1d(np.log10(ms_0), np.log10(mh_0))
+        beta = f_beta(np.log10(m_star))
+        ms_to_mh = lambda ms: 10**f_ms(np.log10(ms))
+
+        # From Symphony
+        alpha = -1.92
+        return invert_smhm(m_star, alpha, beta, self.scatter, ms_to_mh)
+
+def invert_smhm(m_star, alpha, beta, sigma_ms, ms_to_mh):
+    # alpha is the log-slope of HMF, beta is the log-slope of the SMHM relation
+    # sigma_ms is in dex, m_star is in Msun, and ms_to_mh is a function
+    # with units Msun -> Msun
+    inv_sigma = sigma_ms/beta
+    inv_mu = 10**((sigma_ms/beta)**2 * (1 + alpha) +
+                  np.log10(ms_to_mh(m_star)))
+    return inv_mu, inv_sigma    
 
 class UniverseMachineMScatterGrowing(MStarModel):
     
@@ -1370,6 +1543,7 @@ class UniverseMachineMStar(MStarModel):
 
 def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
               target_subs=None, seed=None, gals=None, energy_method="E_sph",
+              tag_cache=None, # tag_cache can be any object
               tag_strategy=DEFAULT_TAG_STRATEGY):
     # energy_method can be E_sph, E, or smooth
     if seed is not None:
@@ -1415,7 +1589,9 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
                 E_snap[i] = look_back_orbital_time(
                     param, scale, star_snap[i], 0.125, h[i,:], 0.5)
                 
-
+    if tag_cache is not None:
+        tag_cache.star_snap = star_snap
+        tag_cache.E_snap = E_snap
 
     n_smooth = np.zeros(len(h), dtype=int)
     # particles in "all" mode at the energy and tagging snapshots
@@ -1451,7 +1627,7 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
             p["x"] -= sx
             p["v"] -= sv
             p_star[i] = p
-
+            
         # Add information at the snapshot energies are evaluated
         for i in i_E:
             p = part.read(snap, mode="smooth", halo=i)
@@ -1461,6 +1637,10 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
             p["x"] -= sx
             p["v"] -= sv
             p_E[i] = p
+
+    if tag_cache is not None:
+        tag_cache.p_star = p_star
+        tag_cache.p_E = p_E
             
     # Initialize various arrays.
     mp_star, ranks = [None]*len(h), [None]*len(h)
@@ -1494,7 +1674,7 @@ def tag_stars(sim_dir, galaxy_halo_model, star_snap=None, E_snap=None,
 
         idx = np.where(p_E[i]["ok"])[0]
         if len(idx) == 0 or len(idx) <= DEFAULT_CORE_PARTICLES: continue
-        
+
         ranks[i].load_particles(p_star[i]["x"][idx], p_star[i]["v"][idx], idx)
         
         kwargs = galaxy_halo_model.get_kwargs(
@@ -1526,11 +1706,17 @@ class RetagStarsState(object):
 def retag_stars(sim_dir, galaxy_halo_model, ranks,
                 state=None, star_snap=None,
                 target_subs=None, seed=None,
+                tag_strategy=None,
                 gals=None):
     if seed is not None:
         random.seed(seed)
     # Basic simulation information
 
+    for i in range(len(ranks)):
+        if tag_strategy is not None:
+            ranks[i].tag_strategy = tag_strategy
+            ranks[i].check_tag_strategy()
+    
     if state is None:
         state = RetagStarsState(sim_dir, galaxy_halo_model)
     param, h, hist, h_cmov, scale, um = state.get_all()
@@ -1779,7 +1965,9 @@ class GalaxyHaloModel(object):
             for i in range(len(n)):
                 out_dict[n[i]] = None
             
-        if "rvir" not in out_dict: out_dict["rvir"] = None
+        if "rvir" not in out_dict:
+            out_dict["rvir"] = None
+            
         return sorted(list(out_dict.keys()))
 
     def get_kwargs(self, params, scale, halo, um, snap):
@@ -2027,6 +2215,19 @@ def n_enc(x, r0):
     r = np.sqrt(np.sum(x**2, axis=1))
     return np.sum(r < r0)
 
+def rho_vir(z, omega_M=0.3):
+    a = 1/(1+z)
+    omega_L = 1 - omega_M
+    Ez = np.sqrt(omega_M/a**3 + omega_L)
+    rho_crit = 2.77519737e11*Ez**2
+    omega_Mz = (omega_M/a**3)/Ez**2
+
+    x = omega_Mz - 1
+    delta_vir = 18*np.pi**2 + 82*x - 39.0*x**2
+    rho_vir = rho_crit*delta_vir
+
+    return rho_vir
+
 def running_median(x):
     if len(x) == 0: return np.array([], dtype=x.dtype)
     med = np.zeros(len(x))
@@ -2068,7 +2269,7 @@ FIDUCIAL_MODEL = GalaxyHaloModel(
         UniverseMachineSFH()
     ),
     ProfileModel(
-        Mansfield2025RHalf(),
+        Mansfield2026RHalf(),
         DeprojectedSersicProfile(n_sersic="mansfield25")
     ),
     MetalModel(
@@ -2084,7 +2285,7 @@ FIDUCIAL_MODEL_NO_UM = GalaxyHaloModel(
         DarkMatterSFH()
     ),
     ProfileModel(
-        Mansfield2025RHalf(),
+        Mansfield2026RHalf(),
         DeprojectedSersicProfile(n_sersic="mansfield25")
     ),
     MetalModel(
