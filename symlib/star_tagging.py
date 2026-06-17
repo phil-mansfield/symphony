@@ -775,7 +775,7 @@ class GeneralisedFixedRHalf(RHalfModel):
         self.ratio = ratio
         self.sigma_log_R = scatter
         self.alpha_z = alpha_z
-        self.constant_delta_vir
+        self.constant_delta_vir=constant_delta_vir
 
     def r_half(self, rvir=None, z=None):
         if self.constant_delta_vir:
@@ -923,8 +923,10 @@ class Mansfield2026RHalf(RHalfModel):
     matching results with inferred halo masses applied to LVD M31/MW satellite
     galaxies using an inverted UM DR1 relation.
     """
-    def __init__(self, scatter=0.100):
+    def __init__(self, scatter=0.100, exponential_cutoff=False, mult=1.0):
         self.sigma_log_R = scatter
+        self.exponential_cutoff = exponential_cutoff
+        self.mult = mult
     
     def r_half(self, rvir=None, z=None, m_star=None):
         """ Required keyword arguments:
@@ -940,11 +942,15 @@ class Mansfield2026RHalf(RHalfModel):
         
         x = np.log10(m_star)
         log10_R = -2.37084071 + 0.07849117*(x - 6)
-        log10_R *= (1 + 0.08450221*np.exp(-2.05423209*(x - 2.41019806)))
-        log10_R += np.log10(rvir)
+        if self.exponential_cutoff:
+            # This leads to a better fit, but has poor extrapolation properties.
+            log10_R *= (1 + 0.08450221*np.exp(-2.05423209*(x - 2.41019806)))
+            
+        log10_R += np.log10(rvir) + np.log10(self.mult)
         
         if self.sigma_log_R > 0.0:
-            log_scatter = random.normal(0, self.sigma_log_R, len(x))
+            n = len(x) if isinstance(x, np.ndarray) else 1
+            log_scatter = random.normal(0, self.sigma_log_R, n)
             log10_R += log_scatter
             
         return 10**log10_R
@@ -956,7 +962,6 @@ class Mansfield2026RHalf(RHalfModel):
         """ var_names returns the names of the variables this model requires.
         """
         return ["rvir", "z", "m_star"]
-
     
 class UniverseMachineSFH(SFHModel):
     """ SFHModel is an abstract base class for models that compute star
