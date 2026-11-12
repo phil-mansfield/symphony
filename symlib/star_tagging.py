@@ -178,17 +178,27 @@ class FeHMDFModel(GalaxyModelComponent):
         """
         pass
 
-#class FeHProfileModel(GalaxyModelComponent):
-#    """ FeHProfileModel is an abstract base class for models of the metallicitiy
-#    distirbution funciton of [Fe/H]. 
-#    """
-#    @abc.abstractmethod
-#    def Fe_H_profile(self, r_half, FeH, ranks, **kwargs):
-#        """ FeH_profile returns the indices that a given set of particle
-#        metallicities would need to have in order to obey the target
-#        metallicity profile. Also returns the target metallicity gradient.
-#        """
-#        pass
+class DeltaFeHModel(GalaxyModelComponent):
+    """ DeltaFeHModel is an abstract base class for models of the coarse-grained
+    change in decrease <[Fe/H]> between r=0 and r=r50.
+    """
+    @abc.abstractmethod
+    def delta_Fe_H(self, **kwargs):
+        """ Returns <[Fe/H](r=r50)> - <[Fe/H](r=0)>.
+        """
+        pass
+    
+    
+class MetallicityProfileModel(GalaxyModelComponent):
+    """ MetallicityProfileModel converts a delta [Fe/H] into a radial
+    metallicity distribution.
+    """
+    @abc.abstractmethod
+    def metallicity_profile(self, r_50_3d, delta_Fe_H, FeH, ranks, **kwargs):
+        """ metallicity_profile returns a new set of metallicities corresponding
+        to the given metallicity gradient.
+        """
+        pass
         
 class MetalCorrelationModel(GalaxyModelComponent):
     """ MetalCorrelationModel computes stellar ages based on [Fe/H] values
@@ -313,7 +323,7 @@ class AbstractRanking(abc.ABC):
         elif gal["n50"] < n50_fixed_cutoff:
             return self.set_mp_star_fixed(gal, 2*n50_core)
         elif gal["n50"] < n50_energy_cutoff:
-            return self.set_mp_star_energy_cut(gal)
+            return self.set_mp_star_energy_cut(gal, n50_core)
         else:
             return self.set_mp_star_nimbus_fit(profile_model, gal)
             
@@ -363,12 +373,12 @@ class AbstractRanking(abc.ABC):
         if n_core == 0:
             return self.set_mp_star_failure(gal)
 
-        core_idx = self.order[:n_core]
+        core_idx = self.idx[self.order[:n_core]]
         r = np.sqrt(np.sum(self.x**2, axis=1))
         self.mp_star[core_idx] = gal["m_star"]/n_core
         return 2
 
-    def set_mp_star_energy_cut(self, gal):
+    def set_mp_star_energy_cut(self, gal, n50_core):
         if self.r_med is None:
             r = np.sqrt(np.sum(self.x[self.order]**2, axis=1))
             self.r_med = running_median(r)
@@ -380,8 +390,7 @@ class AbstractRanking(abc.ABC):
         candidates = np.where(too_small[:-1] & too_big[1:])[0]
         
         if len(candidates) == 0:
-            self.set_mp_star_failure(gal)
-            return 1
+            return self.set_mp_star_fixed(gal, 2*n50_core)
 
         n_core = candidates[-1]
         self.set_mp_star_fixed(gal, n_core)
@@ -1118,110 +1127,114 @@ class Kirby2013MDF(FeHMDFModel):
     def var_names(self):
         return []
 
-#class FlatFeHProfile(FeHProfileModel):
-#    def Fe_H_profile(self, r_half, FeH, ranks):
-#        return FeH, 0.0
-#
-#    def var_names(self):
-#        return []
+class FlatDeltaFeH(DeltaFeHModel):
+    def delta_Fe_H(self):
+        return 0.0
 
-# class Taibi2022FeHProfile(FeHProfileModel):
-#     """ Requires that you're using EnergyRanking
-#     """
-#     def __init__(self, r_r50_max=6):
-#         FeHProfileModel.__init__(self)
-#         delta_Fe_H = [
-#             -0.101, -0.23, -0.09, -0.14, -0.21, -0.04, -0.32, -0.15, -0.15,
-#             -0.07,   0.00,  0.00,  0.00,  0.00, -0.20,  0.00,  0.00, -0.39,
-#             -0.10,  -0.46, -0.06,  0.00, -0.12, -0.16, -0.29,  0.00, -0.10,
-#             -0.08,  -0.35, -0.07
-#         ]
-#         self.mean_delta_Fe_H = np.mean(delta_Fe_H)
-#         self.std_delta_Fe_H = np.std(delta_Fe_H)
-#         self.r_r50_max = r_r50_max
+    def var_names(self):
+        return []
 
-#     def Fe_H_profile(self, r_half, Fe_H, ranks):
-#         delta_Fe_H = random.randn()*self.std_delta_Fe_H + self.mean_delta_Fe_H
+class Taibi2022DeltaFeH(DeltaFeHModel):
+    """ Requires that you're using EnergyRanking
+    """
+    def __init__(self):
+        DeltaFeHModel.__init__(self)
+        delta_Fe_H = [
+            -0.101, -0.23, -0.09, -0.14, -0.21, -0.04, -0.32, -0.15, -0.15,
+            -0.07,   0.00,  0.00,  0.00,  0.00, -0.20,  0.00,  0.00, -0.39,
+            -0.10,  -0.46, -0.06,  0.00, -0.12, -0.16, -0.29,  0.00, -0.10,
+            -0.08,  -0.35, -0.07
+        ]
+        self.mean_delta_Fe_H = np.mean(delta_Fe_H)
+        self.std_delta_Fe_H = np.std(delta_Fe_H)
 
-#         def f_Fe_H(r):
-#             out = delta_Fe_H*(r/r_half)
-#             min_Fe_H = np.abs(delta_Fe_H*self.r_r50_max)
-#             out[out < -min_Fe_H] = -min_Fe_H
-#             out[out > min_Fe_H] = min_Fe_H
-#             return out
-
-#         """
-#         # You need to be unusually careful here since you're using both
-#         # information from the energy and star snapshots. I've appended E or
-#         # star to each variable based on the length/indexing of the underlyng
-#         # array.
-        
-#         idx_star, idx_E = ranks.idx, ranks.E_idx
-        
-#         x_star = ranks.x
-#         x_all = np.zeros((len(ranks.ranks),3))
-#         x_all[idx_star] = x_star
-#         x_E = x_all[idx_E]
-        
-#         r_E = np.sqrt(np.sum(x_E**2, axis=1))
-#         order_E = ranks.order
-#         mp_E = ranks.mp_star[idx_E]
-#         is_bound_E = (ranks.ranks != NIL_RANK)[idx_E]
-        
-#         # f_Fe_H is the metallicity gradient of the galaxy with an arbitary
-#         # offset. [Fe/H] is kept constant outside r_r50_max.t
-        
-#         r_E_sort = r_E[order_E]
-#         mp_E_sort = ranks.mp_star[ranks.order]
-        
-#         # The idea here is that you want to evaluate the metallicity at a
-#         # radius corresponding to a random particle with a similar energy
-#         # to remove biases where particles are pericenter are given higher
-#         # metallicities. You don't want this because correlations with orbital
-#         # phase lead to immediate time evolution after tagging.
-
-#         window = 10 # This number can be whatever, it just can't be large
-#         idx = np.arange(len(r_E_sort), dtype=int)
-#         min_idx = np.maximum(idx - window, 0)
-#         max_idx = np.minimum(idx + window, len(r_E_sort)-1)
-#         idx = random.randint(min_idx, max_idx)
-#         r_eval = r_E_sort[idx]
-
-#         Fe_H_i = f_Fe_H(r_eval) # intial Fe/H before transforms/scatter
-#         input_std = np.std(Fe_H)
-#         w_std = weighted_std(Fe_H_i, mp_E_sort)
-
-#         target_std = np.sqrt(max(input_std**2 - w_std**2, 0))
-#         # This std/5 comes from basically nowhere: I don't think the
-#         # literature has much guidance on what this should be, but I don't
-#         # want it to be a delta function.
-#         scatter = min(input_std/5, target_std)
-#         Fe_H_i += random.randn(len(Fe_H_i)) * scatter
-
-#         avg = np.average(Fe_H_i, weights=mp_E_sort)
-#         Fe_H_i = Fe_H_i - avg + np.mean(Fe_H)
-
-#         Fe_H_i = weighted_abundance_match(Fe_H, Fe_H_i, mp_E_sort)
-        
-#         # Unsort Fe/H back into the orignal order
-#         idx_sort = np.arange(len(Fe_H_i), dtype=int)[ranks.order]
-#         Fe_H_0 = np.zeros(len(Fe_H_i))
-#         Fe_H_0[idx_sort] = Fe_H_i
-
-#         out = f_Fe_H()
-
-#         out = np.zeros(len(ranks.ranks))
-#         out[idx_E] = Fe_H_0
-#         """        
-
-#         out = np.zeros(len(ranks.ranks))
-#         r = np.sqrt(np.sum(ranks.x**2, axis=1))
-#         out[ranks.idx] = f_Fe_H(r)
-        
-#         return out, delta_Fe_H
+    def delta_Fe_H(self):
+        # Clipped Gaussian. This might be a bit wrong in that it doesn't
+        # preserve the over-representation of 0's
+        delta_Fe_H = 1.0
+        while True:
+            delta_Fe_H = (random.randn()*self.std_delta_Fe_H +
+                          self.mean_delta_Fe_H)
+            if delta_Fe_H < 0:
+                return delta_Fe_H
     
-#     def var_names(self):
-#         return []
+    def var_names(self):
+        return []
+    
+class LinearMetallicityProfile(MetallicityProfileModel):
+    def __init__(self, r_r50_max=6, scatter_modifier=0.2):
+        self.r_r50_max = r_r50_max
+        # Begin AI-added block: retain the configured metallicity scatter.
+        self.scatter_modifier = scatter_modifier
+        # End AI-added block.
+    
+    def metallicity_profile(self, r_half, delta_Fe_H, Fe_H, ranks):
+        # f_Fe_H is the metallicity gradient of the galaxy with an arbitary
+        # offset. [Fe/H] is kept constant outside r_r50_max.t
+        def f_Fe_H(r):
+            out = delta_Fe_H*(r/r_half)
+            min_Fe_H = np.abs(delta_Fe_H*self.r_r50_max)
+            out[out < -min_Fe_H] = -min_Fe_H
+            out[out > min_Fe_H] = min_Fe_H
+            return out
+
+        # Begin AI-edited block: align positions and masses in energy order.
+        # Positions are at the tagging snapshot, selected by energy validity.
+        idx_E = ranks.idx
+        x_E = ranks.x
+        
+        r_E = np.sqrt(np.sum(x_E**2, axis=1))
+        order_E = ranks.order
+        mp_E = ranks.mp_star[idx_E]
+
+        r_E_sort = r_E[order_E]
+        mp_E_sort = mp_E[order_E]
+        # End AI-edited block.
+        
+        # The idea here is that you want to evaluate the metallicity at a
+        # radius corresponding to a random particle with a similar energy
+        # to remove biases where particles at pericenter are given higher
+        # metallicities. You don't want this because correlations with orbital
+        # phase lead to immediate time evolution after tagging.
+
+        # Begin AI-edited block: use an exclusive upper sampling bound.
+        window = 10 # This number can be any small number
+        idx = np.arange(len(r_E_sort), dtype=int)
+        min_idx = np.maximum(idx - window, 0)
+        max_idx = np.minimum(idx + window + 1, len(r_E_sort))
+        idx = random.randint(min_idx, max_idx)
+        r_eval = r_E_sort[idx]
+        # End AI-edited block.
+
+        Fe_H_i = f_Fe_H(r_eval) # intial Fe/H before transforms/scatter
+        input_std = np.std(Fe_H)
+        w_std = weighted_std(Fe_H_i, mp_E_sort)
+
+        target_std = np.sqrt(max(input_std**2 - w_std**2, 0))
+        # This std/5 comes from basically nowhere: I don't think the
+        # literature has much guidance on what this should be, but I don't
+        # want it to be a delta function.
+        scatter = min(input_std*self.scatter_modifier, target_std)
+        Fe_H_i += random.randn(len(Fe_H_i)) * scatter
+
+        avg = np.average(Fe_H_i, weights=mp_E_sort)
+        Fe_H_i = Fe_H_i - avg + np.mean(Fe_H)
+        Fe_H_i = weighted_abundance_match(Fe_H, Fe_H_i, mp_E_sort)
+        
+        # Unsort Fe/H back into the orignal order
+        idx_sort = np.arange(len(Fe_H_i), dtype=int)[ranks.order]
+        Fe_H_0 = np.zeros(len(Fe_H_i))
+        Fe_H_0[idx_sort] = Fe_H_i
+
+        # Begin AI-edited block: return the abundance-matched metallicities.
+        out = np.zeros(len(ranks.ranks))
+        out[idx_E] = Fe_H_0
+        # End AI-edited block.
+        
+        return out
+    
+    def var_names(self):
+        return []
 
 def weighted_std(x, w):
     avg = np.average(x, weights=w)
@@ -1791,10 +1804,13 @@ class ProfileModel(object):
         self.profile_shape_model = profile_shape_model
 
 class MetalModel(object):
-    def __init__(self, Fe_H_model, Fe_H_mdf_model, correlation_model):
+    def __init__(self, Fe_H_model, Fe_H_mdf_model, delta_Fe_H_model,
+                 correlation_model, metallicity_profile_model):
         self.Fe_H_model = Fe_H_model
         self.Fe_H_mdf_model = Fe_H_mdf_model
+        self.delta_Fe_H_model = delta_Fe_H_model
         self.correlation_model = correlation_model
+        self.metallicity_profile_model = metallicity_profile_model
         
 class GalaxyHaloModel(object):
     def __init__(self, stellar_mass_model, profile_model, metal_model):
@@ -1811,8 +1827,9 @@ class GalaxyHaloModel(object):
         self.profile_shape_model = profile_model.profile_shape_model
         self.Fe_H_model = metal_model.Fe_H_model
         self.Fe_H_mdf_model = metal_model.Fe_H_mdf_model
-        #self.Fe_H_profile_model = metal_model.Fe_H_profile_model
+        self.delta_Fe_H_model = metal_model.delta_Fe_H_model
         self.correlation_model = metal_model.correlation_model
+        self.metallicity_profile_model = metal_model.metallicity_profile_model
 
     def galaxy_properties(self, sim_dir, state=None):
         # You can also pass RetagState to avoid unneeded extra I/O.
@@ -1835,14 +1852,15 @@ class GalaxyHaloModel(object):
         for i in range(len(rs)):
             kwargs = self.get_kwargs(param, scale, rs[i], um[i], snap[i])
             kwargs = self._galaxy_properties(kwargs)
-            
+
+            gals[i]["delta_Fe_H"] = kwargs["delta_Fe_H"]
             gals[i]["m_star"] = kwargs["m_star"]
-            gals[i]["r50_3d"] = kwargs["r50_3d"]
-            gals[i]["r50_2d"] = kwargs["r50_2d"]
+            # Begin AI-edited block: explicitly extract scalar radii.
+            gals[i]["r50_3d"] = np.asarray(kwargs["r50_3d"]).item()
+            gals[i]["r50_2d"] = np.asarray(kwargs["r50_2d"]).item()
+            # End AI-edited block.
             gals[i]["Fe_H"] = kwargs["Fe_H"]
             gals[i]["sigma_Fe_H"] = kwargs["sigma_Fe_H"]
-            # Not currently implemented
-            # gals_i["delta_Fe_H_i"] = kwargs["delta_Fe_H"]
             gals[i]["a50"] = kwargs["a50"]
             gals[i]["a90"] = kwargs["a90"]
             # I'm tired of fighting this...
@@ -1916,6 +1934,9 @@ class GalaxyHaloModel(object):
         check_var_names(kwargs, self.Fe_H_model)
         kwargs["Fe_H"], kwargs["sigma_Fe_H"] = self.Fe_H_model.Fe_H(
             **self.Fe_H_model.trim_kwargs(kwargs))
+        check_var_names(kwargs, self.delta_Fe_H_model)
+        kwargs["delta_Fe_H"] = self.delta_Fe_H_model.delta_Fe_H(
+            **self.delta_Fe_H_model.trim_kwargs(kwargs))
         
         return kwargs
         
@@ -1935,11 +1956,10 @@ class GalaxyHaloModel(object):
         
         Fe_H = mdf.sample(len(mp_star))
 
-        # Not currently implemented.
-        #Fe_H, delta_Fe_H = self.Fe_H_profile_model.Fe_H_profile(
-        #    r_half, Fe_H, ranks,
-        #    **self.Fe_H_profile_model.trim_kwargs(kwargs))
-
+        Fe_H = self.metallicity_profile_model.metallicity_profile(
+            gal["r50_3d"], gal["delta_Fe_H"], Fe_H, ranks,
+            **self.metallicity_profile_model.trim_kwargs(kwargs))
+                
         # There should be a better way to handle this...
         sfh = self.sfh_model.sfh(**self.sfh_model.trim_kwargs(kwargs))
         a_form = self.correlation_model.a_form(Fe_H, sfh,
@@ -1962,7 +1982,9 @@ class GalaxyHaloModel(object):
                   self.profile_shape_model,
                   self.Fe_H_model,
                   self.Fe_H_mdf_model,
-                  self.correlation_model]
+                  self.delta_Fe_H_model,
+                  self.correlation_model,
+                  self.metallicity_profile_model]
         name_set = [m.var_names() for m in models]
 
         out_dict = { }
@@ -2268,70 +2290,44 @@ def running_median(x):
 
     return np.array(med)
 
+FIDUCIAL_STELLAR_MASS_MODEL = StellarMassModel(
+    UniverseMachineMStar(),
+    UniverseMachineSFH()
+)
+
+FIDUCIAL_STELLAR_MASS_MODEL_NO_UM = StellarMassModel(
+    UniverseMachineMStarFit(),
+    DarkMatterSFH()
+)
+
+FIDUCIAL_PROFILE_MODEL = ProfileModel(
+    Mansfield2026RHalf(),
+    DeprojectedSersicProfile(n_sersic="mansfield25")
+)
+
+FIDUCIAL_METAL_MODEL = MetalModel(
+    Kirby2013Metallicity(),
+    Kirby2013MDF(model_type="gaussian"),
+    Taibi2022DeltaFeH(),
+    GaussianCoupalaCorrelation(),
+    LinearMetallicityProfile()
+)
+
 FIDUCIAL_MODEL = GalaxyHaloModel(
-    StellarMassModel(
-        UniverseMachineMStar(),
-        UniverseMachineSFH()
-    ),
-    ProfileModel(
-        Mansfield2026RHalf(),
-        DeprojectedSersicProfile(n_sersic="mansfield25")
-    ),
-    MetalModel(
-        Kirby2013Metallicity(),
-        Kirby2013MDF(model_type="gaussian"),
-        GaussianCoupalaCorrelation()
-    )
+    FIDUCIAL_STELLAR_MASS_MODEL,
+    FIDUCIAL_PROFILE_MODEL,
+    FIDUCIAL_METAL_MODEL
 )
 
 FIDUCIAL_MODEL_NO_UM = GalaxyHaloModel(
-    StellarMassModel(
-        UniverseMachineMStarFit(),
-        DarkMatterSFH()
-    ),
-    ProfileModel(
-        Mansfield2026RHalf(),
-        DeprojectedSersicProfile(n_sersic="mansfield25")
-    ),
-    MetalModel(
-        Mansfield2025Metallicity(),
-        Kirby2013MDF(model_type="gaussian"),
-        GaussianCoupalaCorrelation()
-    )
+    FIDUCIAL_STELLAR_MASS_MODEL_NO_UM,
+    FIDUCIAL_PROFILE_MODEL,
+    FIDUCIAL_METAL_MODEL
 )
 
 #########################################
 # Provided for backwards compatibility. #
 #########################################
 
-DWARF_GALAXY_HALO_MODEL = GalaxyHaloModel(
-    StellarMassModel(
-        UniverseMachineMStar(),
-        UniverseMachineSFH()
-    ),
-    ProfileModel(
-        Jiang2019RHalf(),
-        DeprojectedSersicProfile()
-    ),
-    MetalModel(
-        Kirby2013Metallicity(),
-        Kirby2013MDF(model_type="gaussian"),
-        GaussianCoupalaCorrelation()
-    )
-)
-
-DWARF_GALAXY_HALO_MODEL_NO_UM = GalaxyHaloModel(
-    StellarMassModel(
-        UniverseMachineMStarFit(),
-        DarkMatterSFH()
-    ),
-    ProfileModel(
-        Jiang2019RHalf(),
-        DeprojectedSersicProfile()
-    ),
-    MetalModel(
-        Kirby2013Metallicity(),
-        Kirby2013MDF(model_type="gaussian"),
-        GaussianCoupalaCorrelation()
-    )
-)
+DWARF_GALAXY_HALO_MODEL = FIDUCIAL_MODEL
+DWARF_GALAXY_HALO_MODEL_NO_UM = FIDUCIAL_MODEL_NO_UM

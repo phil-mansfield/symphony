@@ -14,7 +14,7 @@ from .match import match_subhalos, plot_matched_subhalos
 from .validate import validate_symfind
 
 # Abstract models
-from .star_tagging import ProfileShapeModel, RHalfModel, MStarModel, AbstractRanking, FeHMeanModel, FeHMDFModel, MetalCorrelationModel, SFHModel
+from .star_tagging import ProfileShapeModel, RHalfModel, MStarModel, AbstractRanking, FeHMeanModel, FeHMDFModel, MetalCorrelationModel, SFHModel, DeltaFeHModel, MetallicityProfileModel
 # ProfileShape models
 from .star_tagging import PlummerProfile, EinastoProfile, DeprojectedSersicProfile, HernquistProfile
 # R_half models
@@ -27,6 +27,8 @@ from .star_tagging import UniverseMachineMStarFit, UniverseMachineMStar
 from.star_tagging import UniverseMachineSFH, DarkMatterSFH
 # Metal correlation models
 from .star_tagging import GaussianCoupalaCorrelation
+# Metallicity profile model
+from .star_tagging import FlatDeltaFeH, Taibi2022DeltaFeH, LinearMetallicityProfile
 # Ranking schemes
 from .star_tagging import EnergyRanking
 # Galaxy-halo model components
@@ -36,8 +38,10 @@ from .star_tagging import GalaxyHaloModel
 # Utility functions
 from .star_tagging import clean_particles, tag_stars, look_back_orbital_time, profile_info, rmax_vmax, retag_stars
 
-# Default models:
+# Fiducial models:
 from .star_tagging import FIDUCIAL_MODEL, FIDUCIAL_MODEL_NO_UM
+# Fiducial model components:
+from .star_tagging import FIDUCIAL_STELLAR_MASS_MODEL, FIDUCIAL_STELLAR_MASS_MODEL_NO_UM, FIDUCIAL_PROFILE_MODEL, FIDUCIAL_METAL_MODEL
 # Provided for backwards compartibility
 from .star_tagging import DWARF_GALAXY_HALO_MODEL, DWARF_GALAXY_HALO_MODEL_NO_UM
 

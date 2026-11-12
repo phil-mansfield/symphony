@@ -218,7 +218,7 @@ r50_3d - initial projected 3D half-mass radius (kpc)
 Fe_H - initial mass-weighted mean [Fe/H] of stars
 sigma_Fe_H - the initial 1-sigma scatter in the metallicity distribution
              funciton in dex.
-delta_Fe_H - the initial metallicitiy gradient in units of [Fe/H]/Rhalf
+delta_Fe_H - the change in <[Fe/H]> between r=0 and r=r50,3d.
 a50 - the half-mass formation scale factor of stars
 a90 - the 90% formation scale factor of stars
 profile_param - length-16 array of parameters describing the stellar density
@@ -251,8 +251,9 @@ fit_flag - An integer flag representing the expected quality of the fit.
 NIMBUS_GALAXY_DTYPE = [("m_star", "f4"),
                        ("r50_2d", "f4"),
                        ("r50_3d", "f4"),
-                       ("Fe_H", "f4"), 
+                       ("Fe_H", "f4"),
                        ("sigma_Fe_H", "f4"),
+                       ("delta_Fe_H", "f4"),
                        ("a50", "f4"),
                        ("a90", "f4"),
                        ("n50", "i4"),
